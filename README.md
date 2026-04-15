@@ -132,7 +132,7 @@ off
 
 ## Inspiracja
 
-Polska adaptacja [caveman](https://github.com/JuliusBrussee/caveman) — JuliusBrussee.
+Polska adaptacja [caveman](https://github.com/JuliusBrussee/caveman) - JuliusBrussee.
 
 ## Licencja
 
