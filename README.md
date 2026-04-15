@@ -130,6 +130,10 @@ off
 - **Nieodwracalne operacje:** pełne potwierdzenie, bez skrótów
 - **`stop snaf`:** natychmiastowe wyłączenie
 
+## Inspiracja
+
+Polska adaptacja [caveman](https://github.com/JuliusBrussee/caveman) — JuliusBrussee.
+
 ## Licencja
 
 MIT
