@@ -5,6 +5,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 PROMPT=$(jq -r '.prompt // ""')
 CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR"
 MODE_FILE="$CLAUDE_DIR/.snaf-mode"
 FLAG="$CLAUDE_DIR/.snaf-active"
 

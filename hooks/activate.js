@@ -15,6 +15,7 @@ const { getDefaultMode } = require('./snaf-config');
 const claudeDir = path.join(os.homedir(), '.claude');
 const flagPath = path.join(claudeDir, '.snaf-active');
 const settingsPath = path.join(claudeDir, 'settings.json');
+const statuslineAskedPath = path.join(claudeDir, '.snaf-statusline-asked');
 
 const mode = getDefaultMode();
 
@@ -59,7 +60,8 @@ try {
     }
   }
 
-  if (!hasStatusline) {
+  if (!hasStatusline && !fs.existsSync(statuslineAskedPath)) {
+    try { fs.writeFileSync(statuslineAskedPath, '1'); } catch (e) {}
     const isWindows = process.platform === 'win32';
     const scriptName = isWindows ? 'snaf-statusline.ps1' : 'snaf-statusline.sh';
     const scriptPath = path.join(__dirname, scriptName);
@@ -73,6 +75,8 @@ try {
       'To enable, add this to ~/.claude/settings.json: ' +
       statusLineSnippet + ' ' +
       'Proactively offer to set this up for the user on first interaction.';
+  } else if (!hasStatusline) {
+    // already asked, skip nudge
   }
 } catch (e) {
   console.error('snaf: statusline detection failed:', e.message);
