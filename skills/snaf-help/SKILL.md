@@ -27,7 +27,7 @@ Wyświetl kartę referencyjną. Bez wstępu.
 | `/snaf-commit` | Commit message — Conventional Commits, ≤50 znaków, "dlaczego" nie "co" |
 | `/snaf-review` | Code review — `L42: 🔴 bug: opis. fix.` bez wody |
 | `/snaf-compress <plik>` | Przepisz markdown w stylu snaf, ~40% mniej tokenów |
-| `/snaf-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 67000) |
+| `/snaf-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
 | `/snaf-help` | Ta karta |
 
 ## Severity w review

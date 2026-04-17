@@ -1,6 +1,6 @@
 {
   "name": "snaf",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "author": {
     "name": "Karol Kiljan",
@@ -10,7 +10,7 @@
   "license": "MIT",
   "keywords": ["polish", "compression", "persona", "terse", "orc"],
   "env": {
-    "SNAF_CONTEXT_THRESHOLD": "67000"
+    "SNAF_CONTEXT_THRESHOLD": "85000"
   },
   "hooks": {
     "UserPromptSubmit": [

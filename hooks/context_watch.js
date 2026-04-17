@@ -22,7 +22,7 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 
-  const threshold = parseInt(process.env.SNAF_CONTEXT_THRESHOLD || '67000', 10);
+  const threshold = parseInt(process.env.SNAF_CONTEXT_THRESHOLD || '85000', 10);
   const cooldown = parseInt(process.env.SNAF_CONTEXT_COOLDOWN || '300', 10);
 
   const sessionDir = path.dirname(transcriptPath);

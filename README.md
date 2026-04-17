@@ -90,7 +90,7 @@ Krux nie gadać więcej niż trzeba.
 | `/snaf-commit` | Commit message - Conventional Commits, ≤50 znaków |
 | `/snaf-review` | Code review - `L42: 🔴 bug: opis. fix.` |
 | `/snaf-compress <plik>` | Przepisz markdown w stylu snaf, ~40% mniej tokenów |
-| `/snaf-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 67000) |
+| `/snaf-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
 | `/snaf-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania
@@ -121,7 +121,7 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 **Zmienne środowiskowe:**
 ```bash
 export SNAF_DEFAULT_MODE=off            # wyłącz domyślnie
-export SNAF_CONTEXT_THRESHOLD=67000     # próg ostrzeżenia context watch (tokeny)
+export SNAF_CONTEXT_THRESHOLD=85000     # próg ostrzeżenia context watch (tokeny)
 export SNAF_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżeniami (sekundy)
 ```
 
