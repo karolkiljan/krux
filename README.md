@@ -92,6 +92,10 @@ Krux nie gadać więcej niż trzeba.
 | `/snaf-compress <plik>` | Przepisz markdown w stylu snaf, ~40% mniej tokenów |
 | `/snaf-help` | Karta referencyjna - wszystkie prawa i słownik |
 
+## Wymagania
+
+- Python 3 (`python3` w PATH) — wymagany przez hooki context watch
+
 ## Instalacja
 
 ```bash

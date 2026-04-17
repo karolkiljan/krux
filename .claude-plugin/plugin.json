@@ -9,6 +9,9 @@
   "repository": "https://github.com/karolkiljan/snaf",
   "license": "MIT",
   "keywords": ["polish", "compression", "persona", "terse", "orc"],
+  "env": {
+    "SNAF_CONTEXT_THRESHOLD": "30000"
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -18,6 +21,31 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-toggle.sh",
             "suppressOutput": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.py",
+            "timeout": 10,
+            "asyncRewake": true
           }
         ]
       }

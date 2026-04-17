@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-if ! command -v jq >/dev/null 2>&1; then
-  echo "snaf-toggle: jq not installed — toggle disabled" >&2
+INPUT=$(cat)
+PROMPT=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('prompt',''))" 2>/dev/null)
+if [ $? -ne 0 ]; then
   exit 0
 fi
-PROMPT=$(jq -r '.prompt // ""')
+
 CLAUDE_DIR="$HOME/.claude"
 mkdir -p "$CLAUDE_DIR"
 MODE_FILE="$CLAUDE_DIR/.snaf-mode"
