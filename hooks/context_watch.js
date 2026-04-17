@@ -3,6 +3,7 @@
 // Reads transcript_path + cwd from hook payload (no project_key reconstruction).
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 let raw = '';
@@ -16,6 +17,14 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 
+  // Skip when snaf is globally disabled — user opted out, don't nag.
+  try {
+    const mode = fs.readFileSync(
+      path.join(os.homedir(), '.claude', '.snaf-mode'), 'utf8'
+    ).trim().toLowerCase();
+    if (mode === 'off') process.exit(0);
+  } catch (e) {}
+
   const sessionId = data.session_id || '';
   const transcriptPath = data.transcript_path || '';
   if (!sessionId || !transcriptPath || !fs.existsSync(transcriptPath)) {
@@ -24,14 +33,20 @@ process.stdin.on('end', () => {
 
   const threshold = parseInt(process.env.SNAF_CONTEXT_THRESHOLD || '85000', 10);
   const cooldown = parseInt(process.env.SNAF_CONTEXT_COOLDOWN || '300', 10);
+  const delta = parseInt(process.env.SNAF_CONTEXT_DELTA || '20000', 10);
 
   const sessionDir = path.dirname(transcriptPath);
   const cooldownFile = path.join(sessionDir, sessionId + '.context_watch_ts');
 
+  // State: "timestamp:tokens". Re-fire only when BOTH cooldown elapsed AND
+  // context grew by >= delta tokens since last fire. Prevents per-Stop spam.
+  let prevTs = 0;
+  let prevTokens = 0;
   if (fs.existsSync(cooldownFile)) {
     try {
-      const last = parseFloat(fs.readFileSync(cooldownFile, 'utf8').trim());
-      if (Date.now() / 1000 - last < cooldown) process.exit(0);
+      const parts = fs.readFileSync(cooldownFile, 'utf8').trim().split(':');
+      prevTs = parseFloat(parts[0]) || 0;
+      prevTokens = parseInt(parts[1] || '0', 10) || 0;
     } catch (e) {}
   }
 
@@ -72,13 +87,18 @@ process.stdin.on('end', () => {
     } catch (e) {}
   }
 
-  if (lastTokens > threshold) {
-    try { fs.writeFileSync(cooldownFile, String(Date.now() / 1000)); } catch (e) {}
-    process.stderr.write(
-      `[CONTEXT_WATCH] Context osiągnął ${lastTokens} tokenów (próg: ${threshold}). ` +
-      'Uruchom context watch protocol ze SKILL.md: wyświetl orkowy komunikat ' +
-      'i zapytaj użytkownika co zachować przed /compact.\n'
-    );
-    process.exit(2);
-  }
+  if (lastTokens <= threshold) process.exit(0);
+
+  const now = Date.now() / 1000;
+  const cooldownActive = prevTs > 0 && now - prevTs < cooldown;
+  const deltaSatisfied = prevTokens === 0 || lastTokens - prevTokens >= delta;
+  if (cooldownActive && !deltaSatisfied) process.exit(0);
+
+  try { fs.writeFileSync(cooldownFile, `${now}:${lastTokens}`); } catch (e) {}
+  process.stderr.write(
+    `[CONTEXT_WATCH] Context osiągnął ${lastTokens} tokenów (próg: ${threshold}). ` +
+    'Uruchom context watch protocol ze SKILL.md: wyświetl orkowy komunikat ' +
+    'i zapytaj użytkownika co zachować przed /compact.\n'
+  );
+  process.exit(2);
 });

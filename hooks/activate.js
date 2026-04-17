@@ -24,18 +24,35 @@ try {
   console.error('snaf: flag write failed:', e.message);
 }
 
-const skillPath = path.join(__dirname, '..', 'skills', 'snaf', 'SKILL.md');
-let skillContent;
+// SessionStart source: "startup" | "resume" | "clear" | "compact"
+let source = 'startup';
 try {
-  skillContent = fs.readFileSync(skillPath, 'utf8');
-} catch (e) {
-  console.error('snaf: SKILL.md not found at', skillPath, '-', e.message);
-  process.stdout.write('OK');
-  process.exit(0);
-}
+  let raw = '';
+  if (!process.stdin.isTTY) {
+    raw = fs.readFileSync(0, 'utf8');
+    if (raw) source = JSON.parse(raw).source || 'startup';
+  }
+} catch (e) {}
 
-const body = skillContent.replace(/^---[\s\S]*?---\s*/, '');
-let output = 'SNAF TRYB AKTYWNY\n\n' + body;
+// On resume/compact the skill body is already in memory from the prior context
+// (resume) or injected via PreCompact notes (compact). Emit a short reminder
+// instead of re-injecting the full skill — saves tokens.
+let output;
+if (source === 'resume' || source === 'compact') {
+  output = 'SNAF TRYB AKTYWNY — persona Krux dalej działa. `/snaf-help` dla zasad.';
+} else {
+  const skillPath = path.join(__dirname, '..', 'skills', 'snaf', 'SKILL.md');
+  let skillContent;
+  try {
+    skillContent = fs.readFileSync(skillPath, 'utf8');
+  } catch (e) {
+    console.error('snaf: SKILL.md not found at', skillPath, '-', e.message);
+    process.stdout.write('OK');
+    process.exit(0);
+  }
+  const body = skillContent.replace(/^---[\s\S]*?---\s*/, '');
+  output = 'SNAF TRYB AKTYWNY\n\n' + body;
+}
 
 // Statusline: copy script to stable path on every activation so updates propagate.
 // settings.json always points to ~/.claude/.snaf-statusline.{sh,ps1} — never versioned cache path.

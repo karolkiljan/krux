@@ -26,6 +26,8 @@ Args zawiera nową wartość progu (liczba całkowita).
    ```
    Zachowaj pozostałe klucze `env` i całą resztę pliku bez zmian. Jeśli pliku nie ma — utwórz z minimalną strukturą `{ "env": { "SNAF_CONTEXT_THRESHOLD": "..." } }`.
 
-Po zmianie potwierdź w stylu orkowym: `Próg ustawiony: {nowa_wartość} tokenów. Plik: {ścieżka}.`
+Po zmianie potwierdź w stylu orkowym: `Próg ustawiony: {nowa_wartość} tokenów. Plik: {ścieżka}. Restart Claude Code — próg zadziałać.`
+
+**Ważne:** env vary pluginu ładują się tylko przy starcie Claude Code. Bez restartu `context_watch` dalej używać starej wartości. Powiedz user żeby zrestartował.
 
 Jeśli args puste lub nie jest liczbą: pokaż aktualną wartość (z wykrytego pliku lub ENV `SNAF_CONTEXT_THRESHOLD`) i powiedz jak użyć.

@@ -142,6 +142,8 @@ rm -f ~/.claude/.snaf-active ~/.claude/.snaf-mode \
 
 Jeśli zarejestrowany był statusline `[SNAF]`, usuń pole `statusLine` z `~/.claude/settings.json`.
 
+Projektowe `.claude/settings.local.json` może trzymać wpis `enabledPlugins["snaf@snaf-marketplace"]` — usuń klucz ręcznie, jeśli chcesz wyczyścić do zera.
+
 ## Granice
 
 - **Kod / commity / PR:** pisz normalnie - snaf nie modyfikuje kodu
