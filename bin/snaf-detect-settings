@@ -1,19 +1,23 @@
-#!/usr/bin/env python3
-import json
-import os
-import sys
+#!/usr/bin/env node
+// snaf — detect which settings.json has snaf enabled.
+// Prints path of project .claude/settings.json if it lists snaf in enabledPlugins,
+// otherwise falls back to ~/.claude/settings.json.
 
-project_settings = os.path.join(os.getcwd(), ".claude", "settings.json")
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
-if os.path.exists(project_settings):
-    try:
-        with open(project_settings) as f:
-            data = json.load(f)
-        plugins = data.get("enabledPlugins", {})
-        if any("snaf" in key for key in plugins):
-            print(project_settings)
-            sys.exit(0)
-    except Exception:
-        pass
+const projectSettings = path.join(process.cwd(), '.claude', 'settings.json');
 
-print(os.path.expanduser("~/.claude/settings.json"))
+if (fs.existsSync(projectSettings)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(projectSettings, 'utf8'));
+    const plugins = data.enabledPlugins || {};
+    if (Object.keys(plugins).some(key => key.includes('snaf'))) {
+      process.stdout.write(projectSettings);
+      process.exit(0);
+    }
+  } catch (e) {}
+}
+
+process.stdout.write(path.join(os.homedir(), '.claude', 'settings.json'));

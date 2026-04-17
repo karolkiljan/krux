@@ -95,7 +95,7 @@ Krux nie gadać więcej niż trzeba.
 
 ## Wymagania
 
-- Python 3 (`python3` w PATH) — wymagany przez hooki context watch
+- Claude Code (dostarcza Node.js — plugin nie wymaga dodatkowych zależności)
 
 ## Instalacja
 

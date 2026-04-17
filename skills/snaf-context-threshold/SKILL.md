@@ -12,8 +12,20 @@ Args zawiera nową wartość progu (liczba całkowita).
 
 **Wykryj gdzie zapisać:** Uruchom przez Bash `snaf-detect-settings`. Wynik to ścieżka do pliku settings.json gdzie snaf jest aktywny (plugin's `bin/` jest w PATH).
 
-Użyj Skill tool z `update-config` żeby zaktualizować `"SNAF_CONTEXT_THRESHOLD"` w sekcji `"env"` w wykrytym pliku.
+**Zapis wartości (w kolejności preferencji):**
+
+1. **Preferowane — Skill `update-config`:** jeśli dostępny, użyj żeby zaktualizować `"SNAF_CONTEXT_THRESHOLD"` w sekcji `"env"` w wykrytym pliku.
+
+2. **Fallback — bezpośredni Edit:** jeśli `update-config` niedostępny, odczytaj plik (Read), zaktualizuj pole JSON, zapisz (Write). Schemat docelowy:
+   ```json
+   {
+     "env": {
+       "SNAF_CONTEXT_THRESHOLD": "<nowa_wartość>"
+     }
+   }
+   ```
+   Zachowaj pozostałe klucze `env` i całą resztę pliku bez zmian. Jeśli pliku nie ma — utwórz z minimalną strukturą `{ "env": { "SNAF_CONTEXT_THRESHOLD": "..." } }`.
 
 Po zmianie potwierdź w stylu orkowym: `Próg ustawiony: {nowa_wartość} tokenów. Plik: {ścieżka}.`
 
-Jeśli args puste lub nie jest liczbą: pokaż aktualną wartość i powiedz jak użyć.
+Jeśli args puste lub nie jest liczbą: pokaż aktualną wartość (z wykrytego pliku lub ENV `SNAF_CONTEXT_THRESHOLD`) i powiedz jak użyć.

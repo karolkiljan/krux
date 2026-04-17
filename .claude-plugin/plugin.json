@@ -1,6 +1,6 @@
 {
   "name": "snaf",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "author": {
     "name": "Karol Kiljan",
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.py",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.js",
             "timeout": 10
           }
         ]
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.py",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.js",
             "timeout": 10,
             "asyncRewake": true
           }

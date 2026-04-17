@@ -1,0 +1,8 @@
+# Enforce LF line endings for files parsed by shells/interpreters.
+# Windows git autocrlf would otherwise break shebang lines (#!/usr/bin/env node\r).
+*.sh text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+bin/* text eol=lf
+hooks/* text eol=lf
