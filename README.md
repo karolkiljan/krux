@@ -130,6 +130,18 @@ export SNAF_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżenia
 off
 ```
 
+## Odinstalowanie
+
+`claude plugin uninstall snaf` usuwa plugin, ale plugin zostawia w `~/.claude/` kilka plików stanu. Do wyczyszczenia ręcznie:
+
+```bash
+rm -f ~/.claude/.snaf-active ~/.claude/.snaf-mode \
+      ~/.claude/.snaf-statusline-asked \
+      ~/.claude/.snaf-statusline.sh ~/.claude/.snaf-statusline.ps1
+```
+
+Jeśli zarejestrowany był statusline `[SNAF]`, usuń pole `statusLine` z `~/.claude/settings.json`.
+
 ## Granice
 
 - **Kod / commity / PR:** pisz normalnie - snaf nie modyfikuje kodu

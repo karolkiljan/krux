@@ -35,9 +35,29 @@ process.stdin.on('end', () => {
     } catch (e) {}
   }
 
+  // Read only the tail of the transcript — the freshest `usage` entry is always
+  // near the end. Saves parsing MBs of JSONL each turn in long sessions.
+  const TAIL_BYTES = 128 * 1024;
+  let tail = '';
+  try {
+    const stat = fs.statSync(transcriptPath);
+    const start = Math.max(0, stat.size - TAIL_BYTES);
+    const fd = fs.openSync(transcriptPath, 'r');
+    const len = stat.size - start;
+    const buf = Buffer.alloc(len);
+    fs.readSync(fd, buf, 0, len, start);
+    fs.closeSync(fd);
+    tail = buf.toString('utf8');
+    if (start > 0) {
+      const nl = tail.indexOf('\n');
+      if (nl >= 0) tail = tail.slice(nl + 1);
+    }
+  } catch (e) {
+    process.exit(0);
+  }
+
   let lastTokens = 0;
-  const lines = fs.readFileSync(transcriptPath, 'utf8').split('\n');
-  for (const line of lines) {
+  for (const line of tail.split('\n')) {
     if (!line) continue;
     try {
       const d = JSON.parse(line);
