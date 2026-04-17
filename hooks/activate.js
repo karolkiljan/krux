@@ -63,8 +63,11 @@ try {
   const isSnafStatusline = currentCommand.includes('snaf-statusline');
 
   if (isSnafStatusline && currentCommand !== stableCommand) {
-    settings.statusLine.command = stableCommand;
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    const snippet = '"statusLine": { "type": "command", "command": ' + JSON.stringify(stableCommand) + ' }';
+    output += '\n\nSTATUSLINE UPDATE AVAILABLE: The snaf statusline command path has changed (plugin was updated). ' +
+      'Current path may be stale. New stable path: ' + JSON.stringify(stableCommand) + '. ' +
+      'Ask the user if they want to update ~/.claude/settings.json with: ' + snippet + '. ' +
+      'Only update if user confirms.';
   } else if (!settings.statusLine) {
     if (!fs.existsSync(statuslineAskedPath)) {
       try { fs.writeFileSync(statuslineAskedPath, '1'); } catch (e) {}
