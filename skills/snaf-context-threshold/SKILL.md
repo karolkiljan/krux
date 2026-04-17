@@ -10,10 +10,10 @@ description: >
 
 Args zawiera nową wartość progu (liczba całkowita).
 
-Użyj Skill tool z `update-config` żeby zaktualizować `"SNAF_CONTEXT_THRESHOLD"` w sekcji `"env"` w `settings.local.json` aktualnego projektu.
+**Wykryj gdzie zapisać:** Uruchom przez Bash `snaf-detect-settings`. Wynik to ścieżka do pliku settings.json gdzie snaf jest aktywny (plugin's `bin/` jest w PATH).
 
-Uwaga: zmiana działa per-projekt. Żeby zmienić globalnie dla wszystkich projektów — zaktualizuj `~/.claude/settings.json` zamiast `settings.local.json`.
+Użyj Skill tool z `update-config` żeby zaktualizować `"SNAF_CONTEXT_THRESHOLD"` w sekcji `"env"` w wykrytym pliku.
 
-Po zmianie potwierdź w stylu orkowym: `Próg ustawiony: {nowa_wartość} tokenów.`
+Po zmianie potwierdź w stylu orkowym: `Próg ustawiony: {nowa_wartość} tokenów. Plik: {ścieżka}.`
 
-Jeśli args puste lub nie jest liczbą: pokaż aktualną wartość z pliku i powiedz jak użyć.
+Jeśli args puste lub nie jest liczbą: pokaż aktualną wartość i powiedz jak użyć.

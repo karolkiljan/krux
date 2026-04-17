@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import json
+import os
+import sys
+
+project_settings = os.path.join(os.getcwd(), ".claude", "settings.json")
+
+if os.path.exists(project_settings):
+    try:
+        with open(project_settings) as f:
+            data = json.load(f)
+        plugins = data.get("enabledPlugins", {})
+        if any("snaf" in key for key in plugins):
+            print(project_settings)
+            sys.exit(0)
+    except Exception:
+        pass
+
+print(os.path.expanduser("~/.claude/settings.json"))

@@ -10,7 +10,7 @@ if not session_id:
     sys.stderr.write("snaf context_watch: session_id missing from payload\n")
     sys.exit(0)
 
-threshold = int(os.environ.get("SNAF_CONTEXT_THRESHOLD", "30000"))
+threshold = int(os.environ.get("SNAF_CONTEXT_THRESHOLD", "67000"))
 cooldown = int(os.environ.get("SNAF_CONTEXT_COOLDOWN", "300"))
 
 cwd = os.getcwd()
@@ -39,9 +39,13 @@ with open(jsonl) as f:
             d = json.loads(line)
             usage = d.get("message", {}).get("usage") or d.get("usage")
             if usage:
-                tokens = usage.get("cache_read_input_tokens") or usage.get("input_tokens", 0)
-                if tokens:
-                    last_tokens = tokens
+                total = (
+                    usage.get("cache_read_input_tokens", 0)
+                    + usage.get("cache_creation_input_tokens", 0)
+                    + usage.get("input_tokens", 0)
+                )
+                if total > 0:
+                    last_tokens = total
         except Exception:
             pass
 

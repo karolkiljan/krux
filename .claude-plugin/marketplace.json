@@ -8,7 +8,7 @@
       "name": "snaf",
       "source": "./",
       "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
-      "version": "1.3.0",
+      "version": "1.5.0",
       "author": {
         "name": "Karol Kiljan"
       }

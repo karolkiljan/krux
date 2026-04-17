@@ -1,6 +1,6 @@
 {
   "name": "snaf",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "author": {
     "name": "Karol Kiljan",
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-toggle.sh",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-toggle.js",
             "timeout": 5,
             "suppressOutput": true
           }
