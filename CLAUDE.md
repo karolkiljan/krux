@@ -70,15 +70,19 @@ Plugin działa na dwóch niezależnych osiach:
 
 **Statusline copy na każdym starcie.** Settings wskazują na stabilną ścieżkę `~/.claude/.snaf-statusline.sh`, ale sam skrypt jest kopiowany z wersjonowanego cache pluginu na każdym SessionStart. Update pluginu → update statusline bez zmiany settings.json (`activate.js:57-101`).
 
-## Testy — brak, planowane
+## Testy
 
-Projekt nie ma suite testów. Warte pokrycia w pierwszej kolejności:
-- Regex matchers w `snaf-toggle.js` i `snaf-flow-toggle.js` (diacritics, edge cases).
-- Cooldown + delta logic w `context_watch.js` (stan w pliku, rollback przy /compact).
-- JSONL tail parsing (`context_watch.js:77-91`) — malformed lines, brak `usage`, częściowe wiersze na granicy tail.
-- `getDefaultMode` resolution order (`snaf-config.js`).
+Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install). Uruchomienie: `npm test`.
 
-Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install).
+Pokryte hooki:
+- `snaf-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin (`test/snaf-toggle.test.js`)
+- `snaf-flow-toggle.js` — toggle flag, emit JSON, per-turn reminder, aliasy (`test/snaf-flow-toggle.test.js`)
+- `snaf-config.js` — getDefaultMode resolution order (env > plik > default) (`test/snaf-config.test.js`)
+- `context_watch.js` — opt-out (env + mode), threshold, transcript parsing (JSONL, malformed lines, message.usage vs top-level), cooldown + delta logic (`test/context-watch.test.js`)
+- `precompact.js` — notes injection + one-shot deletion, empty file edge case (`test/precompact.test.js`)
+- `activate.js` — startup vs resume/compact branch, SKILL.md frontmatter strip, statusline copy, setup prompts (`test/activate.test.js`)
+
+**Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `SNAF_*`** z `process.env` — shell użytkownika może mieć np. `SNAF_CONTEXT_WATCH=off` ustawione globalnie i zanieczyścić testy.
 
 ## Wersjonowanie
 

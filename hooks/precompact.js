@@ -16,10 +16,12 @@ process.stdin.on('end', () => {
 
   if (!fs.existsSync(notesFile)) process.exit(0);
 
-  let notes;
-  try { notes = fs.readFileSync(notesFile, 'utf8').trim(); } catch (e) { process.exit(0); }
-  if (!notes) process.exit(0);
+  let notes = '';
+  try { notes = fs.readFileSync(notesFile, 'utf8').trim(); } catch (e) {}
 
-  process.stdout.write(notes);
+  // One-shot contract: consume the file regardless of content. Empty file would
+  // otherwise linger across sessions even though the hook has already "seen" it.
   try { fs.unlinkSync(notesFile); } catch (e) {}
+
+  if (notes) process.stdout.write(notes);
 });

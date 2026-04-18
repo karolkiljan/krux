@@ -92,17 +92,20 @@ test('"normalny tryb" turns OFF', () => {
   withTempHome(home => {
     runHook(home, 'snaf');
     const r = runHook(home, 'normalny tryb');
+    assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
   });
 });
 
 test('aliases: "start snaf", "aktywuj snaf"', () => {
   withTempHome(home => {
-    runHook(home, 'start snaf');
+    const r = runHook(home, 'start snaf');
+    assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
   withTempHome(home => {
-    runHook(home, 'aktywuj snaf');
+    const r = runHook(home, 'aktywuj snaf');
+    assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
 });
