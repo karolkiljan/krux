@@ -1,6 +1,6 @@
 {
   "name": "snaf",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "keywords": ["claude-code-plugin"],
   "scripts": {

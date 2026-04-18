@@ -5,6 +5,7 @@ description: >
   o dużym kontekście, wywołujesz /snaf-context-threshold lub podajesz liczbę tokenów.
   Przykład: /snaf-context-threshold 40000
 argument-hint: Token count (integer, e.g. 40000)
+disable-model-invocation: true
 ---
 
 ## Wykonanie

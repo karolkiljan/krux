@@ -5,6 +5,7 @@ description: >
   Zachowuje sens, usuwa wodę. Użyj gdy kompresujesz CLAUDE.md, README, dokumentację,
   lub wywołujesz /snaf-compress <plik>.
 argument-hint: Path to markdown file
+disable-model-invocation: true
 ---
 
 Target file: $ARGUMENTS

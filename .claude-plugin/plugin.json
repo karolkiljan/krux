@@ -1,69 +1,13 @@
 {
   "name": "snaf",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "author": {
     "name": "Karol Kiljan",
     "url": "https://github.com/karolkiljan"
   },
+  "homepage": "https://github.com/karolkiljan/snaf",
   "repository": "https://github.com/karolkiljan/snaf",
   "license": "MIT",
-  "keywords": ["polish", "compression", "persona", "terse", "orc"],
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-toggle.js",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-flow-toggle.js",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.js",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.js",
-            "timeout": 10,
-            "asyncRewake": true
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/activate.js",
-            "timeout": 5,
-            "statusMessage": "Snaf!"
-          }
-        ]
-      }
-    ]
-  }
+  "keywords": ["polish", "compression", "persona", "terse", "orc"]
 }

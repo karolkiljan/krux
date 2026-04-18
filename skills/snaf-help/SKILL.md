@@ -3,6 +3,7 @@ name: snaf-help
 description: >
   Karta referencyjna snaf — wszystkie tryby i komendy w jednym miejscu.
   Użyj gdy pytasz o snaf, chcesz zobaczyć dostępne komendy, lub wywołujesz /snaf-help.
+disable-model-invocation: true
 ---
 
 ## Wykonanie

@@ -23,6 +23,8 @@ Plugin działa na dwóch niezależnych osiach:
 
 **Kolejność UserPromptSubmit:** oba hooki (`snaf-toggle`, `snaf-flow-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
 
+**Rejestracja:** Wszystkie hooki zdefiniowane w `hooks/hooks.json` (format zgodny z Claude Code plugin spec — ten sam kształt JSON co `settings.json` hooks). Ścieżka do plików JS przez `${CLAUDE_PLUGIN_ROOT}/hooks/...`. Nie duplikować rejestracji w `plugin.json` — jedno źródło prawdy.
+
 ## Stan — gdzie co żyje
 
 | Plik | Kto pisze | Kto czyta | Cel |

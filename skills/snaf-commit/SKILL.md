@@ -3,6 +3,7 @@ name: snaf-commit
 description: >
   Generuje commit message w stylu snaf: Conventional Commits, zwięzłe, "dlaczego" nie "co".
   Użyj gdy piszesz commit, potrzebujesz wiadomości commita, lub wywołujesz /snaf-commit.
+disable-model-invocation: true
 ---
 
 ## Zadanie
