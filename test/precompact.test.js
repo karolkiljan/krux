@@ -12,7 +12,7 @@ const path = require('node:path');
 const HOOK = path.join(__dirname, '..', 'hooks', 'precompact.js');
 
 function withTempCwd(fn) {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-pc-test-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-pc-test-'));
   try { fn(cwd); } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// snaf — PreCompact hook, injects {cwd}/.claude/compact_notes.md into summary.
+// krux — PreCompact hook, injects {cwd}/.claude/compact_notes.md into summary.
 
 const fs = require('fs');
 const path = require('path');

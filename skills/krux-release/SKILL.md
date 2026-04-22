@@ -1,8 +1,8 @@
 ---
-name: snaf-release
+name: krux-release
 description: >
   Release flow: bump wersji + commit w konwencji "feat: vX.Y.Z — opis" + tag.
-  Użyj gdy user mówi "release", "wydanie", "wypuść X.Y.Z", wywołuje /snaf-release
+  Użyj gdy user mówi "release", "wydanie", "wypuść X.Y.Z", wywołuje /krux-release
   albo chce zamknąć wersję pluginu.
 argument-hint: patch|minor|major|X.Y.Z [— opis release]
 disable-model-invocation: true
@@ -31,7 +31,7 @@ Format: `<bump-spec> [— opis]` lub `<bump-spec> [- opis]` lub `<bump-spec> opi
 
 ### Krok 3 — bump wersji
 
-Wywołaj skill `snaf-bump` z argumentem `bump-spec`. Czekaj na potwierdzenie (dwa pliki zmienione).
+Wywołaj skill `krux-bump` z argumentem `bump-spec`. Czekaj na potwierdzenie (dwa pliki zmienione).
 
 Odczytaj nową wersję z `package.json` (żeby mieć finalny numer, nawet gdy `bump-spec` to słowo kluczowe).
 
@@ -73,8 +73,8 @@ Push ręcznie: git push origin master --tags
 ## Przykłady
 
 ```
-/snaf-release patch — poprawki regex toggle
-/snaf-release minor — hook version-sync-guard
-/snaf-release 2.0.0 — spec rewrite, breaking
-/snaf-release patch                           # opis z git log
+/krux-release patch — poprawki regex toggle
+/krux-release minor — hook version-sync-guard
+/krux-release 2.0.0 — spec rewrite, breaking
+/krux-release patch                           # opis z git log
 ```

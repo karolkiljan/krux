@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// snaf — PreToolUse guard: blokuje edycję package.json lub plugin.json
+// krux — PreToolUse guard: blokuje edycję package.json lub plugin.json
 // gdy wersje już rozjechane. Chroni synchronizację wymaganą przez CLAUDE.md.
 //
 // Kontrakt:
@@ -9,7 +9,7 @@
 //
 // Logika: gdy user edytuje JEDEN z dwóch plików wersji, sprawdź czy aktualne
 // wersje w repo są zgodne. Jeśli już rozjechane — zatrzymaj, niech user użyje
-// /snaf-bump albo naprawi ręcznie zamiast pogłębiać dryf.
+// /krux-bump albo naprawi ręcznie zamiast pogłębiać dryf.
 
 const fs = require('fs');
 const path = require('path');
@@ -58,10 +58,10 @@ process.stdin.on('end', () => {
 
   if (pkgVer !== pluginVer) {
     process.stderr.write(
-      `snaf version-sync-guard: wersje rozjechane.\n` +
+      `krux version-sync-guard: wersje rozjechane.\n` +
       `  package.json: ${pkgVer}\n` +
       `  .claude-plugin/plugin.json: ${pluginVer}\n` +
-      `Najpierw zsynchronizuj (/snaf-bump albo ręcznie), potem edytuj.\n`
+      `Najpierw zsynchronizuj (/krux-bump albo ręcznie), potem edytuj.\n`
     );
     process.exit(2);
   }

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// snaf — UserPromptSubmit hook for flow mode (iterative step-by-step).
+// krux — UserPromptSubmit hook for flow mode (iterative step-by-step).
 //
 // Behavior:
-//   1. Recognize toggle phrases ("flow", "flow off", etc.) and flip ~/.claude/.snaf-flow-active.
+//   1. Recognize toggle phrases ("flow", "flow off", etc.) and flip ~/.claude/.krux-flow-active.
 //   2. When flag is active, inject per-turn reminder so the model keeps behaving
 //      iteratively (propose one step → wait → execute → report → propose next).
 //
-// Does NOT touch .snaf-mode (snaf persona) — flow is orthogonal. Flow can run
-// without snaf persona; hook stays passive when flag is absent.
+// Does NOT touch .krux-mode (krux persona) — flow is orthogonal. Flow can run
+// without krux persona; hook stays passive when flag is absent.
 
 const fs = require('fs');
 const path = require('path');
@@ -26,10 +26,10 @@ process.stdin.on('end', () => {
 
   const claudeDir = path.join(os.homedir(), '.claude');
   try { fs.mkdirSync(claudeDir, { recursive: true }); } catch (e) {}
-  const flagFile = path.join(claudeDir, '.snaf-flow-active');
+  const flagFile = path.join(claudeDir, '.krux-flow-active');
 
-  const onRe = /^(flow|flow on|snaf-flow|snaf-flow on|iterate|tryb krokowy)$/iu;
-  const offRe = /^(flow off|stop flow|koniec flow|snaf-flow off)$/iu;
+  const onRe = /^(flow|flow on|krux-flow|krux-flow on|iterate|tryb krokowy)$/iu;
+  const offRe = /^(flow off|stop flow|koniec flow|krux-flow off)$/iu;
 
   const emit = (msg) => {
     process.stdout.write(JSON.stringify({
@@ -42,14 +42,14 @@ process.stdin.on('end', () => {
 
   if (offRe.test(prompt)) {
     try { fs.unlinkSync(flagFile); } catch (e) {}
-    emit('SNAF-FLOW OFF: tryb iteracyjny wyłączony. Potwierdź wyłączenie w stylu orkowym (jeśli snaf aktywny), dalej pracuj normalnie.');
+    emit('KRUX-FLOW OFF: tryb iteracyjny wyłączony. Potwierdź wyłączenie w stylu orkowym (jeśli krux aktywny), dalej pracuj normalnie.');
     process.exit(0);
   }
 
   if (onRe.test(prompt)) {
     try { fs.closeSync(fs.openSync(flagFile, 'w')); } catch (e) {}
     emit(
-      'SNAF-FLOW ON: tryb iteracyjny aktywny. ZASADY: ' +
+      'KRUX-FLOW ON: tryb iteracyjny aktywny. ZASADY: ' +
       '(1) Zero upfront planów — nie rozpisuj kroków 1-N. ' +
       '(2) Zapytaj użytkownika o cel jeśli jeszcze nie znany. ' +
       '(3) Zaproponuj JEDEN najmniejszy sensowny ruch + powód (1 linia) + zapytaj "Robić?". ' +
@@ -58,7 +58,7 @@ process.stdin.on('end', () => {
       '(6) Zaproponuj następny ruch na podstawie REZULTATU, nie z góry wymyślonej listy. ' +
       '(7) Iteruj aż cel osiągnięty → "Cel osiągnięty. X ruchów.". ' +
       '(8) Dezaktywacja: "flow off" / "stop flow". ' +
-      'Pełne zasady w skilla snaf-flow.'
+      'Pełne zasady w skilla krux-flow.'
     );
     process.exit(0);
   }
@@ -66,7 +66,7 @@ process.stdin.on('end', () => {
   // Flag active → inject short reminder every turn so the model stays in mode.
   if (fs.existsSync(flagFile)) {
     emit(
-      'SNAF-FLOW aktywny: pracujesz iteracyjnie. Jeden mały ruch na raz. ' +
+      'KRUX-FLOW aktywny: pracujesz iteracyjnie. Jeden mały ruch na raz. ' +
       'Propozycja (z powodem) → zgoda usera → egzekucja → raport plik:linia → ' +
       'propozycja następnego na podstawie rezultatu. Zero upfront planów. ' +
       'Wyłączenie: "flow off" / "stop flow".'

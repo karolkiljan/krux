@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// snaf — detect which settings.json has snaf enabled.
-// Prints path of project .claude/settings.json if it lists snaf in enabledPlugins,
+// krux — detect which settings.json has krux enabled.
+// Prints path of project .claude/settings.json if it lists krux in enabledPlugins,
 // otherwise falls back to ~/.claude/settings.json.
 
 const fs = require('fs');
@@ -13,7 +13,7 @@ if (fs.existsSync(projectSettings)) {
   try {
     const data = JSON.parse(fs.readFileSync(projectSettings, 'utf8'));
     const plugins = data.enabledPlugins || {};
-    if (Object.entries(plugins).some(([key, enabled]) => key.includes('snaf') && enabled === true)) {
+    if (Object.entries(plugins).some(([key, enabled]) => key.includes('krux') && enabled === true)) {
       process.stdout.write(projectSettings);
       process.exit(0);
     }

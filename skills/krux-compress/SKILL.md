@@ -1,9 +1,9 @@
 ---
-name: snaf-compress
+name: krux-compress
 description: >
-  Przepisuje plik markdown w stylu snaf — oszczędność tokenów ~40%.
+  Przepisuje plik markdown w stylu krux — oszczędność tokenów ~40%.
   Zachowuje sens, usuwa wodę. Użyj gdy kompresujesz CLAUDE.md, README, dokumentację,
-  lub wywołujesz /snaf-compress <plik>.
+  lub wywołujesz /krux-compress <plik>.
 argument-hint: Path to markdown file
 disable-model-invocation: true
 ---
@@ -12,7 +12,7 @@ Target file: $ARGUMENTS
 
 ## Zadanie
 
-Przepisz podany plik w stylu snaf. Mniej tokenów, ten sam sens. Oryginał niezmieniony — nadpisz plik lub zapisz jako `<nazwa>.snaf.md` zależnie od polecenia.
+Przepisz podany plik w stylu krux. Mniej tokenów, ten sam sens. Oryginał niezmieniony — nadpisz plik lub zapisz jako `<nazwa>.krux.md` zależnie od polecenia.
 
 ## Reguły kompresji
 

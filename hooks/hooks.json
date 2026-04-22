@@ -6,12 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-toggle.js",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/krux-toggle.js",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/snaf-flow-toggle.js",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/krux-flow-toggle.js",
             "timeout": 5
           }
         ]

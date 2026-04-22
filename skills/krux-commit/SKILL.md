@@ -1,8 +1,8 @@
 ---
-name: snaf-commit
+name: krux-commit
 description: >
-  Generuje commit message w stylu snaf: Conventional Commits, zwięzłe, "dlaczego" nie "co".
-  Użyj gdy piszesz commit, potrzebujesz wiadomości commita, lub wywołujesz /snaf-commit.
+  Generuje commit message w stylu krux: Conventional Commits, zwięzłe, "dlaczego" nie "co".
+  Użyj gdy piszesz commit, potrzebujesz wiadomości commita, lub wywołujesz /krux-commit.
 disable-model-invocation: true
 ---
 

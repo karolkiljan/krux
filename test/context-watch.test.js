@@ -12,8 +12,8 @@ const path = require('node:path');
 const HOOK = path.join(__dirname, '..', 'hooks', 'context_watch.js');
 
 function withTempEnv(fn) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-cw-home-'));
-  const sessDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-cw-sess-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-cw-home-'));
+  const sessDir = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-cw-sess-'));
   try { fn(home, sessDir); }
   finally {
     fs.rmSync(home, { recursive: true, force: true });
@@ -33,10 +33,10 @@ function usageLine(total) {
 }
 
 function runHook(home, payload, extraEnv = {}) {
-  // Strip ambient SNAF_* vars so tests aren't polluted by shell-level opt-outs.
+  // Strip ambient KRUX_* vars so tests aren't polluted by shell-level opt-outs.
   const cleanEnv = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (!k.startsWith('SNAF_')) cleanEnv[k] = v;
+    if (!k.startsWith('KRUX_')) cleanEnv[k] = v;
   }
   return spawnSync('node', [HOOK], {
     input: JSON.stringify(payload),
@@ -48,32 +48,32 @@ function runHook(home, payload, extraEnv = {}) {
 
 // --- opt-out paths ---
 
-test('SNAF_CONTEXT_WATCH=off disables watch cleanly (exit 0, no stderr)', () => {
+test('KRUX_CONTEXT_WATCH=off disables watch cleanly (exit 0, no stderr)', () => {
   withTempEnv((home, sessDir) => {
     const transcript = writeTranscript(sessDir, [usageLine(200000)]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_WATCH: 'off' });
+      { KRUX_CONTEXT_WATCH: 'off' });
     assert.equal(r.status, 0);
     assert.equal(r.stderr, '');
   });
 });
 
-test('SNAF_CONTEXT_WATCH=OFF is case-insensitive', () => {
+test('KRUX_CONTEXT_WATCH=OFF is case-insensitive', () => {
   withTempEnv((home, sessDir) => {
     const transcript = writeTranscript(sessDir, [usageLine(200000)]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_WATCH: 'OFF' });
+      { KRUX_CONTEXT_WATCH: 'OFF' });
     assert.equal(r.status, 0);
     assert.equal(r.stderr, '');
   });
 });
 
-test('.snaf-mode=off disables watch entirely', () => {
+test('.krux-mode=off disables watch entirely', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-mode'), 'off');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'off');
     const transcript = writeTranscript(sessDir, [usageLine(200000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     assert.equal(r.status, 0);
@@ -81,10 +81,10 @@ test('.snaf-mode=off disables watch entirely', () => {
   });
 });
 
-test('.snaf-context-watch-off file disables watch (keeps persona on)', () => {
+test('.krux-context-watch-off file disables watch (keeps persona on)', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.closeSync(fs.openSync(path.join(home, '.claude', '.snaf-context-watch-off'), 'w'));
+    fs.closeSync(fs.openSync(path.join(home, '.claude', '.krux-context-watch-off'), 'w'));
     const transcript = writeTranscript(sessDir, [usageLine(200000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     assert.equal(r.status, 0);
@@ -92,10 +92,10 @@ test('.snaf-context-watch-off file disables watch (keeps persona on)', () => {
   });
 });
 
-test('.snaf-context-watch-off empty file is enough (marker semantics)', () => {
+test('.krux-context-watch-off empty file is enough (marker semantics)', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-watch-off'), '');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-watch-off'), '');
     const transcript = writeTranscript(sessDir, [usageLine(200000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     assert.equal(r.status, 0);
@@ -118,7 +118,7 @@ test('tokens above custom threshold: stderr warning + exit 2', () => {
     const transcript = writeTranscript(sessDir, [usageLine(50000)]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_THRESHOLD: '40000' });
+      { KRUX_CONTEXT_THRESHOLD: '40000' });
     assert.equal(r.status, 2);
     assert.match(r.stderr, /CONTEXT_WATCH/);
     assert.match(r.stderr, /50000/);
@@ -131,15 +131,15 @@ test('tokens exactly at threshold: no warning (strict >)', () => {
     const transcript = writeTranscript(sessDir, [usageLine(40000)]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_THRESHOLD: '40000' });
+      { KRUX_CONTEXT_THRESHOLD: '40000' });
     assert.equal(r.status, 0);
   });
 });
 
-test('.snaf-context-threshold file overrides default threshold', () => {
+test('.krux-context-threshold file overrides default threshold', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-threshold'), '150000');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-threshold'), '150000');
     // 100k would fire at default (85000) but NOT at file-override (150000).
     const transcript = writeTranscript(sessDir, [usageLine(100000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
@@ -148,23 +148,23 @@ test('.snaf-context-threshold file overrides default threshold', () => {
   });
 });
 
-test('.snaf-context-threshold file beats env SNAF_CONTEXT_THRESHOLD', () => {
+test('.krux-context-threshold file beats env KRUX_CONTEXT_THRESHOLD', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-threshold'), '200000');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-threshold'), '200000');
     // Env says 40k (would fire at 50k), but file says 200k (would NOT fire at 50k).
     const transcript = writeTranscript(sessDir, [usageLine(50000)]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_THRESHOLD: '40000' });
+      { KRUX_CONTEXT_THRESHOLD: '40000' });
     assert.equal(r.status, 0);
   });
 });
 
-test('.snaf-context-threshold file with whitespace is trimmed', () => {
+test('.krux-context-threshold file with whitespace is trimmed', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-threshold'), '\n  40000  \n');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-threshold'), '\n  40000  \n');
     const transcript = writeTranscript(sessDir, [usageLine(50000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     assert.equal(r.status, 2);
@@ -172,10 +172,10 @@ test('.snaf-context-threshold file with whitespace is trimmed', () => {
   });
 });
 
-test('.snaf-context-threshold garbage content falls back to env/default', () => {
+test('.krux-context-threshold garbage content falls back to env/default', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-threshold'), 'not a number');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-threshold'), 'not a number');
     const transcript = writeTranscript(sessDir, [usageLine(90000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     // Default threshold (85000) wins → 90k > 85k → fires.
@@ -184,10 +184,10 @@ test('.snaf-context-threshold garbage content falls back to env/default', () => 
   });
 });
 
-test('.snaf-context-threshold zero or negative is rejected', () => {
+test('.krux-context-threshold zero or negative is rejected', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', '.snaf-context-threshold'), '0');
+    fs.writeFileSync(path.join(home, '.claude', '.krux-context-threshold'), '0');
     const transcript = writeTranscript(sessDir, [usageLine(90000)]);
     const r = runHook(home, { session_id: 's1', transcript_path: transcript });
     // 0 rejected → fallback to default 85000 → 90k > 85k → fires.
@@ -209,7 +209,7 @@ test('sums cache_read + cache_creation + input_tokens', () => {
     ]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_THRESHOLD: '40000' });
+      { KRUX_CONTEXT_THRESHOLD: '40000' });
     assert.equal(r.status, 2);
     assert.match(r.stderr, /45000/);
   });
@@ -222,7 +222,7 @@ test('reads top-level usage field (not only message.usage)', () => {
     ]);
     const r = runHook(home,
       { session_id: 's1', transcript_path: transcript },
-      { SNAF_CONTEXT_THRESHOLD: '40000' });
+      { KRUX_CONTEXT_THRESHOLD: '40000' });
     assert.equal(r.status, 2);
   });
 });
@@ -353,7 +353,7 @@ test('corrupt cooldown file does not crash hook (falls back to fresh fire)', () 
 // --- input edge cases ---
 
 test('malformed stdin: exit 0 without crash', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-cw-home-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-cw-home-'));
   try {
     const r = spawnSync('node', [HOOK], {
       input: 'not-json',

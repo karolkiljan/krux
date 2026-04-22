@@ -11,7 +11,7 @@ const path = require('node:path');
 const HOOK = path.join(__dirname, '..', 'hooks', 'version-sync-guard.js');
 
 function withRepo(fn) {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-vsg-test-'));
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-vsg-test-'));
   try { fn(cwd); } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
 }
 

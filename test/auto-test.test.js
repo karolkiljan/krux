@@ -1,7 +1,7 @@
 // Tests for hooks/auto-test.js — PostToolUse odpalający npm test po zmianie
 // hooks/*.js lub test/*.js.
 //
-// Strategia: tworzymy fałszywy repo "snaf" z minimalnym package.json gdzie
+// Strategia: tworzymy fałszywy repo "krux" z minimalnym package.json gdzie
 // skrypt "test" to komenda którą kontrolujemy (echo albo exit 1). Tak można
 // zweryfikować że hook:
 //   - rozpoznaje strzeżone ścieżki,
@@ -17,8 +17,8 @@ const path = require('node:path');
 
 const HOOK = path.join(__dirname, '..', 'hooks', 'auto-test.js');
 
-function withFakeRepo(fn, { name = 'snaf', testScript = 'exit 0' } = {}) {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-at-test-'));
+function withFakeRepo(fn, { name = 'krux', testScript = 'exit 0' } = {}) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-at-test-'));
   try {
     fs.writeFileSync(
       path.join(cwd, 'package.json'),
@@ -32,10 +32,10 @@ function withFakeRepo(fn, { name = 'snaf', testScript = 'exit 0' } = {}) {
   }
 }
 
-function stripSnafEnv(env) {
+function stripKruxEnv(env) {
   const clean = { ...env };
   for (const k of Object.keys(clean)) {
-    if (k.startsWith('SNAF_')) delete clean[k];
+    if (k.startsWith('KRUX_')) delete clean[k];
   }
   return clean;
 }
@@ -43,7 +43,7 @@ function stripSnafEnv(env) {
 function runHook(cwd, payload, stdinOverride = null, extraEnv = {}) {
   return spawnSync('node', [HOOK], {
     input: stdinOverride !== null ? stdinOverride : JSON.stringify({ cwd, ...payload }),
-    env: { ...stripSnafEnv(process.env), ...extraEnv },
+    env: { ...stripKruxEnv(process.env), ...extraEnv },
     encoding: 'utf8',
     timeout: 30000,
   });
@@ -115,7 +115,7 @@ test('edycja pliku .md w hooks/ → nie odpala (tylko .js)', () => {
   });
 });
 
-test('cwd to nie repo snaf (inne name) → nie odpala', () => {
+test('cwd to nie repo krux (inne name) → nie odpala', () => {
   withFakeRepo(cwd => {
     const file = path.join(cwd, 'hooks', 'foo.js');
     fs.writeFileSync(file, '// noop');
@@ -128,14 +128,14 @@ test('cwd to nie repo snaf (inne name) → nie odpala', () => {
   }, { name: 'other-project', testScript: 'echo "should not run" && exit 1' });
 });
 
-test('SNAF_AUTO_TEST=off → całkowity opt-out', () => {
+test('KRUX_AUTO_TEST=off → całkowity opt-out', () => {
   withFakeRepo(cwd => {
     const file = path.join(cwd, 'hooks', 'foo.js');
     fs.writeFileSync(file, '// noop');
     const r = runHook(cwd, {
       tool_name: 'Edit',
       tool_input: { file_path: file },
-    }, null, { SNAF_AUTO_TEST: 'off' });
+    }, null, { KRUX_AUTO_TEST: 'off' });
     assert.equal(r.status, 0);
     assert.equal(r.stdout, '');
   }, { testScript: 'exit 1' });

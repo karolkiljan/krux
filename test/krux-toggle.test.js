@@ -1,6 +1,6 @@
-// Tests for hooks/snaf-toggle.js — UserPromptSubmit toggle.
+// Tests for hooks/krux-toggle.js — UserPromptSubmit toggle.
 // Strategy: spawn hook as child process with isolated HOME, feed JSON on stdin,
-// assert state of ~/.claude/.snaf-mode and ~/.claude/.snaf-active afterwards.
+// assert state of ~/.claude/.krux-mode and ~/.claude/.krux-active afterwards.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -9,10 +9,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const HOOK = path.join(__dirname, '..', 'hooks', 'snaf-toggle.js');
+const HOOK = path.join(__dirname, '..', 'hooks', 'krux-toggle.js');
 
 function withTempHome(fn) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-test-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-test-'));
   try { fn(home); } finally { fs.rmSync(home, { recursive: true, force: true }); }
 }
 
@@ -27,12 +27,12 @@ function runHook(home, prompt) {
 }
 
 function readMode(home) {
-  try { return fs.readFileSync(path.join(home, '.claude', '.snaf-mode'), 'utf8'); }
+  try { return fs.readFileSync(path.join(home, '.claude', '.krux-mode'), 'utf8'); }
   catch { return null; }
 }
 
 function hasActive(home) {
-  return fs.existsSync(path.join(home, '.claude', '.snaf-active'));
+  return fs.existsSync(path.join(home, '.claude', '.krux-active'));
 }
 
 test('ignores empty prompt', () => {
@@ -44,45 +44,45 @@ test('ignores empty prompt', () => {
   });
 });
 
-test('"snaf" turns mode ON and creates active flag', () => {
+test('"krux" turns mode ON and creates active flag', () => {
   withTempHome(home => {
-    const r = runHook(home, 'snaf');
+    const r = runHook(home, 'krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
     assert.equal(hasActive(home), true);
   });
 });
 
-test('"stop snaf" turns mode OFF and removes active flag', () => {
+test('"stop krux" turns mode OFF and removes active flag', () => {
   withTempHome(home => {
-    runHook(home, 'snaf');
-    const r = runHook(home, 'stop snaf');
+    runHook(home, 'krux');
+    const r = runHook(home, 'stop krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
     assert.equal(hasActive(home), false);
   });
 });
 
-test('Polish diacritics: "włącz snaf" works', () => {
+test('Polish diacritics: "włącz krux" works', () => {
   withTempHome(home => {
-    const r = runHook(home, 'włącz snaf');
+    const r = runHook(home, 'włącz krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
 });
 
-test('ASCII fallback: "wlacz snaf" works (no diacritics)', () => {
+test('ASCII fallback: "wlacz krux" works (no diacritics)', () => {
   withTempHome(home => {
-    const r = runHook(home, 'wlacz snaf');
+    const r = runHook(home, 'wlacz krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
 });
 
-test('"wyłącz snaf" turns OFF', () => {
+test('"wyłącz krux" turns OFF', () => {
   withTempHome(home => {
-    runHook(home, 'snaf');
-    const r = runHook(home, 'wyłącz snaf');
+    runHook(home, 'krux');
+    const r = runHook(home, 'wyłącz krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
   });
@@ -90,21 +90,21 @@ test('"wyłącz snaf" turns OFF', () => {
 
 test('"normalny tryb" turns OFF', () => {
   withTempHome(home => {
-    runHook(home, 'snaf');
+    runHook(home, 'krux');
     const r = runHook(home, 'normalny tryb');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
   });
 });
 
-test('aliases: "start snaf", "aktywuj snaf"', () => {
+test('aliases: "start krux", "aktywuj krux"', () => {
   withTempHome(home => {
-    const r = runHook(home, 'start snaf');
+    const r = runHook(home, 'start krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
   withTempHome(home => {
-    const r = runHook(home, 'aktywuj snaf');
+    const r = runHook(home, 'aktywuj krux');
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
   });
@@ -112,7 +112,7 @@ test('aliases: "start snaf", "aktywuj snaf"', () => {
 
 test('unrelated prompt does not change state', () => {
   withTempHome(home => {
-    runHook(home, 'snaf');
+    runHook(home, 'krux');
     runHook(home, 'explain this code');
     assert.equal(readMode(home), 'on');
     assert.equal(hasActive(home), true);
@@ -121,7 +121,7 @@ test('unrelated prompt does not change state', () => {
 
 test('prompt with extra words does NOT trigger (full-message match only)', () => {
   withTempHome(home => {
-    runHook(home, 'hey snaf please help');
+    runHook(home, 'hey krux please help');
     assert.equal(readMode(home), null);
     assert.equal(hasActive(home), false);
   });
@@ -129,20 +129,20 @@ test('prompt with extra words does NOT trigger (full-message match only)', () =>
 
 test('trim: surrounding whitespace is tolerated', () => {
   withTempHome(home => {
-    runHook(home, '  snaf  ');
+    runHook(home, '  krux  ');
     assert.equal(readMode(home), 'on');
   });
 });
 
-test('case insensitive: "SNAF" works', () => {
+test('case insensitive: "KRUX" works', () => {
   withTempHome(home => {
-    runHook(home, 'SNAF');
+    runHook(home, 'KRUX');
     assert.equal(readMode(home), 'on');
   });
 });
 
 test('malformed stdin: hook exits cleanly', () => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'snaf-test-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-test-'));
   try {
     const r = spawnSync('node', [HOOK], {
       input: 'not-json',

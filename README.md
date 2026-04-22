@@ -2,7 +2,7 @@
   <img src="https://em-content.zobj.net/source/apple/391/pick_26cf-fe0f.png" width="120" />
 </p>
 
-<h1 align="center">snaf</h1>
+<h1 align="center">krux</h1>
 
 <p align="center">
   <strong>Krux kopać ruda w Górnicza Dolina. Teraz Krux robić kod w Dolina Krzemowa.</strong>
@@ -27,7 +27,7 @@ Redukcja tokenów ~55% avg (12 promptów, haiku). Najlepiej na bugfixach i setup
 </td>
 <td width="50%">
 
-### Snaf Claude (18 tokenów)
+### Krux Claude (18 tokenów)
 
 > "Nowa referencja każdy render. Inline prop → nowy obiekt → rerender. `useMemo`. Zrobione."
 
@@ -43,7 +43,7 @@ Redukcja tokenów ~55% avg (12 promptów, haiku). Najlepiej na bugfixach i setup
 </td>
 <td>
 
-### Snaf Claude
+### Krux Claude
 
 > "Auth middleware padać. Token expiry: `<` zamiast `<=`. Fix linia 14."
 
@@ -71,7 +71,7 @@ Redukcja tokenów ~55% avg (12 promptów, haiku). Najlepiej na bugfixach i setup
 
 Krux nie gadać więcej niż trzeba.
 
-| Zwykły Claude | Snaf Claude |
+| Zwykły Claude | Krux Claude |
 |---------------|-------------|
 | `zrobiłem` | `zrobić` - bezokolicznik = wszystkie czasy |
 | `przez middleware` | `middleware` - mianownik zawsze |
@@ -86,13 +86,13 @@ Krux nie gadać więcej niż trzeba.
 
 | Komenda | Co robi |
 |---------|---------|
-| *(domyślnie aktywny)* | Tryb snaf - łamana gramatyka, maksymalna kompresja |
-| `/snaf-commit` | Commit message - Conventional Commits, ≤50 znaków |
-| `/snaf-review` | Code review - `L42: 🔴 bug: opis. fix.` |
-| `/snaf-compress <plik>` | Przepisz markdown w stylu snaf, ~40% mniej tokenów |
-| `/snaf-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
-| `/snaf-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
-| `/snaf-help` | Karta referencyjna - wszystkie prawa i słownik |
+| *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
+| `/krux-commit` | Commit message - Conventional Commits, ≤50 znaków |
+| `/krux-review` | Code review - `L42: 🔴 bug: opis. fix.` |
+| `/krux-compress <plik>` | Przepisz markdown w stylu krux, ~40% mniej tokenów |
+| `/krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
+| `/krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
+| `/krux-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania
 
@@ -101,28 +101,28 @@ Krux nie gadać więcej niż trzeba.
 ## Instalacja
 
 ```bash
-claude plugin marketplace add karolkiljan/snaf
-claude plugin install snaf@snaf-marketplace
+claude plugin marketplace add karolkiljan/krux
+claude plugin install krux@krux-marketplace
 ```
 
 ## Użycie
 
-Aktywuje się sam przy starcie sesji. Plugin sam proponuje konfigurację statusline `[SNAF]` przy pierwszym uruchomieniu.
+Aktywuje się sam przy starcie sesji. Plugin sam proponuje konfigurację statusline `[KRUX]` przy pierwszym uruchomieniu.
 
-**Trwałe przełączanie** (persystuje między sesjami — zapisuje stan do `~/.claude/.snaf-mode`):
+**Trwałe przełączanie** (persystuje między sesjami — zapisuje stan do `~/.claude/.krux-mode`):
 
 | Fraza | Efekt |
 |-------|-------|
-| `snaf` / `włącz snaf` / `start snaf` / `aktywuj snaf` | Włącz |
-| `stop snaf` / `wyłącz snaf` / `normalny tryb` | Wyłącz |
+| `krux` / `włącz krux` / `start krux` / `aktywuj krux` | Włącz |
+| `stop krux` / `wyłącz krux` / `normalny tryb` | Wyłącz |
 
-**Ważne:** fraza musi być **całą wiadomością** — bez dodatkowego tekstu. `snaf` działa, `hej snaf włącz się` nie. Polskie znaki opcjonalne (regex ogarnie obie wersje).
+**Ważne:** fraza musi być **całą wiadomością** — bez dodatkowego tekstu. `krux` działa, `hej krux włącz się` nie. Polskie znaki opcjonalne (regex ogarnie obie wersje).
 
-**Slash command `/snaf:snaf`** — jednorazowy. Wciąga skill do bieżącej sesji, ale **nie zmienia** `.snaf-mode`. Następna sesja wróci do zapisanego stanu.
+**Slash command `/krux:krux`** — jednorazowy. Wciąga skill do bieżącej sesji, ale **nie zmienia** `.krux-mode`. Następna sesja wróci do zapisanego stanu.
 
 **Sprawdzenie stanu:**
 ```bash
-cat ~/.claude/.snaf-mode   # on albo off
+cat ~/.claude/.krux-mode   # on albo off
 ```
 
 Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
@@ -131,37 +131,37 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 
 **Zmienne środowiskowe:**
 ```bash
-export SNAF_DEFAULT_MODE=off            # wyłącz domyślnie
-export SNAF_CONTEXT_THRESHOLD=85000     # próg ostrzeżenia context watch (tokeny)
-export SNAF_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżeniami (sekundy)
-export SNAF_CONTEXT_WATCH=off           # wyłącz context watch (persona snaf zostaje)
+export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
+export KRUX_CONTEXT_THRESHOLD=85000     # próg ostrzeżenia context watch (tokeny)
+export KRUX_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżeniami (sekundy)
+export KRUX_CONTEXT_WATCH=off           # wyłącz context watch (persona krux zostaje)
 ```
 
-**Plik stanu** (`~/.claude/.snaf-mode`) - automatycznie zarządzany przez hook:
+**Plik stanu** (`~/.claude/.krux-mode`) - automatycznie zarządzany przez hook:
 ```
 off
 ```
 
 ## Odinstalowanie
 
-`claude plugin uninstall snaf` usuwa plugin, ale plugin zostawia w `~/.claude/` kilka plików stanu. Do wyczyszczenia ręcznie:
+`claude plugin uninstall krux` usuwa plugin, ale plugin zostawia w `~/.claude/` kilka plików stanu. Do wyczyszczenia ręcznie:
 
 ```bash
-rm -f ~/.claude/.snaf-active ~/.claude/.snaf-mode \
-      ~/.claude/.snaf-statusline-asked \
-      ~/.claude/.snaf-statusline.sh ~/.claude/.snaf-statusline.ps1
+rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
+      ~/.claude/.krux-statusline-asked \
+      ~/.claude/.krux-statusline.sh ~/.claude/.krux-statusline.ps1
 ```
 
-Jeśli zarejestrowany był statusline `[SNAF]`, usuń pole `statusLine` z `~/.claude/settings.json`.
+Jeśli zarejestrowany był statusline `[KRUX]`, usuń pole `statusLine` z `~/.claude/settings.json`.
 
-Projektowe `.claude/settings.local.json` może trzymać wpis `enabledPlugins["snaf@snaf-marketplace"]` — usuń klucz ręcznie, jeśli chcesz wyczyścić do zera.
+Projektowe `.claude/settings.local.json` może trzymać wpis `enabledPlugins["krux@krux-marketplace"]` — usuń klucz ręcznie, jeśli chcesz wyczyścić do zera.
 
 ## Granice
 
-- **Kod / commity / PR:** pisz normalnie - snaf nie modyfikuje kodu
+- **Kod / commity / PR:** pisz normalnie - krux nie modyfikuje kodu
 - **Ostrzeżenia bezpieczeństwa:** pełna klarowność zawsze
 - **Nieodwracalne operacje:** pełne potwierdzenie, bez skrótów
-- **`stop snaf`:** natychmiastowe wyłączenie
+- **`stop krux`:** natychmiastowe wyłączenie
 
 ## Inspiracja
 

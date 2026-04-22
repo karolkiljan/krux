@@ -1,17 +1,17 @@
 {
-  "name": "snaf-marketplace",
+  "name": "krux-marketplace",
   "metadata": {
-    "description": "Marketplace snaf — ork-programista w Claude Code. Kompresja tokenów 20–50% przez persona + iteracyjny tryb flow."
+    "description": "Marketplace krux — ork-programista w Claude Code. Kompresja tokenów 20–50% przez persona + iteracyjny tryb flow."
   },
   "owner": {
     "name": "karolkiljan"
   },
   "plugins": [
     {
-      "name": "snaf",
+      "name": "krux",
       "source": "./",
-      "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
-      "version": "1.9.1",
+      "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
+      "version": "2.0.0",
       "author": {
         "name": "Karol Kiljan"
       }

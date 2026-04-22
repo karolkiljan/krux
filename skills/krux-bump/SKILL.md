@@ -1,8 +1,8 @@
 ---
-name: snaf-bump
+name: krux-bump
 description: >
   Atomowy bump wersji: synchronizuje package.json i .claude-plugin/plugin.json.
-  Użyj gdy chcesz podbić wersję pluginu, wywołujesz /snaf-bump, albo user mówi
+  Użyj gdy chcesz podbić wersję pluginu, wywołujesz /krux-bump, albo user mówi
   "bump wersji", "patch/minor/major", "X.Y.Z".
 argument-hint: patch | minor | major | X.Y.Z (np. 1.10.0)
 disable-model-invocation: true
@@ -43,7 +43,7 @@ Wypisz jednym zdaniem: `Wersja NOWA ustawiona. Dwa pliki zsynchronizowane. Czas 
 
 ## Prawa
 
-- Nie commituj. Nie taguj. Nie push. To robi `snaf-release`.
+- Nie commituj. Nie taguj. Nie push. To robi `krux-release`.
 - Nie ruszaj innych pól niż `version`.
 - Nie modyfikuj `README.md`, `CHANGELOG.md`, testów — poza scope.
 - Walidacja semver: trzy liczby oddzielone kropkami. Nic więcej. Pre-release (`-rc1`) też dopuszczalny.
@@ -51,9 +51,9 @@ Wypisz jednym zdaniem: `Wersja NOWA ustawiona. Dwa pliki zsynchronizowane. Czas 
 ## Przykłady
 
 ```
-/snaf-bump patch      # 1.9.1 → 1.9.2
-/snaf-bump minor      # 1.9.1 → 1.10.0
-/snaf-bump major      # 1.9.1 → 2.0.0
-/snaf-bump 2.0.0-rc1  # wprost
-/snaf-bump            # pokaż obecną + pomoc
+/krux-bump patch      # 1.9.1 → 1.9.2
+/krux-bump minor      # 1.9.1 → 1.10.0
+/krux-bump major      # 1.9.1 → 2.0.0
+/krux-bump 2.0.0-rc1  # wprost
+/krux-bump            # pokaż obecną + pomoc
 ```

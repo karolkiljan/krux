@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// snaf — PostToolUse hook: odpala `npm test` gdy edycja dotknęła hooks/*.js
+// krux — PostToolUse hook: odpala `npm test` gdy edycja dotknęła hooks/*.js
 // albo test/*.js. Zero-dep: tylko node:child_process.
 //
 // Kontrakt:
@@ -7,10 +7,10 @@
 // - exit 0 zawsze (hook informacyjny, nie blokuje workflow)
 // - wynik: stdout z podsumowaniem dla modelu (widoczne w jego contextcie)
 //
-// Opt-out: SNAF_AUTO_TEST=off w env. Zero ruchu gdy user nie chce.
+// Opt-out: KRUX_AUTO_TEST=off w env. Zero ruchu gdy user nie chce.
 //
-// Tylko repo snaf — hook odpala testy tylko gdy cwd ma package.json
-// z "name":"snaf". Chroni przed odpaleniem w obcych repo gdy plugin
+// Tylko repo krux — hook odpala testy tylko gdy cwd ma package.json
+// z "name":"krux". Chroni przed odpaleniem w obcych repo gdy plugin
 // załadowany globalnie.
 
 const fs = require('fs');
@@ -29,10 +29,10 @@ function isWatchedPath(filePath, repoRoot) {
   return rel.endsWith('.js');
 }
 
-function isSnafRepo(repoRoot) {
+function isKruxRepo(repoRoot) {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
-    return pkg.name === 'snaf';
+    return pkg.name === 'krux';
   } catch (e) {
     return false;
   }
@@ -42,7 +42,7 @@ let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { raw += chunk; });
 process.stdin.on('end', () => {
-  if ((process.env.SNAF_AUTO_TEST || '').toLowerCase() === 'off') process.exit(0);
+  if ((process.env.KRUX_AUTO_TEST || '').toLowerCase() === 'off') process.exit(0);
 
   let data = {};
   try { data = JSON.parse(raw); } catch (e) { process.exit(0); }
@@ -53,7 +53,7 @@ process.stdin.on('end', () => {
   const filePath = (data.tool_input && data.tool_input.file_path) || '';
   const repoRoot = data.cwd || process.cwd();
 
-  if (!isSnafRepo(repoRoot)) process.exit(0);
+  if (!isKruxRepo(repoRoot)) process.exit(0);
   if (!isWatchedPath(filePath, repoRoot)) process.exit(0);
 
   const result = spawnSync('npm', ['test', '--silent'], {
@@ -66,13 +66,13 @@ process.stdin.on('end', () => {
   const rel = path.relative(repoRoot, path.isAbsolute(filePath) ? filePath : path.resolve(repoRoot, filePath));
 
   if (result.status === 0) {
-    process.stdout.write(`snaf auto-test: wszystkie testy przeszły po zmianie ${rel}\n`);
+    process.stdout.write(`krux auto-test: wszystkie testy przeszły po zmianie ${rel}\n`);
     process.exit(0);
   }
 
   const tail = (result.stdout || '').split('\n').slice(-40).join('\n');
   process.stdout.write(
-    `snaf auto-test: TESTY PADŁY po zmianie ${rel}\n` +
+    `krux auto-test: TESTY PADŁY po zmianie ${rel}\n` +
     `---\n${tail}\n---\n` +
     `Napraw zanim pójdziesz dalej.\n`
   );

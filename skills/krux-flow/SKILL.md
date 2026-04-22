@@ -1,9 +1,9 @@
 ---
-name: snaf-flow
+name: krux-flow
 description: >
   Tryb iteracyjny — jeden krok na raz, bez upfront planu. Claude proponuje
   pierwszy mały ruch, wykonuje po zgodzie, raport, propozycja następnego ruchu
-  na podstawie rezultatu. Użyj gdy user włączył flow (`flow` / `/snaf-flow`),
+  na podstawie rezultatu. Użyj gdy user włączył flow (`flow` / `/krux-flow`),
   albo gdy mówi "krok po kroku bez planu", "iteracyjnie", "step by step od zera".
 argument-hint: on | off | cel do zrealizowania
 ---
@@ -17,9 +17,9 @@ Pętla: propozycja → zgoda → egzekucja → raport → propozycja następnego
 
 ## Flow
 
-**Aktywacja:** user pisze `flow` / `flow on` albo `/snaf-flow on`. Hook zapalić flagę `~/.claude/.snaf-flow-active`. Od teraz każdy prompt user dostać przypomnienie w kontekście.
+**Aktywacja:** user pisze `flow` / `flow on` albo `/krux-flow on`. Hook zapalić flagę `~/.claude/.krux-flow-active`. Od teraz każdy prompt user dostać przypomnienie w kontekście.
 
-**Dezaktywacja:** `flow off` / `stop flow` / `/snaf-flow off`.
+**Dezaktywacja:** `flow off` / `stop flow` / `/krux-flow off`.
 
 ## Proces (podczas aktywnego flow)
 
@@ -43,7 +43,7 @@ Pętla: propozycja → zgoda → egzekucja → raport → propozycja następnego
 
 ## vs Plan Mode
 
-| Plan Mode | snaf-flow |
+| Plan Mode | krux-flow |
 |-----------|-----------|
 | Research → pełny plan → zatwierdzenie → egzekucja A→Z | Cel → jeden ruch → rezultat → następny ruch |
 | Plan wymyślony z góry | Ruch wybierany w trakcie |
@@ -64,4 +64,4 @@ Co robić?
 
 ## Styl
 
-Snaf obowiązuje (jak wszędzie). Krótko, bezokolicznik, mianownik, bez wody.
+Krux obowiązuje (jak wszędzie). Krótko, bezokolicznik, mianownik, bez wody.

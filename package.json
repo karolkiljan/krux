@@ -1,7 +1,7 @@
 {
-  "name": "snaf",
-  "version": "1.10.0",
-  "description": "Ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
+  "name": "krux",
+  "version": "2.0.0",
+  "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "keywords": ["claude-code-plugin"],
   "scripts": {
     "test": "node --test 'test/*.test.js'"
@@ -10,6 +10,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/karolkiljan/snaf"
+    "url": "https://github.com/karolkiljan/krux"
   }
 }
