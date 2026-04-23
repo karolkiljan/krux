@@ -84,26 +84,39 @@ Krux nie gadać więcej niż trzeba.
 
 ## Orkowie — armia generala Krux
 
-Krux teraz **general**. Dowodzi 14 orków — specjalistycznych agentów do konkretnych zadań.
+Krux teraz **general**. Dowodzi 14 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `/krux:ork-nazwa`.
 
-| Ork | Rola |
-|-----|------|
-| ork-architekt | Projektowanie architektury |
-| ork-badacz | Eksploracja kodu |
-| ork-czysciciel | Refaktoring (dedup, podział plików, styl) |
-| ork-straznik | Audyt hooków |
-| ork-kowal | Backend (API, bazy danych, server) |
-| ork-malarz | UI/frontend |
-| ork-niszczyciel | Usuwanie martwego kodu |
-| ork-sedzia | Code review |
-| ork-skryba | Dokumentacja |
-| ork-sprawdzacz | Testy/weryfikacja |
-| ork-tropiciel | Debugging |
-| ork-wroz | Planowanie |
-| ork-wynalazca | Nowe funkcje |
-| ork-wyrocznia | Q&A/wyjaśnienia |
+### Kiedy który ork się odpala
 
-Użycie: `/krux:ork-nazwa` albo przez `Agent` tool z `subagent_type: krux:ork-nazwa`.
+| Ork | Rola | Frazy które go wzywają |
+|-----|------|------------------------|
+| ork-architekt | Projekt architektury | „architektura", „projekt", „struktura", „moduły" |
+| ork-badacz | Eksploracja kodu | „znajdź", „gdzie jest", „szukaj", „explore" |
+| ork-czysciciel | Refaktoring (dedup, podział plików, styl) | „refaktoryzuj", „przerób", „uporządkuj", „duplikacja" |
+| ork-kowal | Backend (API, bazy danych, server) | „backend", „API", „endpoint", „baza danych", „SQL" |
+| ork-malarz | UI/frontend | „UI", „frontend", „wygląd", „design", „CSS", „komponent" |
+| ork-niszczyciel | Usuwanie martwego kodu | „usuń", „martwy kod", „unused", „nieużywane", „zbędny" |
+| ork-sedzia | Code review | „review", „przejrzyj", „audyt", „ocena kodu" |
+| ork-skryba | Dokumentacja | „docs", „dokumentacja", „README", „komentarze" |
+| ork-sprawdzacz | Testy/weryfikacja | „test", „testy", „npm test", „verify", „coverage" |
+| ork-straznik | Audyt hooków pluginu krux | po zmianie w `hooks/*.js`, „audytuj hook" |
+| ork-tropiciel | Debugging | „debug", „błąd", „stack trace", „napraw bug", „crash" |
+| ork-wroz | Analiza ryzyka, planowanie | „ryzyko", „co jeśli", „plan", „konsekwencje" |
+| ork-wynalazca | Prototyp, MVP, nowa funkcja | „prototype", „MVP", „nowy", „dodaj funkcję", „szybko" |
+| ork-wyrocznia | Q&A, wyjaśnienia | „wyjaśnij", „co to", „jak działa", „jak zrobić" |
+
+### Co zwraca ork
+
+Każdy ork zwraca standardowy JSON z polami: `status` (ok/warning/error), `summary` (1 zdanie dla ciebie), `details` (szczegóły dla kruxa), opcjonalnie `files`, `tests`, `verdict`. Krux bierze `summary` i podsumowuje po swojemu — dostajesz zwięzły wynik, nie wywód.
+
+### Wielu orków na raz
+
+Dwa skille dla zaawansowanych workflow:
+
+- `/krux-orki-lancuch` — sekwencja orków gdzie wynik pierwszego = input drugiego.  
+  Przykład: ork-badacz znajdzie → ork-tropiciel naprawi → ork-sprawdzacz przetestuje.
+- `/krux-orki-rownolegle` — wielu orków jednocześnie na niezależne zadania.  
+  Przykład: 3 bugi w różnych plikach → 3 ork-tropiciele równolegle.
 
 ## Skille
 
