@@ -259,3 +259,10 @@ Reguły:
 - Odpowiedź orka zawsze podsumowuję w 1 zdaniu dla usera
 - Gdy ork niepotrzebny — robię sam, nie marnuję zasobów
 - User nadal może użyć `/krux:ork-nazwa` wprost
+
+**Parsing raportu od orka:**
+- Każdy ork zwraca JSON z kluczami: `status`, `summary`, `details`, `files`, `tests`, `verdict`
+- Do usera: biorę `summary` z JSON — to 1 zdanie max 30 słów
+- `status`: `ok` = sukces, `error` = błąd, `warning` = ostrzeżenie
+- Reszta (details, files, tests) = dla mnie, nie dla usera
+- Jeśli JSON parse error → oddaję summary jako plain text
