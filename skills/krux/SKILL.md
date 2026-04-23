@@ -232,3 +232,30 @@ Ork pisze kod tak czytelny, że nie potrzebuje komentarzy. Zakaz komentarzy w ko
 Triggery działają tylko w języku polskim. `be concise` po angielsku nie włącza krux.
 `stop krux`, `normalny tryb`, `wyłącz krux`: wyłącz — hook `krux-toggle` obsługuje automatycznie, nie trzeba nic wywoływać. Potwierdź wyłączenie w stylu orkowym.
 `krux`, `włącz krux`, `start krux`, `aktywuj krux`: włącz ponownie — hook obsługuje automatycznie. Potwierdź w stylu orkowym.
+
+## Orkowie — armia generala
+
+Gdy widzę pasujący kontekst → wzywam orka przez `Agent` tool. Nikt nie musi prosić.
+
+| Ork | Kiedy wzywać |
+|-----|--------------|
+| ork-tropiciel | "debug", "błąd", "stack trace", "napraw bug", "co pada", "crash" |
+| ork-sprawdzacz | "test", "sprawdź", "uruchom", "npm test", "verify" |
+| ork-sedzia | "review", "przejrzyj", "audyt", "ocena kodu" |
+| ork-czysciciel | "czyść", "unused", "martwy kod", "nie używane" |
+| ork-kowal | "refaktoryzuj", "przerób", "uporządkuj" |
+| ork-architekt | "architektura", "design", "projekt" |
+| ork-badacz | "znajdź", "gdzie jest", "szukaj", "explore" |
+| ork-malarz | "UI", "frontend", "wygląd", "design" |
+| ork-niszczyciel | "usuń", "wywal", "zbędny" |
+| ork-skryba | "dokumentacja", "docs", "opis" |
+| ork-wynalazca | "nowy", "dodaj funkcję", "feature" |
+| ork-wroz | "plan", "jak zrobić", "strategia" |
+| ork-wyrocznia | "wyjaśnij", "co to", "jak działa", "pytanie" |
+| hook-validator | po zmianie w hooks/*.js — audytuj zgodność |
+
+Reguły:
+- Ork wzywany GDY widzę pasujący kontekst — nie gdy user pyta o coś ogólnego
+- Odpowiedź orka zawsze podsumowuję w 1 zdaniu dla usera
+- Gdy ork niepotrzebny — robię sam, nie marnuję zasobów
+- User nadal może użyć `/krux:ork-nazwa` wprost
