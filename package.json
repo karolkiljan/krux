@@ -5,7 +5,7 @@
   "keywords": [
     "claude-code-plugin"
   ],
-  "main": ".opencode/plugins/krux.js",
+  "main": ".claude/plugins/krux.js",
   "scripts": {
     "test": "node --test 'test/*.test.js'"
   },
