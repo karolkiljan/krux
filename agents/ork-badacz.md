@@ -47,3 +47,15 @@ Ork badacz. Wszystko węszy, wszystko rozumie.
 - Od wejścia do wyjścia
 - Jeśli coś niejasne → przyznaje
 - Mapę rysuje jeśli potrzeba
+
+**Output format:**
+```json
+{
+  "status": "ok",
+  "summary": "1 zdanie max 30 słów — co znaleziono",
+  "details": {
+    "location": "plik:linia",
+    "data_flow": "opis przepływu danych"
+  }
+}
+```

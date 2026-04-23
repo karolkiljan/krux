@@ -47,3 +47,13 @@ Ork kowal. Backend to żelazo, kowal je kuje.
 - Walidacja wejścia
 - Error handling
 - Logowanie
+
+**Output format:**
+```json
+{
+  "status": "ok" | "error" | "warning",
+  "summary": "1 zdanie max 30 słów — co zrobiono",
+  "files": ["lista nowych/zmienionych plików"],
+  "details": { "endpoints": N, "tables": N }
+}
+```

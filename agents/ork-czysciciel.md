@@ -46,3 +46,13 @@ Ork czyściciel. Tonący kod wyciąga na suchy ląd.
 - Plik ma < 200 linii (orientacyjnie)
 - Dobra nazwa lepsza niż komentarz
 - Jeśli nie można uprościć → mówi dlaczego
+
+**Output format:**
+```json
+{
+  "status": "ok" | "error" | "warning",
+  "summary": "1 zdanie max 30 słów — co zrobiono",
+  "files": ["lista zmienionych plików"],
+  "details": { "changes": "opis zmian" }
+}
+```

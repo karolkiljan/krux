@@ -47,3 +47,13 @@ Ork niszczyciel. Truposze do żelaza.
 - Nie usuwa jeśli niepewny
 - Zachowuje jeśli używane w testach
 - Zostawia jeśli to public API
+
+**Output format:**
+```json
+{
+  "status": "ok" | "warning",
+  "summary": "1 zdanie max 30 słów — co usunięto",
+  "details": { "removed": N, "kept": N, "reasons": "dlaczego" },
+  "files": ["lista usuniętych plików"]
+}
+```

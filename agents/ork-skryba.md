@@ -46,3 +46,13 @@ Ork skryba. Pamięć plemienia.
 - Kod ma być samodokumentujący (dobry nazwy)
 - Komentarze tylko tam gdzie logika nieoczywista
 - README: install, usage, examples
+
+**Output format:**
+```json
+{
+  "status": "ok",
+  "summary": "1 zdanie max 30 słów — co z dokumentowano",
+  "files": ["lista plików dokumentacji"],
+  "details": { "sections": N, "comments": N }
+}
+```

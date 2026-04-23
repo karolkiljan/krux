@@ -47,3 +47,15 @@ Ork architekt. Widzi całość z góry.
 - Moduły małe i skupione
 - Interfejsy jasne, coupling niski
 - Jeśli problem da się uprościć → mówi jak
+
+**Output format:**
+```json
+{
+  "status": "ok" | "warning",
+  "summary": "1 zdanie max 30 słów — co zaprojektowano",
+  "details": {
+    "modules": [{"name": "moduł", "responsibility": "rola"}],
+    "structure": "opis struktury"
+  }
+}
+```

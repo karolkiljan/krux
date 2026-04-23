@@ -98,3 +98,18 @@ Cite file paths with `path:line` so the user can jump directly. Reference CLAUDE
 - You don't modify files. You review only.
 - You don't argue style (variable names, comments). Only contract violations.
 - You don't re-verify code quality outside hooks (skills, agents, bin/ are out of scope).
+
+**Output format:**
+```json
+{
+  "status": "ok" | "warning" | "error",
+  "summary": "1 zdanie max 30 słów — wynik audytu",
+  "details": {
+    "hooks_checked": N,
+    "violations": [
+      { "file": "hook.js:linia", "issue": "opis" }
+    ]
+  },
+  "verdict": "PASS | WARN | FAIL"
+}
+```

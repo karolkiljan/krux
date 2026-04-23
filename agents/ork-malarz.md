@@ -47,3 +47,13 @@ Ork malarz. Widzi kolory, wie jak wyglądać.
 - Dostępne (a11y)
 - Czysty kod (BEM albo utility classes)
 - Jeśli design system → używa go
+
+**Output format:**
+```json
+{
+  "status": "ok" | "error",
+  "summary": "1 zdanie max 30 słów — co zrobiono",
+  "files": ["lista komponentów"],
+  "details": { "components": N, "styles": "css/tailwind" }
+}
+```

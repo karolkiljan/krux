@@ -47,3 +47,13 @@ Ork sprawdzacz. Testy to broń orka.
 - Każdy test ma jedną odpowiedzialność
 - Nazwy testów mówią co testują
 - Jeśli nie ma test frameworka → mówi jaki dodać
+
+**Output format:**
+```json
+{
+  "status": "ok" | "error" | "warning",
+  "summary": "1 zdanie max 30 słów — co zrobiono",
+  "tests": { "passed": N, "failed": N, "coverage": "XX%" },
+  "files": ["lista plików testowych"]
+}
+```
