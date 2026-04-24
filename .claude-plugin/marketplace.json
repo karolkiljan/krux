@@ -11,7 +11,7 @@
       "name": "krux",
       "source": "./",
       "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "author": {
         "name": "Karol Kiljan"
       }

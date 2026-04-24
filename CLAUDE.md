@@ -20,7 +20,7 @@ Plugin działa na dwóch niezależnych osiach:
 | `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
 | `Stop` | `hooks/context_watch.js` | koniec tury modelu | Czyta tail transcriptu (128KB), sumuje `usage` tokenów. Gdy > threshold → ostrzeżenie przez stderr + exit 2. Cooldown 300s + delta 20k tokenów. |
 | `PreCompact` | `hooks/precompact.js` | przed /compact | Odczytuje `{cwd}/.claude/compact_notes.md` i wstrzykuje do summary. Kasuje plik po użyciu (notatki jednorazowe). |
-| `PreToolUse` | `hooks/version-sync-guard.js` | przed Edit/Write/MultiEdit | Gdy edytowany `package.json` lub `.claude-plugin/plugin.json`, porównuje ich wersje. Rozjazd → exit 2 z instrukcją `/krux-bump`. Chroni wymóg synchronizacji. |
+| `PreToolUse` | `hooks/version-sync-guard.js` | przed Edit/Write/MultiEdit | Gdy edytowany `package.json`, `.claude-plugin/plugin.json` lub `.claude-plugin/marketplace.json`, porównuje wszystkie trzy wersje. Rozjazd → exit 2 z instrukcją `/krux-bump`. Chroni wymóg synchronizacji. |
 | `PostToolUse` | `hooks/auto-test.js` | po Edit/Write/MultiEdit | Gdy zmieniony plik w `hooks/*.js` lub `test/*.js` w repo `krux`, odpala `npm test`. Wynik (OK / tail padniętych) idzie do modelu przez stdout. Opt-out: `KRUX_AUTO_TEST=off`. |
 
 **Kolejność UserPromptSubmit:** oba hooki (`krux-toggle`, `krux-flow-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
@@ -48,7 +48,7 @@ Plugin działa na dwóch niezależnych osiach:
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
 - `krux-commit`, `krux-review`, `krux-compress`, `krux-help`, `krux-context-threshold`, `krux-bump`, `krux-release` — sloty komend. Każdy skill rejestruje slash `/krux:{name}` automatycznie (spec: skill taking precedence over commands/). Argumenty przez `$ARGUMENTS` w SKILL.md, autocomplete hint przez `argument-hint` we frontmatterze.
 - `krux-context-threshold` — jedyny skill modyfikujący konfigurację. Używa `bin/krux-detect-settings` (wykrywa właściwy `settings.json` — projekt vs user-level) i zmienia zmienną `KRUX_CONTEXT_THRESHOLD`.
-- `krux-bump` — atomowy bump wersji w `package.json` + `.claude-plugin/plugin.json`. Przyjmuje `patch|minor|major|X.Y.Z`. Egzekwuje wymóg z sekcji "Wersjonowanie" — wersje rozjechane → przerwa.
+- `krux-bump` — atomowy bump wersji w `package.json` + `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`. Przyjmuje `patch|minor|major|X.Y.Z`. Egzekwuje wymóg z sekcji "Wersjonowanie" — wersje rozjechane → przerwa.
 - `krux-release` — workflow release: `krux-bump` → commit `feat: vX.Y.Z — opis` → tag `vX.Y.Z`. Nie push-uje automatycznie.
 
 ## Konwencje — co robić, czego nie
@@ -101,7 +101,7 @@ Pokryte hooki:
 
 ## Wersjonowanie
 
-`.claude-plugin/plugin.json` i `package.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla Claude Code marketplace, package.json dla npm-style metadanych. Bumpować razem — najłatwiej przez `/krux-bump` albo `/krux-release`. Hook `version-sync-guard` blokuje edycję gdy wersje już rozjechane.
+`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` i `package.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych. Bumpować wszystkie razem — najłatwiej przez `/krux-bump` albo `/krux-release`. Hook `version-sync-guard` blokuje edycję gdy wersje już rozjechane.
 
 ## Publikacja
 

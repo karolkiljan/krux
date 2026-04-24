@@ -15,7 +15,9 @@ function withRepo(fn) {
   try { fn(cwd); } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
 }
 
-function writeRepo(cwd, pkgVer, pluginVer) {
+function writeRepo(cwd, pkgVer, pluginVer, marketVer) {
+  // marketVer domyślnie == pluginVer (happy path), żeby stare testy dalej działały
+  if (marketVer === undefined) marketVer = pluginVer;
   if (pkgVer !== null) {
     fs.writeFileSync(path.join(cwd, 'package.json'), JSON.stringify({ version: pkgVer }, null, 2));
   }
@@ -24,6 +26,13 @@ function writeRepo(cwd, pkgVer, pluginVer) {
     fs.writeFileSync(
       path.join(cwd, '.claude-plugin', 'plugin.json'),
       JSON.stringify({ version: pluginVer }, null, 2)
+    );
+  }
+  if (marketVer !== null) {
+    fs.mkdirSync(path.join(cwd, '.claude-plugin'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, '.claude-plugin', 'marketplace.json'),
+      JSON.stringify({ plugins: [{ name: 'krux', version: marketVer }] }, null, 2)
     );
   }
 }
@@ -152,6 +161,29 @@ test('package.json z uszkodzonym JSON → exit 0 (traktuj jak brak wersji)', () 
   withRepo(cwd => {
     fs.writeFileSync(path.join(cwd, 'package.json'), 'not json');
     writeRepo(cwd, null, '1.0.0');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: path.join(cwd, 'package.json') },
+    });
+    assert.equal(r.status, 0);
+  });
+});
+
+test('marketplace.json rozjechany z plugin.json → blokuje', () => {
+  withRepo(cwd => {
+    writeRepo(cwd, '2.3.0', '2.3.0', '2.2.0');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: path.join(cwd, '.claude-plugin', 'marketplace.json') },
+    });
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /marketplace\.json: 2\.2\.0/);
+  });
+});
+
+test('brak marketplace.json → exit 0 (nie ten repo, nie blokuj)', () => {
+  withRepo(cwd => {
+    writeRepo(cwd, '1.0.0', '1.0.0', null);
     const r = runHook(cwd, {
       tool_name: 'Edit',
       tool_input: { file_path: path.join(cwd, 'package.json') },
