@@ -17,7 +17,7 @@ description: Use this agent when user asks for frontend, UI or visual developmen
   Agent handles UI components, styles, layouts
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: green
 tools: ["Read", "Write", "Grep", "Glob"]
 ---

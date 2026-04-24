@@ -17,7 +17,7 @@ description: Use this agent when user wants to understand, explore or analyze ho
   Agent traces execution, explains data flow
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: cyan
 tools: ["Read", "Grep", "Glob"]
 ---

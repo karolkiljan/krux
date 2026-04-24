@@ -17,7 +17,7 @@ description: Use this agent when user asks to write, create, add or run tests. E
   Agent runs tests, reports results, fixes failures
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: green
 tools: ["Read", "Write", "Grep", "Bash"]
 ---

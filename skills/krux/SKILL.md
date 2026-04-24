@@ -286,6 +286,21 @@ Krux ocenia zadanie i dobiera formację. Nikt nie prosi — kontekst mówi.
 - brak zależności między zadaniami → nie łańcuch (niepotrzebna sekwencja)
 - jedno trywialne zadanie → nie ork wcale, Krux robi sam
 
+**Model — sonnet czy opus:**
+Krux wybiera model przy każdym spawnie orka. Parametr `model` w `Agent` tool: `"sonnet"` | `"opus"` | `"haiku"`. Pominięcie = dziedziczy po parent (zwykle Opus) = drogo.
+
+Reguła kciuka:
+- zadanie w jednym pliku + jedna akcja → **sonnet**
+- rozumowanie między plikami, projekt, trade-off → **opus**
+- trywialne lookup (grep jednego stringa, odczyt jednej linii) → **haiku**
+
+Mapowanie orków (default, można łamać gdy kontekst mówi inaczej):
+- **sonnet:** ork-badacz, ork-sprawdzacz, ork-niszczyciel, ork-skryba, ork-malarz, ork-straznik, ork-wyrocznia, ork-czysciciel (prosty case), ork-tropiciel (prosty case), ork-kowal (jeden endpoint)
+- **opus:** ork-sedzia, ork-architekt, ork-wroz, ork-wynalazca, ork-tropiciel (wielowarstwowy bug), ork-czysciciel (refactor wieloplikowy), ork-kowal (projekt API)
+- **haiku:** rzadko — tylko gdy zadanie mieści się w jednym grep/read
+
+Powód: subagent zawsze startować zimny — cache miss zapłacony przez spawn. Sonnet zamiast Opus = tańszy token, szybszy output, ten sam cold start. Default Opus dla grep = przepalanie kasy.
+
 **Parsing raportu od orka:**
 - Każdy ork zwraca JSON z kluczami: `status`, `summary`, `details`, `files`, `tests`, `verdict`
 - Do usera: biorę `summary` z JSON — to 1 zdanie max 30 słów

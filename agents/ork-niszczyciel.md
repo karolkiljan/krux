@@ -17,7 +17,7 @@ description: Use this agent when user wants to remove dead code, clean up unused
   Agent finds and removes dead code, unused files, unused imports
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: red
 tools: ["Read", "Grep", "Bash"]
 ---

@@ -6,7 +6,7 @@ description: >
   żeby wyłapać naruszenia: parsowanie stdin JSON, exit codes, timeout,
   tail-only odczyt transcriptu, diacritics w regex.
   Też na żądanie: "sprawdź hook", "audytuj hooks", "review hook XYZ".
-model: inherit
+model: sonnet
 color: purple
 tools: ["Read", "Grep", "Glob", "Bash"]
 ---

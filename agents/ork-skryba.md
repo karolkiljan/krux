@@ -17,7 +17,7 @@ description: Use this agent when user asks to create, generate or update documen
   Agent writes docs, readme, comments, api specifications
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: cyan
 tools: ["Read", "Write", "Grep"]
 ---

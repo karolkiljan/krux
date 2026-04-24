@@ -17,7 +17,7 @@ description: Use this agent when user asks questions about code, architecture or
   Agent answers questions, provides guidance and best practices
   </commentary>
   </example>
-model: inherit
+model: sonnet
 color: blue
 tools: ["Read", "Grep", "Glob"]
 ---
