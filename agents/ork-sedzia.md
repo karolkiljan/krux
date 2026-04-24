@@ -1,22 +1,10 @@
 ---
 name: ork-sedzia
-description: Use this agent when user asks to review code, do code review or analyze changes. Examples:
-  <example>
-  Context: User wants code review
-  user: "przejrzyj ten PR"
-  assistant: "Ork sędzia sadzić!"
-  <commentary>
-  Agent triggers on review keywords: review, pr, pull request, code review, przejrzyj
-  </commentary>
-  </example>
-  <example>
-  Context: User wants analysis of changes
-  user: "co zmieniłeś w ostatnim commicie?"
-  assistant: "Sędzia badać zmiany!"
-  <commentary>
-  Agent reviews diffs, commits, analyzes code quality
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants code review, PR analysis, diff review or code
+  quality assessment. Reviews for bugs, security, performance and style.
+  Triggers: review, pr, pull request, code review, przejrzyj, audyt, ocena kodu,
+  zmiany, diff, co zmieniłeś.
 model: inherit
 color: purple
 tools: ["Read", "Grep", "Bash"]

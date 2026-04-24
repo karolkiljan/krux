@@ -1,22 +1,10 @@
 ---
 name: ork-sprawdzacz
-description: Use this agent when user asks to write, create, add or run tests. Examples:
-  <example>
-  Context: User wants test coverage for new function
-  user: "napisz testy dla tej funkcji"
-  assistant: "Ork sprawdzacz pisać testy!"
-  <commentary>
-  Agent triggers on test-related keywords: test, coverage, unit test, test case
-  </commentary>
-  </example>
-  <example>
-  Context: User needs to run existing tests
-  user: "uruchom test suite"
-  assistant: "Sprawdzacz biegać!"
-  <commentary>
-  Agent runs tests, reports results, fixes failures
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants to write, run or fix tests. Handles unit tests,
+  coverage analysis and fixing failing tests.
+  Triggers: test, testy, npm test, verify, coverage, unit test, uruchom testy,
+  napisz testy, test case, test suite.
 model: sonnet
 color: green
 tools: ["Read", "Write", "Grep", "Bash"]

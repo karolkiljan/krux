@@ -1,22 +1,10 @@
 ---
 name: ork-malarz
-description: Use this agent when user asks for frontend, UI or visual development. Examples:
-  <example>
-  Context: User needs UI component
-  user: "zrób komponent interfejsu"
-  assistant: "Ork malarz malować UI!"
-  <commentary>
-  Agent triggers on frontend keywords: frontend, ui, component, button, style, css, html
-  </commentary>
-  </example>
-  <example>
-  Context: User needs styling
-  user: "dodaj stylowanie do tego"
-  assistant: "Malarz malować!"
-  <commentary>
-  Agent handles UI components, styles, layouts
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants frontend, UI or visual development: components,
+  styling, layouts, responsiveness, accessibility.
+  Triggers: UI, frontend, wygląd, design, CSS, komponent, style, HTML, button,
+  layout, stylowanie, responsywność, a11y.
 model: sonnet
 color: green
 tools: ["Read", "Write", "Grep", "Glob"]

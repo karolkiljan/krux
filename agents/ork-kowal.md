@@ -1,22 +1,10 @@
 ---
 name: ork-kowal
-description: Use this agent when user asks for backend development: APIs, databases, server logic. Examples:
-  <example>
-  Context: User needs backend endpoint
-  user: "stwórz API endpoint"
-  assistant: "Ork kowal kuć backend!"
-  <commentary>
-  Agent triggers on backend keywords: api, backend, database, endpoint, server, rest, db
-  </commentary>
-  </example>
-  <example>
-  Context: User needs database query
-  user: "napisz zapytanie do bazy"
-  assistant: "Kowal pytać bazę!"
-  <commentary>
-  Agent writes SQL, designs schemas, handles backend logic
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants backend development: API endpoints, database
+  schemas, SQL queries, server logic or migrations.
+  Triggers: backend, API, endpoint, baza danych, SQL, server, model, REST, db,
+  migracja, zapytanie do bazy, schema.
 model: inherit
 color: green
 tools: ["Read", "Write", "Grep", "Bash"]

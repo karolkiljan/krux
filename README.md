@@ -129,6 +129,8 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 | `/krux-compress <plik>` | Przepisz markdown w stylu krux, ~40% mniej tokenów |
 | `/krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
 | `/krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
+| `/krux-bump <patch\|minor\|major\|X.Y.Z>` | Atomowy bump wersji w 3 plikach (package.json, plugin.json, marketplace.json) |
+| `/krux-release <bump-spec> [— opis]` | Release flow: bump + commit `feat: vX.Y.Z — opis` + tag `vX.Y.Z` |
 | `/krux-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania
@@ -185,6 +187,9 @@ off
 
 ```bash
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
+      ~/.claude/.krux-flow-active \
+      ~/.claude/.krux-context-watch-off \
+      ~/.claude/.krux-context-threshold \
       ~/.claude/.krux-statusline-asked \
       ~/.claude/.krux-statusline.sh ~/.claude/.krux-statusline.ps1
 ```

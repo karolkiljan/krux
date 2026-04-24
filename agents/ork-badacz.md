@@ -1,22 +1,10 @@
 ---
 name: ork-badacz
-description: Use this agent when user wants to understand, explore or analyze how something works. Examples:
-  <example>
-  Context: User doesn't understand code
-  user: "jak działa ta funkcja?"
-  assistant: "Ork badacz badać!"
-  <commentary>
-  Agent triggers on exploration keywords: jak działa, understand, explore, analyze, wytłumacz
-  </commentary>
-  </example>
-  <example>
-  Context: User wants code traced
-  user: "skąd się bierze ten błąd?"
-  assistant: "Badacz iść tropić!"
-  <commentary>
-  Agent traces execution, explains data flow
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants to explore codebase, understand how code works,
+  trace execution flow or locate definitions and usages.
+  Triggers: znajdź, gdzie jest, szukaj, explore, jak działa, understand, analyze,
+  wytłumacz jak, skąd się bierze, trace.
 model: sonnet
 color: cyan
 tools: ["Read", "Grep", "Glob"]

@@ -1,22 +1,10 @@
 ---
 name: ork-wroz
-description: Use this agent when user wants to analyze risks, predict problems or assess impact. Examples:
-  <example>
-  Context: User wants risk analysis
-  user: "jakie ryzyka niesie ta zmiana?"
-  assistant: "Ork wróż widzieć przyszłość!"
-  <commentary>
-  Agent triggers on risk keywords: ryzyko, risk, problem, impact, konsekwencje, co jeśli
-  </commentary>
-  </example>
-  <example>
-  Context: User needs impact assessment
-  user: "co jeśli zmienię X?"
-  assistant: "Wróż przepowiadać!"
-  <commentary>
-  Agent predicts consequences and identifies potential issues
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants risk analysis, impact assessment or prediction
+  of consequences before a change. Identifies breaking changes and edge cases.
+  Triggers: ryzyko, risk, impact, konsekwencje, co jeśli, plan, strategia,
+  jak zrobić, breaking change, bezpieczne czy nie.
 model: inherit
 color: yellow
 tools: ["Read", "Grep", "Bash"]

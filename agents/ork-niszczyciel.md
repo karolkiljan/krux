@@ -1,22 +1,10 @@
 ---
 name: ork-niszczyciel
-description: Use this agent when user wants to remove dead code, clean up unused code or delete unnecessary files. Examples:
-  <example>
-  Context: User wants cleanup
-  user: "usuń martwy kod"
-  assistant: "Ork niszczyciel niszczyć!"
-  <commentary>
-  Agent triggers on cleanup keywords: martwy, dead, unused, remove, delete, cleanup, nie używany
-  </commentary>
-  </example>
-  <example>
-  Context: User wants to find unused code
-  user: "jakie pliki są nie używane?"
-  assistant: "Niszczyciel szukać!"
-  <commentary>
-  Agent finds and removes dead code, unused files, unused imports
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants to remove dead code, unused files, unused
+  imports or unneeded dependencies.
+  Triggers: usuń, wywal, martwy kod, unused, nieużywane, zbędny, dead code,
+  remove, delete, cleanup, nie używany.
 model: sonnet
 color: red
 tools: ["Read", "Grep", "Bash"]

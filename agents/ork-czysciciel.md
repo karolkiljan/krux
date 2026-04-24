@@ -1,22 +1,10 @@
 ---
 name: ork-czysciciel
-description: Use this agent when user asks to refactor, clean, simplify or improve code quality. Examples:
-  <example>
-  Context: User wants code cleaned up
-  user: "ten plik jest za duży, refaktoryzuj"
-  assistant: "Ork czyściciel czyścić!"
-  <commentary>
-  Agent triggers on refactor keywords: refactor, clean, simplify, improve, too big
-  </commentary>
-  </example>
-  <example>
-  Context: User needs code improvements
-  user: "napraw style, usuń duplikację"
-  assistant: "Czyściciel iść do roboty!"
-  <commentary>
-  Agent handles deduplication, code style, extracting functions
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants to refactor, clean or simplify code. Handles
+  deduplication, file splitting, extracting functions and code style improvements.
+  Triggers: refaktoryzuj, przerób, uporządkuj, duplikacja, podziel plik, refactor,
+  clean, simplify, sprzątaj, za duży plik, usuń duplikację.
 model: inherit
 color: yellow
 tools: ["Read", "Write", "Grep", "Bash"]

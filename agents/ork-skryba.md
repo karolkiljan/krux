@@ -1,22 +1,10 @@
 ---
 name: ork-skryba
-description: Use this agent when user asks to create, generate or update documentation. Examples:
-  <example>
-  Context: User needs README updated
-  user: "zaktualizuj README"
-  assistant: "Ork skryba pisać dokumenty!"
-  <commentary>
-  Agent triggers on doc keywords: docs, documentation, readme, api docs, comments
-  </commentary>
-  </example>
-  <example>
-  Context: User wants code documented
-  user: "dodaj komentarze do tego modułu"
-  assistant: "Skryba dokumentować!"
-  <commentary>
-  Agent writes docs, readme, comments, api specifications
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants documentation work: README, CONTRIBUTING,
+  API docs, CHANGELOG or inline comments where non-obvious.
+  Triggers: dokumentacja, docs, opis, README, CHANGELOG, komentarze, documentation,
+  api docs, zaktualizuj README.
 model: sonnet
 color: cyan
 tools: ["Read", "Write", "Grep"]

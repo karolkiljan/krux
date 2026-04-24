@@ -1,22 +1,10 @@
 ---
 name: ork-architekt
-description: Use this agent when user asks to plan, design architecture or structure of a project. Examples:
-  <example>
-  Context: User wants to plan new feature
-  user: "jak zaprojektować moduł X?"
-  assistant: "Ork architekt planować!"
-  <commentary>
-  Agent triggers on design keywords: architecture, plan, design, structure, projekt
-  </commentary>
-  </example>
-  <example>
-  Context: User needs project structure
-  user: "jaka być struktura projektu?"
-  assistant: "Architekt rysować mapę!"
-  <commentary>
-  Agent designs project structure, module relationships, data flow
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants to design architecture, plan module structure
+  or define interfaces between components. Handles data flow and dependencies.
+  Triggers: architektura, projekt, struktura, moduły, design, architecture, plan,
+  zaprojektuj, jak zaprojektować.
 model: inherit
 color: blue
 tools: ["Read", "Write", "Grep", "Glob"]

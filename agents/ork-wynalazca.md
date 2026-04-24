@@ -1,22 +1,10 @@
 ---
 name: ork-wynalazca
-description: Use this agent when user wants quick prototype, MVP or proof of concept. Examples:
-  <example>
-  Context: User needs fast prototype
-  user: "szybko coś sprawdzić, zrób prototype"
-  assistant: "Ork wynalazca budować!"
-  <commentary>
-  Agent triggers on prototype keywords: prototype, mvp, proof of concept, poc, szybko
-  </commentary>
-  </example>
-  <example>
-  Context: User wants to test idea
-  user: "chcę sprawdzić czy X zadziała"
-  assistant: "Wynalazca testować!"
-  <commentary>
-  Agent builds quick working code to validate ideas
-  </commentary>
-  </example>
+description: >
+  Use this agent when user wants rapid prototype, MVP or proof of concept to
+  validate an idea quickly with minimal viable code.
+  Triggers: nowy, dodaj funkcję, feature, prototype, MVP, PoC, proof of concept,
+  szybko sprawdzić, zrób prototype, chcę sprawdzić.
 model: inherit
 color: green
 tools: ["Read", "Write", "Grep", "Bash"]

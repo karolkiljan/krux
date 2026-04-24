@@ -1,22 +1,10 @@
 ---
 name: ork-wyrocznia
-description: Use this agent when user asks questions about code, architecture or how to do something. Examples:
-  <example>
-  Context: User has a question about code
-  user: "jak to zrobić w JavaScript?"
-  assistant: "Wyrocznia odpowiadać!"
-  <commentary>
-  Agent triggers on question patterns: jak, jak zrobić, jak najlepiej, co to jest, wytłumacz
-  </commentary>
-  </example>
-  <example>
-  Context: User wants guidance
-  user: "jaki pattern użyć dla X?"
-  assistant: "Wyrocznia zna odpowiedź!"
-  <commentary>
-  Agent answers questions, provides guidance and best practices
-  </commentary>
-  </example>
+description: >
+  Use this agent when user has general questions about code, concepts, patterns
+  or best practices and wants guidance.
+  Triggers: wyjaśnij, co to, jak działa, pytanie, jak zrobić, jaki pattern,
+  jak najlepiej, best practice, wytłumacz.
 model: sonnet
 color: blue
 tools: ["Read", "Grep", "Glob"]
