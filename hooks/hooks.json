@@ -61,6 +61,11 @@
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.js",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/token-log.js",
+            "timeout": 5
           }
         ]
       }

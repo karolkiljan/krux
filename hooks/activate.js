@@ -37,9 +37,12 @@ process.stdin.on('end', () => {
   // On resume/compact the skill body is already in memory from the prior context
   // (resume) or injected via PreCompact notes (compact). Emit a short reminder
   // instead of re-injecting the full skill — saves tokens.
+  const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
   if (source === 'resume' || source === 'compact') {
     output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa. `/krux-help` dla zasad.';
+  } else if (useNativeSkill) {
+    output = 'KRUX TRYB AKTYWNY';
   } else {
     const skillPath = path.join(__dirname, '..', 'skills', 'krux', 'SKILL.md');
     let skillContent;
@@ -66,9 +69,24 @@ process.stdin.on('end', () => {
       ? `powershell -ExecutionPolicy Bypass -File "${stableScript}"`
       : `bash "${stableScript}"`;
 
-    fs.copyFileSync(srcScript, stableScript);
-    if (!isWindows) {
-      try { fs.chmodSync(stableScript, 0o755); } catch (e) {}
+    let needsCopy = true;
+    try {
+      const stat = fs.statSync(stableScript);
+      if (Date.now() - stat.mtimeMs < 5000) needsCopy = false;
+    } catch (e) {}
+
+    if (needsCopy) {
+      const tmpPath = stableScript + '.tmp.' + process.pid;
+      try {
+        fs.copyFileSync(srcScript, tmpPath);
+        fs.renameSync(tmpPath, stableScript);
+        if (!isWindows) {
+          try { fs.chmodSync(stableScript, 0o755); } catch (e) {}
+        }
+      } catch (e) {
+        try { fs.unlinkSync(tmpPath); } catch (e2) {}
+        throw e;
+      }
     }
 
     let settings = {};

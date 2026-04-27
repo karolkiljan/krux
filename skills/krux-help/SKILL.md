@@ -29,6 +29,7 @@ Wyświetl kartę referencyjną. Bez wstępu.
 | `/krux-review` | Code review — `L42: 🔴 bug: opis. fix.` bez wody |
 | `/krux-compress <plik>` | Przepisz markdown w stylu krux, ~40% mniej tokenów |
 | `/krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
+| `/krux-stats [--last N]` | Statystyki tokenów (krux ON vs OFF) z logu `~/.claude/.krux-token-log.jsonl` |
 | `/krux-help` | Ta karta |
 
 ## Severity w review

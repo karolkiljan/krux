@@ -102,7 +102,7 @@ test('edycja poza hooks/ i test/ → nie odpala testów', () => {
   }, { testScript: 'echo "should not run" && exit 1' });
 });
 
-test('edycja pliku .md w hooks/ → nie odpala (tylko .js)', () => {
+test('edycja .md w hooks/ → odpala (matcher rozszerzony o .md/.json)', () => {
   withFakeRepo(cwd => {
     const file = path.join(cwd, 'hooks', 'README.md');
     fs.writeFileSync(file, '# hooks');
@@ -111,8 +111,35 @@ test('edycja pliku .md w hooks/ → nie odpala (tylko .js)', () => {
       tool_input: { file_path: file },
     });
     assert.equal(r.status, 0);
-    assert.equal(r.stdout, '');
+    assert.match(r.stdout, /przeszły/);
   });
+});
+
+test('edycja agents/triggers.json → odpala (sync triggerów)', () => {
+  withFakeRepo(cwd => {
+    fs.mkdirSync(path.join(cwd, 'agents'), { recursive: true });
+    const file = path.join(cwd, 'agents', 'triggers.json');
+    fs.writeFileSync(file, '{}');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: file },
+    });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /przeszły/);
+  });
+});
+
+test('ETIMEDOUT przy przekroczeniu KRUX_AUTO_TEST_TIMEOUT_MS → komunikat TIMEOUT', () => {
+  withFakeRepo(cwd => {
+    const file = path.join(cwd, 'hooks', 'slow.js');
+    fs.writeFileSync(file, '// noop');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: file },
+    }, null, { KRUX_AUTO_TEST_TIMEOUT_MS: '100' });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /TIMEOUT/);
+  }, { testScript: 'node -e "setTimeout(() => process.exit(0), 5000)"' });
 });
 
 test('cwd to nie repo krux (inne name) → nie odpala', () => {

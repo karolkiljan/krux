@@ -8,6 +8,10 @@
   <strong>Krux kopać ruda w Górnicza Dolina. Teraz Krux robić kod w Dolina Krzemowa.</strong>
 </p>
 
+<p align="center">
+  <sub>Plugin pod Claude Code (persona ork-programisty). <strong>Nie powiązany</strong> z <a href="https://github.com/selfcustody/krux">selfcustody/krux</a> (Bitcoin signing device firmware).</sub>
+</p>
+
 ---
 
 Ork wiedzieć dużo. Ork gadać mało. Claude Code słuchać.
