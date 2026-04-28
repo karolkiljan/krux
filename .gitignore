@@ -3,3 +3,9 @@
 node_modules/
 .remember/
 benchmarks/
+hooks/conversation-log.js
+hooks/token-log.js
+test/conversation-log.test.js
+test/token-log.test.js
+docs/
+skills/krux-stats/

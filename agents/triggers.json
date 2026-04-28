@@ -1,0 +1,16 @@
+{
+  "ork-tropiciel": ["debug", "błąd", "stack trace", "napraw bug", "co pada", "crash"],
+  "ork-sprawdzacz": ["test", "testy", "npm test", "verify", "coverage", "unit test", "uruchom testy"],
+  "ork-sedzia": ["review", "przejrzyj", "audyt", "ocena kodu"],
+  "ork-czysciciel": ["refaktoryzuj", "przerób", "uporządkuj", "duplikacja", "podziel plik"],
+  "ork-kowal": ["backend", "API", "endpoint", "baza danych", "SQL", "server", "model"],
+  "ork-architekt": ["architektura", "projekt", "struktura", "moduły"],
+  "ork-badacz": ["znajdź", "gdzie jest", "szukaj", "explore"],
+  "ork-malarz": ["UI", "frontend", "wygląd", "design", "CSS", "komponent"],
+  "ork-niszczyciel": ["usuń", "wywal", "martwy kod", "unused", "nieużywane", "zbędny"],
+  "ork-skryba": ["dokumentacja", "docs", "opis"],
+  "ork-wynalazca": ["nowy", "dodaj funkcję", "feature", "prototype", "MVP"],
+  "ork-wroz": ["ryzyko", "co jeśli"],
+  "ork-wyrocznia": ["wyjaśnij", "co to", "jak działa"],
+  "ork-straznik": ["sprawdź hook", "audytuj hooks", "review hook"]
+}

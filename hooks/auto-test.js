@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const WATCH_DIRS = ['hooks', 'test'];
+const WATCH_DIRS = ['hooks', 'test', 'agents'];
 
 function isWatchedPath(filePath, repoRoot) {
   if (!filePath) return false;
@@ -26,7 +26,7 @@ function isWatchedPath(filePath, repoRoot) {
   if (rel.startsWith('..')) return false;
   const firstSegment = rel.split(path.sep)[0];
   if (!WATCH_DIRS.includes(firstSegment)) return false;
-  return rel.endsWith('.js');
+  return rel.endsWith('.js') || rel.endsWith('.json') || rel.endsWith('.md');
 }
 
 function isKruxRepo(repoRoot) {
@@ -56,14 +56,34 @@ process.stdin.on('end', () => {
   if (!isKruxRepo(repoRoot)) process.exit(0);
   if (!isWatchedPath(filePath, repoRoot)) process.exit(0);
 
+  const HOOK_TIMEOUT_MS = parseInt(
+    process.env.KRUX_AUTO_TEST_TIMEOUT_MS || '72000', 10
+  );
+  const startTs = Date.now();
   const result = spawnSync('npm', ['test', '--silent'], {
     cwd: repoRoot,
     encoding: 'utf8',
-    timeout: 60000,
+    timeout: HOOK_TIMEOUT_MS,
     env: { ...process.env, CI: '1' },
   });
+  const elapsed = Date.now() - startTs;
 
   const rel = path.relative(repoRoot, path.isAbsolute(filePath) ? filePath : path.resolve(repoRoot, filePath));
+
+  if (result.error && result.error.code === 'ETIMEDOUT') {
+    process.stdout.write(
+      `krux auto-test: TIMEOUT po ${HOOK_TIMEOUT_MS / 1000}s przy zmianie ${rel}. ` +
+      `Test suite rośnie — zwiększ KRUX_AUTO_TEST_TIMEOUT_MS lub przyspiesz testy.\n`
+    );
+    process.exit(0);
+  }
+
+  if (elapsed > HOOK_TIMEOUT_MS * 0.8) {
+    process.stderr.write(
+      `krux auto-test: testy zajęły ${elapsed}ms (>80% timeoutu ${HOOK_TIMEOUT_MS}ms). ` +
+      `Rozważ zwiększenie KRUX_AUTO_TEST_TIMEOUT_MS.\n`
+    );
+  }
 
   if (result.status === 0) {
     process.stdout.write(`krux auto-test: wszystkie testy przeszły po zmianie ${rel}\n`);

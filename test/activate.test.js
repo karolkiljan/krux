@@ -217,6 +217,70 @@ test('KRUX_DEFAULT_MODE=off env overrides .krux-mode file', () => {
   });
 });
 
+// --- KRUX_NATIVE_SKILL feature flag ---
+
+test('KRUX_NATIVE_SKILL=1: startup emits krótki nagłówek bez body SKILL.md', () => {
+  withTempHome(home => {
+    writeMode(home, 'on');
+    const r = runHook(home, { source: 'startup' }, { KRUX_NATIVE_SKILL: '1' });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+    assert.doesNotMatch(r.stdout, /PRAWO 1/, 'native flag → bez body SKILL.md');
+    assert.doesNotMatch(r.stdout, /## Persona/);
+  });
+});
+
+test('KRUX_NATIVE_SKILL=0 (default): startup nadal wstrzykuje body SKILL.md', () => {
+  withTempHome(home => {
+    writeMode(home, 'on');
+    const r = runHook(home, { source: 'startup' }, { KRUX_NATIVE_SKILL: '0' });
+    assert.match(r.stdout, /PRAWO 1/);
+  });
+});
+
+// --- statusline atomic write ---
+
+test('statusline: świeży plik (<5s mtime) nie jest nadpisywany', () => {
+  withTempHome(home => {
+    writeMode(home, 'on');
+    const stable = process.platform === 'win32'
+      ? path.join(home, '.claude', '.krux-statusline.ps1')
+      : path.join(home, '.claude', '.krux-statusline.sh');
+    fs.mkdirSync(path.dirname(stable), { recursive: true });
+    fs.writeFileSync(stable, '#!/bin/bash\necho "FRESH"');
+    const mtimeBefore = fs.statSync(stable).mtimeMs;
+
+    runHook(home, { source: 'startup' });
+
+    const content = fs.readFileSync(stable, 'utf8');
+    assert.equal(content, '#!/bin/bash\necho "FRESH"');
+    const mtimeAfter = fs.statSync(stable).mtimeMs;
+    assert.ok(Math.abs(mtimeAfter - mtimeBefore) < 100);
+  });
+});
+
+test('statusline: stary plik (>5s mtime) jest atomowo zastąpiony', () => {
+  withTempHome(home => {
+    writeMode(home, 'on');
+    const stable = process.platform === 'win32'
+      ? path.join(home, '.claude', '.krux-statusline.ps1')
+      : path.join(home, '.claude', '.krux-statusline.sh');
+    fs.mkdirSync(path.dirname(stable), { recursive: true });
+    fs.writeFileSync(stable, '#!/bin/bash\necho "OLD"');
+    const oldTime = (Date.now() - 10000) / 1000;
+    fs.utimesSync(stable, oldTime, oldTime);
+
+    runHook(home, { source: 'startup' });
+
+    const content = fs.readFileSync(stable, 'utf8');
+    assert.equal(content.includes('echo "OLD"'), false);
+
+    const tmpFiles = fs.readdirSync(path.dirname(stable))
+      .filter(f => f.includes('.tmp.'));
+    assert.deepEqual(tmpFiles, []);
+  });
+});
+
 test('malformed stdin: defaults to startup, does not crash', () => {
   withTempHome(home => {
     writeMode(home, 'on');

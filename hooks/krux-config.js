@@ -31,4 +31,4 @@ function getDefaultMode() {
   return 'on';
 }
 
-module.exports = { getDefaultMode, VALID_MODES };
+module.exports = { getDefaultMode };

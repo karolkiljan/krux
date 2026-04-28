@@ -44,10 +44,10 @@ Plugin działa na dwóch niezależnych osiach:
 
 ## Skille — jak są ze sobą powiązane
 
-- `krux` — persona. Jedyny skill z pełnym SKILL.md wstrzykiwanym przez `activate.js`. Inne skille korzystają z jej stylu, jeśli persona aktywna.
+- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA + Słownik + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. Pliki referencyjne (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) ładowane przez Claude natywnie na żądanie wg sekcji "Pliki referencyjne". Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body — patrz `docs/experiment-native-skill.md`.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
 - `krux-commit`, `krux-review`, `krux-compress`, `krux-help`, `krux-context-threshold`, `krux-bump`, `krux-release` — sloty komend. Każdy skill rejestruje slash `/krux:{name}` automatycznie (spec: skill taking precedence over commands/). Argumenty przez `$ARGUMENTS` w SKILL.md, autocomplete hint przez `argument-hint` we frontmatterze.
-- `krux-context-threshold` — jedyny skill modyfikujący konfigurację. Używa `bin/krux-detect-settings` (wykrywa właściwy `settings.json` — projekt vs user-level) i zmienia zmienną `KRUX_CONTEXT_THRESHOLD`.
+- `krux-context-threshold` — jedyny skill modyfikujący konfigurację. Zapisuje `~/.claude/.krux-context-threshold` (plik z wartością progu) i `~/.claude/.krux-context-watch-off` (marker opt-out). Nie dotyka `settings.json`.
 - `krux-bump` — atomowy bump wersji w `package.json` + `.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`. Przyjmuje `patch|minor|major|X.Y.Z`. Egzekwuje wymóg z sekcji "Wersjonowanie" — wersje rozjechane → przerwa.
 - `krux-release` — workflow release: `krux-bump` → commit `feat: vX.Y.Z — opis` → tag `vX.Y.Z`. Nie push-uje automatycznie.
 
@@ -58,6 +58,7 @@ Plugin działa na dwóch niezależnych osiach:
 - Nowe skille → `skills/{name}/SKILL.md`. Slash `/krux:{name}` rejestrowany automatycznie. Nie dodawać `commands/` — legacy format, skill i tak wygrywa.
 - Diacritics w regex → zawsze tolerować opcjonalność: `[ł|l]`, `[ą|a]`. Wzorce: `krux-toggle.js:27-28`, `krux-flow-toggle.js:31-32`.
 - Stan w `~/.claude/` → ukryte pliki prefiksowane `.krux-`.
+- Triggery orków → `agents/triggers.json` (single source of truth). Każde słowo z listy MUSI być w `description` agenta — test `triggers-sync.test.js` to wymusza. Tabela w `skills/krux/SKILL.md` jest tylko referencją do triggers.json.
 
 **Czego nie robić:**
 - Nie mieszać logiki persony i flow w jednym hooku.
@@ -90,14 +91,17 @@ Pokryte hooki:
 - `precompact.js` — notes injection + one-shot deletion, empty file edge case (`test/precompact.test.js`)
 - `activate.js` — startup vs resume/compact branch, SKILL.md frontmatter strip, statusline copy, setup prompts (`test/activate.test.js`)
 - `version-sync-guard.js` — detekcja strzeżonych ścieżek, porównanie wersji, blok exit 2, edge case brakujących plików (`test/version-sync-guard.test.js`)
-- `auto-test.js` — matcher ścieżki (`hooks/*.js`, `test/*.js`), spawn `npm test`, propagacja wyniku, opt-out `KRUX_AUTO_TEST=off`, guard „nie repo krux" (`test/auto-test.test.js`)
+- `auto-test.js` — matcher ścieżki (`hooks/*.js`, `test/*.js`, `agents/*.{md,json}`), spawn `npm test`, propagacja wyniku, ETIMEDOUT z `KRUX_AUTO_TEST_TIMEOUT_MS`, opt-out `KRUX_AUTO_TEST=off`, guard „nie repo krux" (`test/auto-test.test.js`)
+- `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
+- `agents-shape` — walidacja frontmatter orków (name/description/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
+- `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, PreCompact konsumuje compact_notes.md, version-sync-guard blokada) (`test/integration.test.js`)
 
 **Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_CONTEXT_WATCH=off` ustawione globalnie i zanieczyścić testy.
 
 ## Orki (subprocessy)
 
 - Nazwa: **orki** — nie "agenci". Pasuje do persony.
-- Armia 14 orków w `agents/ork-*.md`. Mapowanie triggerów → ork w `skills/krux/SKILL.md` („Orkowie — armia generala"). Krux sam wybiera orka i model (`sonnet`/`opus`/`inherit`) przy `Agent` spawn.
+- Armia 14 orków w `agents/ork-*.md`. **Mapowanie triggerów → `agents/triggers.json`** (single source of truth). Krux sam wybiera orka i model (`sonnet`/`opus`/`inherit`) przy `Agent` spawn.
 - **Frontmatter orka — konwencja:** `description: >` (folded scalar) z listą triggerów po przecinku. **Nie używać** `<example>` / inline `user:`/`assistant:` w description — YAML parser Claude Code interpretuje je jako nested keys i cała description + pole `tools` nie łykają (efekt: auto-invocation po triggerach nie działa, ork wygląda jak generic „Agent from krux plugin" w system prompt).
 - `agents/ork-straznik.md` — specjalistyczny reviewer hooków Claude Code. Uruchamiany po każdej zmianie w `hooks/*.js` albo na żądanie. Audytuje: stdin JSON contract, exit codes, timeout awareness, tail-only transcript parsing, diacritics w regex, lokalizację stanu, zero-dep, rozdzielność logiki persony/flow, pokrycie testami. Nie modyfikuje plików — tylko raport.
 - Orki zwracają standardowy JSON z kluczami `status` / `summary` / `details` / opcjonalnie `files` / `tests` / `verdict` — Krux parsuje `summary` dla usera, reszta dla niego.
