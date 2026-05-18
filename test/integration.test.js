@@ -81,7 +81,7 @@ test('resume nie wstrzykuje pełnego SKILL.md', () => {
     fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'on');
     const r = runHook('hooks/activate.js', { source: 'resume' }, home);
     assert.equal(r.status, 0);
-    assert.ok(r.stdout.length < 500, `resume output za długi: ${r.stdout.length} znaków`);
+    assert.ok(r.stdout.length < 800, `resume output za długi: ${r.stdout.length} znaków`);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
     assert.doesNotMatch(r.stdout, /## Persona/, 'resume NIE wstrzykuje sekcji Persona');
   } finally {

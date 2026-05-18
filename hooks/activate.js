@@ -40,7 +40,7 @@ process.stdin.on('end', () => {
   const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
   if (source === 'resume' || source === 'compact') {
-    output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa. `/krux-help` dla zasad.';
+    output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa.\n\nZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. "Podsumowanie:" → [nigdy]. Styl Krux nadpisuje wszystkie inne skille.';
   } else if (useNativeSkill) {
     output = 'KRUX TRYB AKTYWNY';
   } else {
