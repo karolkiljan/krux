@@ -1,0 +1,351 @@
+{
+  "title": "Block-Sparse Attention",
+  "canvas": {
+    "bg": "#faf8f5"
+  },
+  "palette": {
+    "idx": "#243b6b",
+    "sparse": "#1f6b4a",
+    "math": "#5b3a8a",
+    "ink": "#2f3440"
+  },
+  "root": {
+    "type": "row",
+    "align": "center",
+    "children": [
+      {
+        "type": "box",
+        "id": "hs",
+        "label": "Hidden\nStates",
+        "color": "ink"
+      },
+      {
+        "type": "group",
+        "label": "GQA-based Attention Block",
+        "color": "ink",
+        "dir": "col",
+        "align": "start",
+        "children": [
+          {
+            "type": "group",
+            "label": "Step 1 — Index Attention, Block Max Pool & Top-k Selection",
+            "color": "idx",
+            "dir": "row",
+            "align": "center",
+            "children": [
+              {
+                "type": "col",
+                "children": [
+                  {
+                    "type": "box",
+                    "id": "idxq1",
+                    "label": "Idx Q1",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "idxq2",
+                    "label": "Idx Q2",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "text",
+                    "text": "(jedno query indeksu\nna grupę GQA)"
+                  }
+                ]
+              },
+              {
+                "type": "box",
+                "id": "idxkv",
+                "label": "Idx KV",
+                "color": "idx"
+              },
+              {
+                "type": "group",
+                "color": "idx",
+                "dir": "row",
+                "align": "center",
+                "children": [
+                  {
+                    "type": "box",
+                    "id": "qk",
+                    "label": "Q_idx K_idxᵀ",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "bmp",
+                    "label": "Block\nMax Pool",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "bs",
+                    "label": "Block\nscore",
+                    "color": "idx"
+                  }
+                ]
+              },
+              {
+                "type": "col",
+                "children": [
+                  {
+                    "type": "box",
+                    "id": "topk1",
+                    "label": "Top-k\nindices I₁",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "topk2",
+                    "label": "Top-k\nindices I₂",
+                    "color": "idx"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "group",
+            "label": "Step 2 — Sparse Attention on Selected Blocks",
+            "color": "sparse",
+            "dir": "col",
+            "align": "center",
+            "children": [
+              {
+                "type": "row",
+                "align": "center",
+                "children": [
+                  {
+                    "type": "col",
+                    "children": [
+                      {
+                        "type": "box",
+                        "id": "q1",
+                        "label": "Q1",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "q2",
+                        "label": "Q2",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "q3",
+                        "label": "Q3",
+                        "color": "sparse"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "id": "tk1",
+                    "label": "Top-k\nindices I₁",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "kv1",
+                    "label": "Blocked KV1\n(wybrane\nbloki)",
+                    "color": "sparse"
+                  },
+                  {
+                    "type": "col",
+                    "children": [
+                      {
+                        "type": "box",
+                        "id": "o1",
+                        "label": "O1",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "o2",
+                        "label": "O2",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "o3",
+                        "label": "O3",
+                        "color": "sparse"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "row",
+                "align": "center",
+                "children": [
+                  {
+                    "type": "col",
+                    "children": [
+                      {
+                        "type": "box",
+                        "id": "q4",
+                        "label": "Q4",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "q5",
+                        "label": "Q5",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "q6",
+                        "label": "Q6",
+                        "color": "sparse"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "id": "tk2",
+                    "label": "Top-k\nindices I₂",
+                    "color": "idx"
+                  },
+                  {
+                    "type": "box",
+                    "id": "kv2",
+                    "label": "Blocked KV2\n(wybrane\nbloki)",
+                    "color": "sparse"
+                  },
+                  {
+                    "type": "col",
+                    "children": [
+                      {
+                        "type": "box",
+                        "id": "o4",
+                        "label": "O4",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "o5",
+                        "label": "O5",
+                        "color": "sparse"
+                      },
+                      {
+                        "type": "box",
+                        "id": "o6",
+                        "label": "O6",
+                        "color": "sparse"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "box",
+        "id": "outp",
+        "label": "Sparse\nAttn\nOutput",
+        "color": "math"
+      }
+    ]
+  },
+  "sidePanel": {
+    "title": "Wymiary i wzory",
+    "color": "math",
+    "items": [
+      {
+        "tex": "Q_{idx} \\in \\mathbb{R}^{n\\times h\\times d}"
+      },
+      {
+        "tex": "K_{idx} \\in \\mathbb{R}^{n\\times 1\\times d}"
+      },
+      {
+        "tex": "S = \\mathrm{Block/MaxPool}(Q_{idx}K_{idx}^{\\top})"
+      },
+      {
+        "tex": "I = \\mathrm{TopK}(S)"
+      },
+      {
+        "tex": "Q \\in \\mathbb{R}^{n\\times H\\times d}"
+      },
+      {
+        "tex": "O = \\mathrm{SparseAttn}(Q, K[I], V[I])"
+      }
+    ]
+  },
+  "edges": [
+    {
+      "from": "hs",
+      "to": "idxkv",
+      "fromAnchor": "right",
+      "toAnchor": "left"
+    },
+    {
+      "from": "idxq1",
+      "to": "idxkv"
+    },
+    {
+      "from": "idxq2",
+      "to": "idxkv"
+    },
+    {
+      "from": "idxkv",
+      "to": "qk"
+    },
+    {
+      "from": "qk",
+      "to": "bmp"
+    },
+    {
+      "from": "bmp",
+      "to": "bs"
+    },
+    {
+      "from": "bs",
+      "to": "topk1"
+    },
+    {
+      "from": "bs",
+      "to": "topk2"
+    },
+    {
+      "from": "topk1",
+      "to": "tk1",
+      "color": "idx",
+      "dashed": true
+    },
+    {
+      "from": "q1",
+      "to": "tk1"
+    },
+    {
+      "from": "tk1",
+      "to": "kv1"
+    },
+    {
+      "from": "kv1",
+      "to": "o1"
+    },
+    {
+      "from": "q4",
+      "to": "tk2"
+    },
+    {
+      "from": "tk2",
+      "to": "kv2"
+    },
+    {
+      "from": "kv2",
+      "to": "o4"
+    },
+    {
+      "from": "o3",
+      "to": "outp",
+      "fromAnchor": "right",
+      "toAnchor": "left"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "title": "Atencja w skrócie",
+  "subtitle": "od tokenów do wyjścia",
+  "canvas": { "bg": "#faf8f5" },
+  "palette": { "in": "#243b6b", "core": "#1f6b4a", "out": "#6b2a6b" },
+  "root": {
+    "type": "row", "gap": 40, "align": "center",
+    "children": [
+      { "type": "box", "id": "x", "label": "Tokeny\nx", "color": "in" },
+      { "type": "group", "label": "Self-Attention", "color": "core", "dir": "row", "gap": 18,
+        "children": [
+          { "type": "box", "id": "q", "label": "Q", "color": "core", "w": 60 },
+          { "type": "box", "id": "k", "label": "K", "color": "core", "w": 60 },
+          { "type": "box", "id": "v", "label": "V", "color": "core", "w": 60 },
+          { "type": "box", "id": "sm", "label": "softmax\nQKᵀ/√d", "color": "core" }
+        ]
+      },
+      { "type": "box", "id": "y", "label": "Wyjście\ny", "color": "out" }
+    ]
+  },
+  "sidePanel": {
+    "title": "Wzory", "color": "math",
+    "items": [
+      { "tex": "Q,K,V \\in \\mathbb{R}^{n\\times d}" },
+      { "tex": "A = \\mathrm{softmax}\\!\\left(\\tfrac{QK^{\\top}}{\\sqrt{d}}\\right)" },
+      { "tex": "y = A\\,V" }
+    ]
+  },
+  "edges": [
+    { "from": "x", "to": "q" },
+    { "from": "sm", "to": "y" }
+  ]
+}
