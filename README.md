@@ -16,7 +16,7 @@
 
 Ork wiedzieć dużo. Ork gadać mało. Claude Code słuchać.
 
-Redukcja tokenów ~55% avg (12 promptów, haiku). Najlepiej na bugfixach i setupie.
+Mniej tokenów, pełna treść techniczna. Najmocniej czuć na bugfixach i setupie.
 
 ## Przed i po
 
@@ -56,20 +56,6 @@ Redukcja tokenów ~55% avg (12 promptów, haiku). Najlepiej na bugfixach i setup
 </table>
 
 **Ten sam fakt. Mniej słów. Ork wiedzieć dużo - ork nie gadać dużo.**
-
-```
-┌─────────────────────────────────────────────────┐
-│  bugfix / setup      ████████████████ 72–76%    │
-│  code-review         █████████████░░░ 65%       │
-│  debugging           ████████████░░░░ 37–59%    │
-│  architecture        ██████████░░░░░░ 53%       │
-│  devops / refactor   █████████░░░░░░░ 42–49%    │
-│  explanation         ████████░░░░░░░░ 44%       │
-│  RAZEM               ███████████░░░░░ 55%       │
-│                                                 │
-│  TREŚĆ TECHNICZNA    ████████████████ 100%      │
-└─────────────────────────────────────────────────┘
-```
 
 ## Dlaczego ork - nie tylko kompresja
 
@@ -135,7 +121,6 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 | `/krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
 | `/krux-bump <patch\|minor\|major\|X.Y.Z>` | Atomowy bump wersji w 3 plikach (package.json, plugin.json, marketplace.json) |
 | `/krux-release <bump-spec> [— opis]` | Release flow: bump + commit `feat: vX.Y.Z — opis` + tag `vX.Y.Z` |
-| `/krux-stats [--all \| --session <id> \| --last <N>]` | Statystyki tokenów z logu — ile Krux zaoszczędził per sesja/łącznie |
 | `/krux-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania

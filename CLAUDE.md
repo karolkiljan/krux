@@ -15,12 +15,10 @@ Plugin działa na dwóch niezależnych osiach:
 
 | Hook | Plik | Kiedy | Rola |
 |------|------|-------|------|
-| `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup) lub krótki reminder (resume/compact). Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
+| `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
 | `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active`. |
 | `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
 | `Stop` | `hooks/context_watch.js` | koniec tury modelu | Czyta tail transcriptu (128KB), sumuje `usage` tokenów. Gdy > threshold → ostrzeżenie przez stderr + exit 2. Cooldown 300s + delta 20k tokenów. |
-| `PreCompact` | `hooks/precompact.js` | przed /compact | Odczytuje `{cwd}/.claude/compact_notes.md` i wstrzykuje do summary. Kasuje plik po użyciu (notatki jednorazowe). |
-| `PreToolUse` | `hooks/version-sync-guard.js` | przed Edit/Write/MultiEdit | Gdy edytowany `package.json`, `.claude-plugin/plugin.json` lub `.claude-plugin/marketplace.json`, porównuje wszystkie trzy wersje. Rozjazd → exit 2 z instrukcją `/krux-bump`. Chroni wymóg synchronizacji. |
 | `PostToolUse` | `hooks/auto-test.js` | po Edit/Write/MultiEdit | Gdy zmieniony plik w `hooks/*.js` lub `test/*.js` w repo `krux`, odpala `npm test`. Wynik (OK / tail padniętych) idzie do modelu przez stdout. Opt-out: `KRUX_AUTO_TEST=off`. |
 
 **Kolejność UserPromptSubmit:** oba hooki (`krux-toggle`, `krux-flow-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
@@ -38,13 +36,12 @@ Plugin działa na dwóch niezależnych osiach:
 | `~/.claude/.krux-context-watch-off` | user, `krux-context-threshold` | `context_watch.js` | Marker opt-out samego context_watch (persona dalej działa). Istnienie = OFF. Powstał, bo env z settings.json nie dociera do child procesów hooków. |
 | `~/.claude/.krux-context-threshold` | user, `krux-context-threshold` | `context_watch.js` | Override wartości progu (jedna liczba). Precedencja: plik > env > default 85000. Nie wymaga restartu Claude Code. |
 | `{transcript_dir}/{session_id}.context_watch_ts` | `context_watch.js` | `context_watch.js` | Stan cooldownu (`timestamp:lastTokens`). Per-sesja. |
-| `{cwd}/.claude/compact_notes.md` | user/model | `precompact.js` | Notatki dla PreCompact. Jednorazowe — hook kasuje po użyciu. |
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag dla UI. Slash command `/krux:krux` włącza tylko `.krux-active` (jednorazowe), nie pisze do `.krux-mode`. Dzięki temu jednorazowa aktywacja nie nadpisuje globalnego opt-out użytkownika.
 
 ## Skille — jak są ze sobą powiązane
 
-- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA + Słownik + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. Pliki referencyjne (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) ładowane przez Claude natywnie na żądanie wg sekcji "Pliki referencyjne". Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body — patrz `docs/experiment-native-skill.md`.
+- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + KODEKS ROBOTY + Słownik + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. Dwie osie zachowania: **4 PRAWA** = jak Krux mówi (głos, kompresja), **KODEKS ROBOTY** = jak Krux buduje kod (granica przed robotą, selektywny zwiad, reuse, kontynuacja patternu, czystość, weryfikacja + kontrakt raportu). Kodeks obowiązuje przy każdej zmianie kodu, niezależnie od głosu. Pliki referencyjne (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) ładowane przez Claude natywnie na żądanie wg sekcji "Pliki referencyjne". Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body — patrz `docs/experiment-native-skill.md`.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
 - `krux-commit`, `krux-review`, `krux-compress`, `krux-help`, `krux-context-threshold`, `krux-bump`, `krux-release` — sloty komend. Każdy skill rejestruje slash `/krux:{name}` automatycznie (spec: skill taking precedence over commands/). Argumenty przez `$ARGUMENTS` w SKILL.md, autocomplete hint przez `argument-hint` we frontmatterze.
 - `krux-context-threshold` — jedyny skill modyfikujący konfigurację. Zapisuje `~/.claude/.krux-context-threshold` (plik z wartością progu) i `~/.claude/.krux-context-watch-off` (marker opt-out). Nie dotyka `settings.json`.
@@ -73,7 +70,7 @@ Plugin działa na dwóch niezależnych osiach:
 
 **Tail-only parsing transcriptu.** Freshest `usage` entry zawsze na końcu. 128KB tail pokrywa kilka ostatnich tur nawet przy dużych payloadach (`context_watch.js:58-72`).
 
-**Resume/compact → krótki reminder zamiast pełnego SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Przy compact PreCompact hook wstrzykuje notatki. Pełne SKILL.md tylko przy `startup` (`activate.js:41-55`).
+**Resume → krótki reminder, compact → pełny reinject SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Compact przepisuje kontekst, więc `activate.js` ponownie wstrzykuje pełne SKILL.md, tak samo jak przy `startup` (`activate.js:41-55`).
 
 **File-based opt-out i threshold dla context_watch.** Claude Code nie propaguje `env` z `settings.json` do child procesów hooków (empiryczne: `process.env.KRUX_CONTEXT_THRESHOLD` i `KRUX_CONTEXT_WATCH` puste w hooku mimo ustawienia w settings). Dlatego `context_watch.js` czyta pliki w `~/.claude/`: `.krux-context-watch-off` (marker opt-out, sprawdzany przed env) i `.krux-context-threshold` (wartość progu, precedencja plik > env > default). Zaletę: zmiana działa od razu, bez restartu Claude Code — następny Stop hook już widzi nową wartość.
 
@@ -88,13 +85,11 @@ Pokryte hooki:
 - `krux-flow-toggle.js` — toggle flag, emit JSON, per-turn reminder, aliasy (`test/krux-flow-toggle.test.js`)
 - `krux-config.js` — getDefaultMode resolution order (env > plik > default) (`test/krux-config.test.js`)
 - `context_watch.js` — opt-out (env + mode), threshold, transcript parsing (JSONL, malformed lines, message.usage vs top-level), cooldown + delta logic (`test/context-watch.test.js`)
-- `precompact.js` — notes injection + one-shot deletion, empty file edge case (`test/precompact.test.js`)
-- `activate.js` — startup vs resume/compact branch, SKILL.md frontmatter strip, statusline copy, setup prompts (`test/activate.test.js`)
-- `version-sync-guard.js` — detekcja strzeżonych ścieżek, porównanie wersji, blok exit 2, edge case brakujących plików (`test/version-sync-guard.test.js`)
+- `activate.js` — startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts (`test/activate.test.js`)
 - `auto-test.js` — matcher ścieżki (`hooks/*.js`, `test/*.js`, `agents/*.{md,json}`), spawn `npm test`, propagacja wyniku, ETIMEDOUT z `KRUX_AUTO_TEST_TIMEOUT_MS`, opt-out `KRUX_AUTO_TEST=off`, guard „nie repo krux" (`test/auto-test.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
-- `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, PreCompact konsumuje compact_notes.md, version-sync-guard blokada) (`test/integration.test.js`)
+- `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md) (`test/integration.test.js`)
 
 **Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_CONTEXT_WATCH=off` ustawione globalnie i zanieczyścić testy.
 
@@ -108,7 +103,7 @@ Pokryte hooki:
 
 ## Wersjonowanie
 
-`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` i `package.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych. Bumpować wszystkie razem — najłatwiej przez `/krux-bump` albo `/krux-release`. Hook `version-sync-guard` blokuje edycję gdy wersje już rozjechane.
+`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` i `package.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych. Bumpować wszystkie razem — najłatwiej przez `/krux-bump` albo `/krux-release`.
 
 ## Publikacja
 

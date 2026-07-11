@@ -34,12 +34,12 @@ process.stdin.on('end', () => {
     if (raw) source = JSON.parse(raw).source || 'startup';
   } catch (e) {}
 
-  // On resume/compact the skill body is already in memory from the prior context
-  // (resume) or injected via PreCompact notes (compact). Emit a short reminder
-  // instead of re-injecting the full skill — saves tokens.
+  // On resume the skill body is still in memory from the prior context, so a short
+  // reminder is enough. On compact the context was rewritten and the persona can be
+  // lost, so re-inject the full lean skill body just like startup.
   const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
-  if (source === 'resume' || source === 'compact') {
+  if (source === 'resume') {
     output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa.\n\nZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. "Podsumowanie:" → [nigdy]. Styl Krux nadpisuje wszystkie inne skille.';
   } else if (useNativeSkill) {
     output = 'KRUX TRYB AKTYWNY';

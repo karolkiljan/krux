@@ -64,7 +64,7 @@ test('mode=off: removes flag, emits "OK", exits 0', () => {
   });
 });
 
-// --- mode=on: startup vs resume/compact ---
+// --- mode=on: startup/compact (full body) vs resume (short reminder) ---
 
 test('mode=on + source=startup: emits SKILL.md body with KRUX header', () => {
   withTempHome(home => {
@@ -99,13 +99,15 @@ test('mode=on + source=resume: emits short reminder (no full SKILL.md)', () => {
   });
 });
 
-test('mode=on + source=compact: emits short reminder', () => {
+test('mode=on + source=compact: re-injects full SKILL.md body (context was rewritten)', () => {
   withTempHome(home => {
     writeMode(home, 'on');
     const r = runHook(home, { source: 'compact' });
     assert.equal(r.status, 0);
-    assert.match(r.stdout, /persona Krux dalej działa/);
-    assert.doesNotMatch(r.stdout, /PRAWO 1/);
+    assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+    // Compact rewrites context → full persona body must return, not just a reminder.
+    assert.match(r.stdout, /PRAWO 1/);
+    assert.doesNotMatch(r.stdout, /persona Krux dalej działa/);
   });
 });
 

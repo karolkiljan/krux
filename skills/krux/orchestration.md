@@ -19,7 +19,7 @@ Krux ocenia zadanie i dobiera formację. Nikt nie prosi — kontekst mówi.
 
 **SOLO — jeden ork:** zadanie wąskie, jedna domena, jeden plik/obszar.
 - `napraw bug w krux-toggle.js` → ork-tropiciel
-- `napisz testy dla precompact` → ork-sprawdzacz
+- `napisz testy dla context_watch` → ork-sprawdzacz
 
 **ŁAŃCUCH — sekwencja orków:** output A = input B, kolejność wymuszona.
 - `zrozum bug → napraw` → badacz → tropiciel

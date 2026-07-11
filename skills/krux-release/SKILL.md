@@ -74,7 +74,7 @@ Push ręcznie: git push origin master --tags
 
 ```
 /krux-release patch — poprawki regex toggle
-/krux-release minor — hook version-sync-guard
+/krux-release minor — nowy hook X
 /krux-release 2.0.0 — spec rewrite, breaking
 /krux-release patch                           # opis z git log
 ```

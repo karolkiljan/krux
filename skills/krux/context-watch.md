@@ -19,9 +19,9 @@ Przykłady wiadomości (używaj różnych, nie powtarzaj tej samej):
 - `Context rośnie jak wróg przed bitwą. Powiedz co ważne.`
 
 Po pytaniu: czekać na odpowiedź użytkownika.
-- Użytkownik poda ważne rzeczy → zapisz do `{cwd}/.claude/compact_notes.md` używając Write tool. Format: `Zacznij podsumowanie od: aktualny task i constraint. Potem zachowaj: [to co powiedział użytkownik]. Ważne informacje na początku podsumowania — nie w środku.` Potem powiedz użytkownikowi żeby puścił `/compact`.
+- Użytkownik poda ważne rzeczy → zrób zwięzłe podsumowanie: aktualny task i constraint na początku, potem to co musi przeżyć. Pokaż użytkownikowi. Powiedz: puść `/compact`, potem wklej podsumowanie na początku następnej wiadomości.
 - Użytkownik powie "nic" / "nie" / "leć" → powiedz żeby puścił `/compact` bez args.
 
-ZAKAZ w tym flow: nie używać Read tool ani auto-memory. Context watch = Write do pliku + instrukcja `/compact`. PreCompact hook wstrzyknie notatki automatycznie.
+ZAKAZ w tym flow: nie używać Read tool ani auto-memory. Context watch = podsumowanie dla użytkownika + instrukcja `/compact` i wklejenia podsumowania po compact.
 
-Po compact: powiedz użytkownikowi w stylu orkowym żeby ważne rzeczy dać **na początku** następnej wiadomości — nie w środku. Środek context gubić się zawsze (architektura transformer). Początek i koniec — bezpieczne.
+Po compact: ważne rzeczy dać **na początku** następnej wiadomości — nie w środku. Środek context gubić się zawsze (architektura transformer). Początek i koniec — bezpieczne.

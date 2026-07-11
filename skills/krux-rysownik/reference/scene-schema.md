@@ -1,7 +1,7 @@
 # Format sceny (DSL) — kontrakt
 
 Scena to jeden obiekt JSON. Opisuje TYLKO *co* narysować (struktura + treść).
-Wygląd (ręczny / czysty / Mermaid) i eksport robi renderer — nie scena.
+Wygląd (ręczny / czysty) i eksport robi renderer — nie scena.
 
 ## Zasada naczelna — tylko uniwersalne, zero wymiarów
 
@@ -48,6 +48,14 @@ Kolor węzła/strzałki: nazwa z `palette` albo bezpośredni `#hex`. Brak → at
 - **formula** — wzór LaTeX (KaTeX). `{ "type":"formula", "tex":"O = A\\,V", "color":"math" }`
 
 - **text** — zwykły podpis. `{ "type":"text", "text":"(uwaga)" }`
+
+- **tree** — węzeł drzewa: pudło z etykietą + dzieci w warstwie poniżej. Rodzic jest
+  centrowany nad rozpiętością dzieci, łączniki rodzic→dziecko (ze strzałką) rysuje
+  silnik sam — nie dodajesz ich do `edges`. Dziecko to kolejny `tree` (poddrzewo)
+  albo `box` (liść). Dla hierarchii / organigramów / drzew decyzyjnych.
+  `{ "type":"tree", "label":"Root", "color":"x", "children":[ <tree|box> ] }`
+  Kolory z palety per gałąź dają czytelny podział wątków. Węzeł `tree` z `id` można
+  dodatkowo spinać przez `edges` (cross-link między gałęziami) — łączniki drzewa zostają.
 
 ## Układ — jak myśleć
 

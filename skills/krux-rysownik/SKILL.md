@@ -35,12 +35,13 @@ zwykle NIE musisz pytać o styl z góry; budujesz raz, user klika resztę.
 2. **Rozłóż wiedzę na strukturę.** Wypisz w głowie: bloki/etapy, gałęzie,
    przepływ danych (co → co), kluczowe wzory. To szkielet sceny.
 3. **Skomponuj scenę** wg `reference/scene-schema.md`:
-   - hierarchia = zagnieżdżone `group` (dir row/col/grid),
-   - przepływ = `edges` po `id`,
+   - przepływ/pipeline = zagnieżdżone `group` (dir row/col/grid) + `edges` po `id`,
+   - hierarchia/organigram/drzewo decyzyjne = `tree` (rodzic centrowany nad dziećmi,
+     łączniki rysuje silnik — nie dodajesz `edges`),
    - matematyka = `sidePanel` lub węzły `formula`,
    - kolory per gałąź w `palette`.
-   Wzoruj się na `reference/examples/sparse-attention.json` (bogaty) i
-   `simple-flow.json` (prosty).
+   Wzoruj się na `reference/examples/sparse-attention.json` (bogaty),
+   `simple-flow.json` (prosty) i `tree-hierarchy.json` (drzewo).
 4. **Zapisz scenę** do pliku, np. `<temat>.scene.json` (w katalogu roboczym usera
    albo /tmp jeśli nie wskazano).
 5. **Zbuduj:** użyj `scripts/build.js` z KATALOGU TEGO SKILLA (przy wczytaniu
@@ -51,8 +52,7 @@ zwykle NIE musisz pytać o styl z góry; budujesz raz, user klika resztę.
    ```
    build.js waliduje scenę (spójność id w edges) i wypisuje ścieżkę pliku.
 6. **Oddaj userowi** ścieżkę do `.html`. Powiedz: otwórz w przeglądarce; na górze
-   przełączasz styl (Ręczny/Czysty/Mermaid) i klikasz eksport (PNG / SVG /
-   .excalidraw).
+   przełączasz styl (Ręczny/Czysty) i klikasz eksport (PNG / SVG / .excalidraw).
 
 Opcjonalnie `--style hand|clean` ustawia styl startowy (domyślnie hand).
 
@@ -80,6 +80,12 @@ Opcjonalnie `--style hand|clean` ustawia styl startowy (domyślnie hand).
 Jeśli Node nie działa: skopiuj `template/rysownik.html`, w kopii podmień
 `/*__SCENE__*/ null` na `/*__SCENE__*/ <twój JSON>` i zapisz jako `.html`.
 To jedyna zmiana, której wymaga szablon.
+
+**Uwaga bezpieczeństwa.** JSON ląduje wewnątrz `<script>`. W ręcznej podmianie
+zescapuj każde `<` na sześcioznakową sekwencję JSON-unicode (backslash, litera
+u, cyfry 0 0 3 c) — parser JSON to zje, a parser HTML nie złamie skryptu.
+Inaczej `</script>` w treści sceny wybija się z bloku i odpala dowolny
+HTML/JS (XSS). `build.js` robi ten escape sam; fallback nie — pilnujesz go ręcznie.
 
 ## Dobre nawyki
 
