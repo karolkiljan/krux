@@ -85,51 +85,25 @@ test('"stop krux" turns mode OFF and removes active flag', () => {
   });
 });
 
-test('Polish diacritics: "włącz krux" works', () => {
-  withTempHome(home => {
-    const r = runHook(home, 'włącz krux');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'on');
-  });
+test('ON aliases: diacritics, ASCII fallback, "start krux", "aktywuj krux"', () => {
+  for (const phrase of ['włącz krux', 'wlacz krux', 'start krux', 'aktywuj krux']) {
+    withTempHome(home => {
+      const r = runHook(home, phrase);
+      assert.equal(r.status, 0, `phrase=${phrase} should exit 0`);
+      assert.equal(readMode(home), 'on', `phrase=${phrase} should turn mode on`);
+    });
+  }
 });
 
-test('ASCII fallback: "wlacz krux" works (no diacritics)', () => {
-  withTempHome(home => {
-    const r = runHook(home, 'wlacz krux');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'on');
-  });
-});
-
-test('"wyłącz krux" turns OFF', () => {
-  withTempHome(home => {
-    runHook(home, 'krux');
-    const r = runHook(home, 'wyłącz krux');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'off');
-  });
-});
-
-test('"normalny tryb" turns OFF', () => {
-  withTempHome(home => {
-    runHook(home, 'krux');
-    const r = runHook(home, 'normalny tryb');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'off');
-  });
-});
-
-test('aliases: "start krux", "aktywuj krux"', () => {
-  withTempHome(home => {
-    const r = runHook(home, 'start krux');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'on');
-  });
-  withTempHome(home => {
-    const r = runHook(home, 'aktywuj krux');
-    assert.equal(r.status, 0);
-    assert.equal(readMode(home), 'on');
-  });
+test('OFF aliases: "wyłącz krux", "normalny tryb"', () => {
+  for (const phrase of ['wyłącz krux', 'normalny tryb']) {
+    withTempHome(home => {
+      runHook(home, 'krux');
+      const r = runHook(home, phrase);
+      assert.equal(r.status, 0, `phrase=${phrase} should exit 0`);
+      assert.equal(readMode(home), 'off', `phrase=${phrase} should turn mode off`);
+    });
+  }
 });
 
 test('unrelated prompt does not change state', () => {
@@ -149,18 +123,13 @@ test('prompt with extra words does NOT trigger (full-message match only)', () =>
   });
 });
 
-test('trim: surrounding whitespace is tolerated', () => {
-  withTempHome(home => {
-    runHook(home, '  krux  ');
-    assert.equal(readMode(home), 'on');
-  });
-});
-
-test('case insensitive: "KRUX" works', () => {
-  withTempHome(home => {
-    runHook(home, 'KRUX');
-    assert.equal(readMode(home), 'on');
-  });
+test('normalization: trim whitespace and case insensitivity are tolerated', () => {
+  for (const phrase of ['  krux  ', 'KRUX']) {
+    withTempHome(home => {
+      runHook(home, phrase);
+      assert.equal(readMode(home), 'on', `phrase=${JSON.stringify(phrase)} should turn mode on`);
+    });
+  }
 });
 
 test('malformed stdin: hook exits cleanly', () => {
