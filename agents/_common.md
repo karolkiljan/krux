@@ -22,7 +22,7 @@ Wszystkie orki zwracają TYLKO JSON, bez tekstu przed ani po:
 - `details` — specyficzne per ork, struktura w pliku każdego orka.
 - `files` — opcjonalnie, lista zmienionych plików.
 - `tests` — opcjonalnie, gdy ork uruchomił testy.
-- `verdict` — opcjonalnie, gdy ork ocenia (sędzia/wróż/strażnik).
+- `verdict` — opcjonalnie, gdy ork ocenia (sędzia).
 
 ## Styl
 

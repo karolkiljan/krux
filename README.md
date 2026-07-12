@@ -96,7 +96,7 @@ Każdy ork zwraca standardowy JSON z polami: `status` (ok/warning/error), `summa
 Krux sam ocenia sytuację i dobiera formację — nie musisz nic włączać:
 
 - **Solo** — wąskie zadanie, jedna domena → jeden ork.
-- **Łańcuch** — output A = input B (np. `zrozum → napraw → sprawdź`) → badacz → tropiciel → sprawdzacz.
+- **Łańcuch** — output A = input B (np. `zrozum → napraw → sprawdź`) → tropiciel → kowal → tester.
 - **Równolegle** — 2+ niezależne zadania (różne pliki, bez wspólnego stanu) → wielu orków jednocześnie.
 
 Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (konflikt edycji), łańcuch bez zależności (zbędna sekwencja), ork do trywialnego zadania (marnotrawstwo).
