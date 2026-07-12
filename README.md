@@ -74,26 +74,18 @@ Krux nie gadać więcej niż trzeba.
 
 ## Orkowie — armia generala Krux
 
-Krux teraz **general**. Dowodzi 14 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `@krux:ork-nazwa`.
+Krux teraz **general**. Dowodzi 6 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `@krux:ork-nazwa`.
 
 ### Kiedy który ork się odpala
 
 | Ork | Rola | Frazy które go wzywają |
 |-----|------|------------------------|
-| `@krux:ork-architekt` | Projekt architektury | „architektura", „projekt", „struktura", „moduły" |
-| `@krux:ork-badacz` | Eksploracja kodu | „znajdź", „gdzie jest", „szukaj", „explore" |
-| `@krux:ork-czysciciel` | Refaktoring (dedup, podział plików, styl) | „refaktoryzuj", „przerób", „uporządkuj", „duplikacja", „podziel plik" |
+| `@krux:ork-burzyciel` | Refaktoring i usuwanie martwego kodu (dedup, podział plików, unused) | „usuń", „wywal", „zburz", „duplikacja", „podziel plik", „martwy kod" |
 | `@krux:ork-kowal` | Backend (API, bazy danych, server) | „backend", „API", „endpoint", „baza danych", „SQL", „server", „model danych" |
 | `@krux:ork-malarz` | UI/frontend | „UI", „frontend", „wygląd", „design", „CSS", „komponent" |
-| `@krux:ork-niszczyciel` | Usuwanie martwego kodu | „usuń", „wywal", „martwy kod", „unused", „nieużywane", „zbędny" |
 | `@krux:ork-sedzia` | Code review | „review", „przejrzyj", „audyt", „ocena kodu" |
-| `@krux:ork-skryba` | Dokumentacja | „dokumentacja", „docs", „opis" |
-| `@krux:ork-sprawdzacz` | Testy/weryfikacja | „test", „testy", „npm test", „verify", „coverage", „unit test", „uruchom testy" |
-| `@krux:ork-straznik` | Audyt hooków pluginu krux | „sprawdź hook", „audytuj hooks", „review hook" |
-| `@krux:ork-tropiciel` | Debugging | „debug", „błąd", „stack trace", „napraw bug", „co pada", „crash" |
-| `@krux:ork-wroz` | Analiza ryzyka | „ryzyko", „co jeśli" |
-| `@krux:ork-wynalazca` | Prototyp, MVP, nowa funkcja | „nowa funkcja", „dodaj funkcję", „feature", „prototype", „MVP" |
-| `@krux:ork-wyrocznia` | Q&A, wyjaśnienia | „wyjaśnij", „co to", „jak działa" |
+| `@krux:ork-tester` | Testy/weryfikacja | „test", „testy", „npm test", „verify", „coverage", „unit test", „uruchom testy" |
+| `@krux:ork-tropiciel` | Debugging i eksploracja kodu | „debug", „błąd", „stack trace", „napraw bug", „co pada", „crash", „znajdź", „gdzie jest", „szukaj", „explore" |
 
 ### Co zwraca ork
 
@@ -114,15 +106,8 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 | Komenda | Co robi |
 |---------|---------|
 | *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
-| `/krux:krux-commit` | Commit message - Conventional Commits, ≤50 znaków |
-| `/krux:krux-review` | Code review - `L42: 🔴 bug: opis. fix.` |
-| `/krux:krux-compress <plik>` | Przepisz markdown w stylu krux bez utraty treści technicznej |
-| `/krux:krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
 | `/krux:krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
-| `/krux:krux-bump <patch\|minor\|major\|X.Y.Z>` | Atomowy bump wersji w 3 plikach (package.json, plugin.json, marketplace.json) |
-| `/krux:krux-release <bump-spec> [— opis]` | Release flow: bump + commit `feat: vX.Y.Z — opis` + tag `vX.Y.Z` |
 | `/krux:krux-rysownik <temat>` | Zbuduj interaktywny diagram HTML z eksportem PNG/SVG/.excalidraw |
-| `/krux:krux-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania
 
@@ -162,9 +147,6 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 **Zmienne środowiskowe:**
 ```bash
 export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
-export KRUX_CONTEXT_THRESHOLD=85000     # próg ostrzeżenia context watch (tokeny)
-export KRUX_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżeniami (sekundy)
-export KRUX_CONTEXT_WATCH=off           # wyłącz context watch (persona krux zostaje)
 ```
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
@@ -182,8 +164,6 @@ off
 ```bash
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
       ~/.claude/.krux-flow-active \
-      ~/.claude/.krux-context-watch-off \
-      ~/.claude/.krux-context-threshold \
       ~/.claude/.krux-statusline-asked \
       ~/.claude/.krux-statusline.sh ~/.claude/.krux-statusline.ps1
 ```

@@ -68,7 +68,7 @@ Doczytuj na żądanie — nie czytaj wszystkiego naraz.
 - `robota.md` — sześć CIĘĆ + kontrakt raportu. **Czytaj gdy:** analizujesz, zmieniasz, testujesz lub raportujesz kod.
 - `moods.md` — BOJOWY / WYTRWAŁY / DUMNY / NEUTRALNY. **Czytaj gdy:** error produkcyjny, refactor legacy, sukces (testy/deploy), albo kontekst wymaga zmiany tonu.
 - `auto-disable.md` — kiedy wyłączyć styl + blend mode (ton Krux, struktura skilla). **Czytaj gdy:** user prosi o wykonanie nieodwracalnej operacji (`DROP TABLE`, `rm -rf`, force push), pyta `co masz na myśli?` / `nie rozumiem`, albo aktywny skill wymaga określonej struktury odpowiedzi (`learning`, `brainstorming`, `plan`).
-- `context-watch.md` — protocol context rot + context watch + flow przez podsumowanie dla użytkownika. **Czytaj gdy:** user wkleił >100 linii, sesja rośnie, hook `context_watch.js` zasygnalizował przekroczenie progu, user mówi "context watch" / "duża sesja".
+- `context-watch.md` — protocol context rot + context watch + flow przez podsumowanie dla użytkownika. **Czytaj gdy:** user wkleił >100 linii, sesja rośnie, user mówi "context watch" / "duża sesja".
 - `orchestration.md` — wzywanie orków, formacje (solo/łańcuch/równolegle), wybór modelu, parsing raportu. **Czytaj gdy:** kontekst pasuje do triggera w `agents/triggers.json`, decyzja o spawnie Agent, wybór sonnet/opus/haiku.
 
 Triggery orków: `agents/triggers.json` (single source of truth).

@@ -2,7 +2,29 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { getDefaultMode } = require('./krux-config');
+
+const VALID_MODES = ['on', 'off'];
+
+// Resolution order for default mode:
+//   1. ~/.claude/.krux-mode (explicit user choice) beats an inherited shell default —
+//      otherwise `stop krux` writes "off" but the next SessionStart silently turns it on.
+//   2. KRUX_DEFAULT_MODE environment variable (initial default only)
+//   3. 'on'
+function getDefaultMode() {
+  try {
+    const claudeMode = fs.readFileSync(
+      path.join(os.homedir(), '.claude', '.krux-mode'), 'utf8'
+    ).trim().toLowerCase();
+    if (VALID_MODES.includes(claudeMode)) return claudeMode;
+  } catch (e) {}
+
+  const envMode = process.env.KRUX_DEFAULT_MODE;
+  if (envMode && VALID_MODES.includes(envMode.toLowerCase())) {
+    return envMode.toLowerCase();
+  }
+
+  return 'on';
+}
 
 const claudeDir = path.join(os.homedir(), '.claude');
 const flagPath = path.join(claudeDir, '.krux-active');

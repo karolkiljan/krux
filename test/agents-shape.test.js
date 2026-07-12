@@ -68,11 +68,9 @@ test('body orka (po frontmatter) ≤50 linii', () => {
 
 test('granty narzędzi są spójne z workflow orków', () => {
   const required = {
-    'ork-czysciciel.md': ['Edit', 'Write', 'Bash'],
+    'ork-burzyciel.md': ['Edit', 'Write', 'Bash'],
     'ork-kowal.md': ['Edit', 'Write', 'Bash'],
     'ork-malarz.md': ['Edit', 'Write'],
-    'ork-straznik.md': ['Bash'],
-    'ork-wroz.md': ['Read', 'Grep'],
   };
 
   for (const [file, tools] of Object.entries(required)) {

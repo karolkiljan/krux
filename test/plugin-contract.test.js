@@ -75,18 +75,6 @@ test('komendy hooków działają, gdy katalog pluginu ma spację', { skip: proce
   }
 });
 
-test('komendy user-only blokują automatyczne wywołanie modelu', () => {
-  const userOnly = [
-    'krux-bump', 'krux-commit', 'krux-compress', 'krux-context-threshold',
-    'krux-help', 'krux-release', 'krux-review',
-  ];
-  for (const name of userOnly) {
-    const content = fs.readFileSync(path.join(ROOT, 'skills', name, 'SKILL.md'), 'utf8');
-    const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)[1];
-    assert.match(frontmatter, /^disable-model-invocation:\s*true$/m, `${name}: brak user-only`);
-  }
-});
-
 test('każdy śledzony katalog skilla rejestruje komendę przez zgodny frontmatter', () => {
   const listed = spawnSync('git', ['ls-files', 'skills/*/SKILL.md'], {
     cwd: ROOT,
@@ -103,12 +91,4 @@ test('każdy śledzony katalog skilla rejestruje komendę przez zgodny frontmatt
     const frontmatter = (content.match(/^---\n([\s\S]*?)\n---/) || [])[1] || '';
     assert.match(frontmatter, new RegExp(`^name:\\s*${directory}\\s*$`, 'm'), `${file}: name nie zgadza się z katalogiem`);
   }
-});
-
-test('release wymaga czystego drzewa i stage\u2019uje dokładnie trzy manifesty', () => {
-  const content = fs.readFileSync(path.join(ROOT, 'skills', 'krux-release', 'SKILL.md'), 'utf8');
-  assert.match(content, /Jeśli drzewo brudne[^\n]+którykolwiek z trzech manifestów/);
-  assert.match(content, /git rev-parse -q --verify "refs\/tags\/vDOCELOWA"/);
-  assert.match(content, /git diff --cached --name-only/);
-  assert.match(content, /git add package\.json \.claude-plugin\/plugin\.json \.claude-plugin\/marketplace\.json/);
 });
