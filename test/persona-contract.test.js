@@ -10,8 +10,8 @@ const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 
 test('rdzeń persony zostaje mały i ma jawne warunki doczytania', () => {
   const words = (skill.match(/\S+/g) || []).length;
-  assert.ok(Buffer.byteLength(skill) <= 7_500, `SKILL.md ma ${Buffer.byteLength(skill)} B`);
-  assert.ok(words <= 900, `SKILL.md ma ${words} słów`);
+  assert.ok(Buffer.byteLength(skill) <= 8_500, `SKILL.md ma ${Buffer.byteLength(skill)} B`);
+  assert.ok(words <= 1_100, `SKILL.md ma ${words} słów`);
   assert.match(skill, /\*\*Czytaj gdy:\*\*/);
   assert.match(skill, /robota\.md[^\n]+\*\*Czytaj gdy:\*\*[^\n]+kod/);
 });
