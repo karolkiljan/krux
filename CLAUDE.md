@@ -34,6 +34,16 @@ Plugin działa na dwóch niezależnych osiach:
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag dla UI. Slash command `/krux:krux` zapisuje tylko `.krux-active`, bez zmiany `.krux-mode`. Dzięki temu jednorazowa aktywacja nie nadpisuje globalnego opt-out użytkownika.
 
+## Dystrybucja — Claude Code i Codex CLI
+
+Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-plugin/plugin.json` (Claude Code) i `.codex-plugin/plugin.json` (Codex CLI). `hooks/` i `skills/` są fizycznie współdzielone — żadnej kopii treści. Jedyne naprawdę osobne artefakty to manifesty i orki (format subagentów się rozjeżdża, patrz niżej).
+
+**Stan między hostami.** `hooks/lib/state-dir.js` eksportuje `stateDir()`: zwraca `process.env.PLUGIN_DATA` gdy ustawione (Codex ustawia ten host-neutralny, zapisywalny katalog per-plugin), inaczej `~/.claude/` (Claude Code, dzisiejsze zachowanie 1:1). `activate.js`, `krux-toggle.js`, `krux-flow-toggle.js` czytają katalog stanu przez ten resolver zamiast twardo kodować `~/.claude/`. Statusline (Claude-Code-specific, brak odpowiednika w Codex) jest owinięty w `if (!process.env.PLUGIN_DATA)` w `activate.js` — pod Codexem sekcja w ogóle się nie wykonuje.
+
+**Orki pod Codex.** Codex nie ma granularnej listy `tools:` — ma tylko `sandbox_mode` (`read-only` | `workspace-write`). `agents/ork-*.md` (Markdown + frontmatter) zostaje jedynym źródłem prawdy dla obu hostów. `scripts/generate-codex-agents.js` czyta te pliki i pisze `agents-codex/*.toml` (format Codeksa: `name`, `description`, `sandbox_mode`, `developer_instructions`). Mapowanie `tools → sandbox_mode`: obecność `Edit` lub `Write` → `workspace-write`, inaczej → `read-only`. Wygenerowane `.toml` są **commitowane** (Codex czyta gotowe pliki, nie odpala generatora sam) — odśwież ręcznie przez `npm run generate:codex-agents` po każdej zmianie w `agents/ork-*.md`. Test `agents-codex-sync.test.js` pilnuje że commitowany output nie jest przestarzały, analogicznie do `triggers-sync.test.js`.
+
+Design pełnego portu: `docs/specs/2026-07-12-codex-port-design.md` (lokalny, niecommitowany).
+
 ## Skille — jak są ze sobą powiązane
 
 - `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** mówią jak Krux mówi; **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`, czytanym przy pracy z kodem. Pozostałe referencje (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) mają jawne warunki doczytania w rdzeniu. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
@@ -71,8 +81,11 @@ Pokrycie:
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md) (`test/integration.test.js`)
-- `plugin-contract` — synchronizacja 3 manifestów, cytowane i żywe komendy hooków, ścieżka pluginu ze spacją, frontmatter skilli zgodny z katalogiem (`test/plugin-contract.test.js`)
+- `plugin-contract` — synchronizacja 4 manifestów, cytowane i żywe komendy hooków, ścieżka pluginu ze spacją, frontmatter skilli zgodny z katalogiem (`test/plugin-contract.test.js`)
 - `persona-contract` — rdzeń persony mały z jawnymi warunkami doczytania, hierarchia/raport/granice/model A-B-C, delegacja nie ucina raport do summary, ork dostaje jawny stan persony (`test/persona-contract.test.js`)
+- `state-dir` — resolver katalogu stanu (`PLUGIN_DATA` vs `~/.claude/`) (`test/state-dir.test.js`)
+- `codex-plugin-contract` — `.codex-plugin/plugin.json` istnieje, wymagane pola, ścieżki żywe (`test/codex-plugin-contract.test.js`)
+- `agents-codex-sync` — `agents-codex/*.toml` zsynchronizowane z `agents/ork-*.md` (`test/agents-codex-sync.test.js`)
 
 **Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_DEFAULT_MODE=off` ustawione globalnie i zanieczyścić testy.
 
@@ -85,7 +98,7 @@ Pokrycie:
 
 ## Wersjonowanie
 
-`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` i `package.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych. Bumpować wszystkie razem ręcznie — test `plugin-contract.test.js` blokuje rozjazd wersji.
+`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `package.json` i `.codex-plugin/plugin.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu Claude Code, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych, `.codex-plugin/plugin.json` dla instalacji przez Codex CLI. Bumpować wszystkie cztery razem ręcznie — test `plugin-contract.test.js` blokuje rozjazd wersji.
 
 ## Publikacja
 
