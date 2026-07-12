@@ -48,7 +48,7 @@ zwykle NIE musisz pytać o styl z góry; budujesz raz, user klika resztę.
    podany jako „Base directory for this skill" — globalnie `~/.claude/skills/krux-rysownik`,
    w pluginie ścieżka instalacji Kruxa). build.js sam znajduje template względem siebie.
    ```bash
-   node "<BASE_DIR>/scripts/build.js" <scena>.json --out <temat>.html
+   node "${CLAUDE_SKILL_DIR}/scripts/build.js" <scena>.json --out <temat>.html
    ```
    build.js waliduje scenę (spójność id w edges) i wypisuje ścieżkę pliku.
 6. **Oddaj userowi** ścieżkę do `.html`. Powiedz: otwórz w przeglądarce; na górze

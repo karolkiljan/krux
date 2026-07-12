@@ -58,7 +58,7 @@ test('"flow off" disables flow mode', () => {
 });
 
 test('aliases: "iterate", "tryb krokowy", "krux-flow"', () => {
-  for (const phrase of ['iterate', 'tryb krokowy', 'krux-flow', 'krux-flow on', 'flow on']) {
+  for (const phrase of ['iterate', 'tryb krokowy', 'krux-flow', 'krux-flow on', 'flow on', '/krux:krux-flow', '/krux:krux-flow on', '/krux:krux-flow naprawić parser']) {
     withTempHome(home => {
       const r = runHook(home, phrase);
       assert.equal(r.status, 0, `phrase=${phrase} should exit 0`);
@@ -68,7 +68,7 @@ test('aliases: "iterate", "tryb krokowy", "krux-flow"', () => {
 });
 
 test('off aliases: "stop flow", "koniec flow", "krux-flow off"', () => {
-  for (const phrase of ['stop flow', 'koniec flow', 'krux-flow off']) {
+  for (const phrase of ['stop flow', 'koniec flow', 'krux-flow off', '/krux:krux-flow off']) {
     withTempHome(home => {
       runHook(home, 'flow');
       const r = runHook(home, phrase);

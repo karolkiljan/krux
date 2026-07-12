@@ -6,6 +6,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+function positiveInt(value, fallback) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { raw += chunk; });
@@ -43,23 +48,23 @@ process.stdin.on('end', () => {
 
   // Threshold resolution: file > env > default. File override lets users
   // change threshold without restarting Claude Code (env is loaded at startup).
-  let threshold = parseInt(process.env.KRUX_CONTEXT_THRESHOLD || '85000', 10);
+  let threshold = positiveInt(process.env.KRUX_CONTEXT_THRESHOLD, 85000);
   try {
-    const fileThreshold = parseInt(
+    const fileThreshold = positiveInt(
       fs.readFileSync(path.join(claudeDir, '.krux-context-threshold'), 'utf8').trim(),
-      10
+      null
     );
-    if (Number.isFinite(fileThreshold) && fileThreshold > 0) threshold = fileThreshold;
+    if (fileThreshold !== null) threshold = fileThreshold;
   } catch (e) {}
 
-  const cooldown = parseInt(process.env.KRUX_CONTEXT_COOLDOWN || '300', 10);
-  const delta = parseInt(process.env.KRUX_CONTEXT_DELTA || '20000', 10);
+  const cooldown = positiveInt(process.env.KRUX_CONTEXT_COOLDOWN, 300);
+  const delta = positiveInt(process.env.KRUX_CONTEXT_DELTA, 20000);
 
   const sessionDir = path.dirname(transcriptPath);
   const cooldownFile = path.join(sessionDir, sessionId + '.context_watch_ts');
 
-  // State: "timestamp:tokens". Re-fire only when BOTH cooldown elapsed AND
-  // context grew by >= delta tokens since last fire. Prevents per-Stop spam.
+  // State: "timestamp:tokens". Re-fire when cooldown elapsed OR context grew
+  // by >= delta tokens since last fire. Prevents spam without hiding fast growth.
   let prevTs = 0;
   let prevTokens = 0;
   if (fs.existsSync(cooldownFile)) {

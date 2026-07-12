@@ -1,9 +1,9 @@
 ---
 name: krux-compress
 description: >
-  Przepisuje plik markdown w stylu krux — oszczędność tokenów ~40%.
+  Przepisuje plik markdown w stylu krux — mniej tokenów bez utraty treści.
   Zachowuje sens, usuwa wodę. Użyj gdy kompresujesz CLAUDE.md, README, dokumentację,
-  lub wywołujesz /krux-compress <plik>.
+  lub wywołujesz /krux:krux-compress <plik>.
 argument-hint: Path to markdown file
 disable-model-invocation: true
 ---

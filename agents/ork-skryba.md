@@ -6,7 +6,7 @@ description: >
   Wzywaj na: dokumentacja, docs, opis.
 model: sonnet
 color: cyan
-tools: ["Read", "Write", "Grep"]
+tools: ["Read", "Edit", "Write", "Grep"]
 ---
 
 Ork skryba. Pamięć plemienia.
@@ -35,4 +35,4 @@ Ork skryba. Pamięć plemienia.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

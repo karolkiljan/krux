@@ -94,6 +94,8 @@ test('mode=on + source=resume: emits short reminder (no full SKILL.md)', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
     assert.match(r.stdout, /persona Krux dalej działa/);
+    assert.match(r.stdout, /nie wymagany format ani strukturę/);
+    assert.doesNotMatch(r.stdout, /nadpisuje wszystkie inne skille/);
     // Full SKILL.md body (e.g., "PRAWO 1") should NOT be present.
     assert.doesNotMatch(r.stdout, /PRAWO 1/);
   });
@@ -210,12 +212,12 @@ test('mode=on writes flag with current mode value', () => {
 
 // --- env override ---
 
-test('KRUX_DEFAULT_MODE=off env overrides .krux-mode file', () => {
+test('.krux-mode file overrides KRUX_DEFAULT_MODE env', () => {
   withTempHome(home => {
     writeMode(home, 'on');
     const r = runHook(home, { source: 'startup' }, { KRUX_DEFAULT_MODE: 'off' });
-    assert.equal(r.stdout, 'OK');
-    assert.equal(hasFlag(home), false);
+    assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+    assert.equal(hasFlag(home), true);
   });
 });
 
@@ -283,7 +285,7 @@ test('statusline: stary plik (>5s mtime) jest atomowo zastąpiony', () => {
   });
 });
 
-test('malformed stdin: defaults to startup, does not crash', () => {
+test('malformed stdin: exits cleanly without activating persona', () => {
   withTempHome(home => {
     writeMode(home, 'on');
     const r = spawnSync('node', [HOOK], {
@@ -293,6 +295,7 @@ test('malformed stdin: defaults to startup, does not crash', () => {
       timeout: 5000,
     });
     assert.equal(r.status, 0);
-    assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+    assert.equal(r.stdout, 'OK');
+    assert.equal(hasFlag(home), false);
   });
 });

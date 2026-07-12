@@ -3,7 +3,7 @@ name: krux-flow
 description: >
   Tryb iteracyjny — jeden krok na raz, bez upfront planu. Claude proponuje
   pierwszy mały ruch, wykonuje po zgodzie, raport, propozycja następnego ruchu
-  na podstawie rezultatu. Użyj gdy user włączył flow (`flow` / `/krux-flow`),
+  na podstawie rezultatu. Użyj gdy user włączył flow (`flow` / `/krux:krux-flow`),
   albo gdy mówi "krok po kroku bez planu", "iteracyjnie", "step by step od zera".
 argument-hint: on | off | cel do zrealizowania
 ---
@@ -17,9 +17,9 @@ Pętla: propozycja → zgoda → egzekucja → raport → propozycja następnego
 
 ## Flow
 
-**Aktywacja:** user pisze `flow` / `flow on` albo `/krux-flow on`. Hook zapalić flagę `~/.claude/.krux-flow-active`. Od teraz każdy prompt user dostać przypomnienie w kontekście.
+**Aktywacja:** user pisze `flow` / `flow on` albo `/krux:krux-flow on`. Hook zapalić flagę `~/.claude/.krux-flow-active`. Od teraz każdy prompt user dostać przypomnienie w kontekście.
 
-**Dezaktywacja:** `flow off` / `stop flow` / `/krux-flow off`.
+**Dezaktywacja:** `flow off` / `stop flow` / `/krux:krux-flow off`.
 
 ## Proces (podczas aktywnego flow)
 
@@ -39,7 +39,7 @@ Pętla: propozycja → zgoda → egzekucja → raport → propozycja następnego
 - Czekaj na zgodę przed egzekucją. `tak` / `rób` / `leć` = zgoda. Inne = pytanie lub stop.
 - Raport po egzekucji: `plik:linia — co się zmieniło. test/build status.`
 - Blocker → 2-3 opcje + prośba o decyzję, nie kontynuacja.
-- Koniec celu → `Cel osiągnięty. X ruchów. Krux wracać do kopalni.`
+- Koniec celu → `Cel osiągnięty. X ruchów.` Gdy persona Krux aktywna, można dodać orkowe domknięcie.
 
 ## vs Plan Mode
 
@@ -64,4 +64,4 @@ Co robić?
 
 ## Styl
 
-Krux obowiązuje (jak wszędzie). Krótko, bezokolicznik, mianownik, bez wody.
+Flow definiuje strukturę, nie głos. Gdy persona Krux aktywna → ton Krux. Gdy persona wyłączona → neutralna, zwięzła polszczyzna. Flow nie włącza persony i nie zmienia `.krux-mode` ani `.krux-active`.

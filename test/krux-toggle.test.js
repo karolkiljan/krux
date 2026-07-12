@@ -39,6 +39,10 @@ function hasActive(home) {
   return fs.existsSync(path.join(home, '.claude', '.krux-active'));
 }
 
+function additionalContext(result) {
+  return result.stdout ? JSON.parse(result.stdout).hookSpecificOutput.additionalContext : '';
+}
+
 test('ignores empty prompt', () => {
   withTempHome(home => {
     const r = runHook(home, '');
@@ -54,6 +58,18 @@ test('"krux" turns mode ON and creates active flag', () => {
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'on');
     assert.equal(hasActive(home), true);
+    assert.match(additionalContext(r), /PRAWO 1/);
+  });
+});
+
+test('slash /krux:krux aktywuje runtime bez nadpisania trwałego mode', () => {
+  withTempHome(home => {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'off');
+    const r = runHook(home, '/krux:krux');
+    assert.equal(r.status, 0);
+    assert.equal(readMode(home), 'off');
+    assert.equal(hasActive(home), true);
   });
 });
 
@@ -64,6 +80,8 @@ test('"stop krux" turns mode OFF and removes active flag', () => {
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
     assert.equal(hasActive(home), false);
+    assert.match(additionalContext(r), /KRUX PERSONA OFF/);
+    assert.match(additionalContext(r), /Flow zachowuje własny, niezależny stan/);
   });
 });
 

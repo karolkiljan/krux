@@ -36,4 +36,4 @@ Ork sędzia. Bez stronniczości. Prawo jest prawo.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

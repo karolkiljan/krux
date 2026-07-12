@@ -450,6 +450,12 @@ function addBanner(y,W,text,o){
 
 function renderScene(){
   const scene=SCENE; CUR=scene; SEED=0; FONTSCALE=1;
+  // CDN rough.js może być niedostępny offline. Wtedy przejdź na czysty SVG,
+  // zamiast przerwać cały render przed narysowaniem pierwszego pudełka.
+  if(STYLE==="hand" && typeof rough==="undefined"){
+    STYLE="clean";
+    [...document.querySelectorAll("#styleSeg button")].forEach(x=>x.classList.toggle("active",x.dataset.style===STYLE));
+  }
   // budżet szerokości na auto-reflow: okno minus marginesy (i rezerwa na boczny panel wzorów, jeśli jest)
   WBUDGET=Math.max(820,(window.innerWidth||1440)-2*28-2*D.margin-(scene.sidePanel?380:0));
   document.getElementById("stageOuter").style.background=(scene.canvas&&scene.canvas.bg)||scene.bg||"#faf8f5";

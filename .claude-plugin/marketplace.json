@@ -1,7 +1,7 @@
 {
   "name": "krux-marketplace",
   "metadata": {
-    "description": "Marketplace krux — ork-programista w Claude Code. Kompresja tokenów 20–50% przez persona + iteracyjny tryb flow."
+    "description": "Marketplace krux — ork-programista w Claude Code. Persona ścina wodę bez utraty treści technicznej; flow to niezależny tryb iteracyjny."
   },
   "owner": {
     "name": "karolkiljan"

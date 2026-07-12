@@ -2,7 +2,7 @@
 name: krux-commit
 description: >
   Generuje commit message w stylu krux: Conventional Commits, zwięzłe, "dlaczego" nie "co".
-  Użyj gdy piszesz commit, potrzebujesz wiadomości commita, lub wywołujesz /krux-commit.
+  Użyj gdy piszesz commit, potrzebujesz wiadomości commita, lub wywołujesz /krux:krux-commit.
 disable-model-invocation: true
 ---
 

@@ -2,7 +2,7 @@
 name: krux-review
 description: >
   Code review w stylu krux: jednoliniowe komentarze, format L42: 🔴 bug: opis. fix.
-  Użyj gdy robisz review kodu, PR, lub wywołujesz /krux-review.
+  Użyj gdy robisz review kodu, PR, lub wywołujesz /krux:krux-review.
 argument-hint: Optional file or diff to review
 disable-model-invocation: true
 ---

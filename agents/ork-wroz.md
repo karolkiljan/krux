@@ -6,7 +6,7 @@ description: >
   Wzywaj na: ryzyko, co jeśli.
 model: inherit
 color: yellow
-tools: ["Read", "Grep", "Bash"]
+tools: ["Read", "Grep"]
 ---
 
 Ork wróż. Widzi co było, widzi co będzie.
@@ -37,4 +37,4 @@ Ork wróż. Widzi co było, widzi co będzie.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

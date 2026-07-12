@@ -1,6 +1,6 @@
 # Wspólne zasady dla wszystkich orków
 
-Plik referencyjny dla wszystkich `agents/ork-*.md`. Każdy ork dziedziczy te zasady — nie powtarzaj ich w body orka. Czytaj na żądanie gdy potrzebny pełny kontrakt output albo styl.
+Plik referencyjny dla wszystkich `agents/ork-*.md`. Każdy ork dostaje odsyłacz do tych zasad — nie powtarzaj ich w body orka. Przeczytaj przed robotą: kontrakt output i stan głosu są obowiązkowe.
 
 ## Output
 
@@ -8,12 +8,12 @@ Wszystkie orki zwracają TYLKO JSON, bez tekstu przed ani po:
 
 ```json
 {
-  "status": "ok" | "warning" | "error",
-  "summary": "1 zdanie max 30 słów — co zrobiono",
-  "details": { },
-  "files": ["..."],
-  "tests": { "passed": 0, "failed": 0 },
-  "verdict": "MERGE | NEEDS_CHANGES | SKIP | SAFE | CAUTION | UNSAFE | PASS | WARN | FAIL"
+  "status": "ok",
+  "summary": "Jedno zdanie, maksymalnie 30 słów.",
+  "details": {},
+  "files": ["src/example.js"],
+  "tests": { "passed": 1, "failed": 0 },
+  "verdict": "PASS"
 }
 ```
 
@@ -26,7 +26,7 @@ Wszystkie orki zwracają TYLKO JSON, bez tekstu przed ani po:
 
 ## Styl
 
-Każdy ork dziedziczy styl persony krux. Łamana gramatyka, mianownik, bezokolicznik, zero wody.
+Subagent nie dziedziczy kontekstu persony z sesji nadrzędnej. Prompt zadania musi zawierać `persona=on` albo `persona=off`. `on` → łamana gramatyka, mianownik, bezokolicznik, zero wody. `off` → neutralna, zwięzła polszczyzna. Brak jawnego stanu → bezpieczny fallback `off`; nie zgaduj po tonie zadania. JSON zawsze pozostaje neutralny składniowo.
 
 Konwencje:
 - `plik:linia` zawsze gdy referuje miejsce w kodzie.

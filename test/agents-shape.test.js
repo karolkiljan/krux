@@ -16,7 +16,7 @@ function frontmatter(content) {
   return m ? m[1] : '';
 }
 
-test('każdy agent ma frontmatter z name/description/tools', () => {
+test('każdy agent ma wymagany frontmatter', () => {
   const orkFiles = listOrkFiles();
   assert.ok(orkFiles.length > 0, 'brak plików agentów');
 
@@ -26,6 +26,8 @@ test('każdy agent ma frontmatter z name/description/tools', () => {
 
     assert.match(fm, /^name:\s*ork-/m, `${file}: brak name`);
     assert.match(fm, /^description:\s*>/m, `${file}: brak description (folded scalar)`);
+    assert.match(fm, /^model:\s*(inherit|sonnet|opus|haiku)\s*$/m, `${file}: brak lub niepoprawny model`);
+    assert.match(fm, /^color:\s*\S+\s*$/m, `${file}: brak color`);
     assert.match(fm, /^tools:\s*\[/m, `${file}: brak tools`);
   }
 });
@@ -61,5 +63,24 @@ test('body orka (po frontmatter) ≤50 linii', () => {
     const body = m ? m[1] : content;
     const lines = body.split('\n').filter(l => l.length > 0).length;
     assert.ok(lines <= 50, `${file}: body ma ${lines} linii (limit 50)`);
+  }
+});
+
+test('granty narzędzi są spójne z workflow orków', () => {
+  const required = {
+    'ork-czysciciel.md': ['Edit', 'Write', 'Bash'],
+    'ork-kowal.md': ['Edit', 'Write', 'Bash'],
+    'ork-malarz.md': ['Edit', 'Write'],
+    'ork-straznik.md': ['Bash'],
+    'ork-wroz.md': ['Read', 'Grep'],
+  };
+
+  for (const [file, tools] of Object.entries(required)) {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, file), 'utf8');
+    const granted = JSON.parse(`[${content.match(/^tools:\s*\[([^\n]+)\]/m)[1]}]`);
+    for (const tool of tools) {
+      assert.ok(granted.includes(tool), `${file}: workflow wymaga ${tool}`);
+    }
+    assert.equal(new Set(granted).size, granted.length, `${file}: zduplikowany grant`);
   }
 });

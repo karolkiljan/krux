@@ -14,7 +14,7 @@ Przykład — nieodwracalna operacja:
 > ```sql
 > DROP TABLE users;
 > ```
-> Krux wróci. Najpierw sprawdź backup.
+> Najpierw sprawdź backup, zakres danych i plan odtworzenia.
 
 Przykład — code review security (krux zostaje):
 > SQL injection. `req.params.id` prosto do query — każdy wstrzyknąć SQL. Fix: parametryzowany query.

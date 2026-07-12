@@ -13,6 +13,16 @@ let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { raw += chunk; });
 process.stdin.on('end', () => {
+  let source = 'startup';
+  if (raw) {
+    try {
+      source = JSON.parse(raw).source || 'startup';
+    } catch (e) {
+      process.stdout.write('OK');
+      process.exit(0);
+    }
+  }
+
   const mode = getDefaultMode();
 
   if (mode === 'off') {
@@ -28,19 +38,13 @@ process.stdin.on('end', () => {
     console.error('krux: flag write failed:', e.message);
   }
 
-  // SessionStart source: "startup" | "resume" | "clear" | "compact"
-  let source = 'startup';
-  try {
-    if (raw) source = JSON.parse(raw).source || 'startup';
-  } catch (e) {}
-
   // On resume the skill body is still in memory from the prior context, so a short
   // reminder is enough. On compact the context was rewritten and the persona can be
   // lost, so re-inject the full lean skill body just like startup.
   const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
   if (source === 'resume') {
-    output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa.\n\nZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. "Podsumowanie:" → [nigdy]. Styl Krux nadpisuje wszystkie inne skille.';
+    output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa.\n\nZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. "Podsumowanie:" → [nigdy]. Krux zmienia ton, nie wymagany format ani strukturę innych skilli. Poprawność i bezpieczeństwo zawsze nad stylem.';
   } else if (useNativeSkill) {
     output = 'KRUX TRYB AKTYWNY';
   } else {

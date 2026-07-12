@@ -2,8 +2,8 @@
 name: krux-context-threshold
 description: >
   Ustawia próg tokenów dla context watch. Użyj gdy chcesz zmienić próg ostrzeżenia
-  o dużym kontekście, wywołujesz /krux-context-threshold lub podajesz liczbę tokenów.
-  Przykład: /krux-context-threshold 40000
+  o dużym kontekście, wywołujesz /krux:krux-context-threshold lub podajesz liczbę tokenów.
+  Przykład: /krux:krux-context-threshold 40000
 argument-hint: Token count (integer, e.g. 40000) — "off" disables, "on" re-enables
 disable-model-invocation: true
 ---
@@ -35,7 +35,7 @@ Tool: `Write` pustego pliku do `~/.claude/.krux-context-watch-off` — hook czyt
 Potwierdź:
 ```
 Context watch wyłączony. Plik flag: ~/.claude/.krux-context-watch-off.
-Żeby włączyć: /krux-context-threshold on (albo usuń plik).
+Żeby włączyć: /krux:krux-context-threshold on (albo usuń plik).
 ```
 
 ### Przypadek 3 — argument to `on`
@@ -57,7 +57,7 @@ Pokaż stan:
    - Read `~/.claude/.krux-context-threshold` → jeśli istnieje i zawiera liczbę → ta wartość
    - Else env `KRUX_CONTEXT_THRESHOLD` (prawdopodobnie pusty)
    - Else default `85000`
-3. Pokaż użycie: `/krux-context-threshold <liczba>`, `/krux-context-threshold off`, `/krux-context-threshold on`.
+3. Pokaż użycie: `/krux:krux-context-threshold <liczba>`, `/krux:krux-context-threshold off`, `/krux:krux-context-threshold on`.
 
 ## Prawa
 
@@ -69,9 +69,9 @@ Pokaż stan:
 ## Przykłady
 
 ```
-/krux-context-threshold 150000   # podnieś próg
-/krux-context-threshold 40000    # wczesne ostrzeżenie
-/krux-context-threshold off      # wyłącz zupełnie
-/krux-context-threshold on       # włącz z powrotem
-/krux-context-threshold          # pokaż stan
+/krux:krux-context-threshold 150000   # podnieś próg
+/krux:krux-context-threshold 40000    # wczesne ostrzeżenie
+/krux:krux-context-threshold off      # wyłącz zupełnie
+/krux:krux-context-threshold on       # włącz z powrotem
+/krux:krux-context-threshold          # pokaż stan
 ```

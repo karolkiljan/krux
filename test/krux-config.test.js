@@ -43,12 +43,18 @@ test('reads from ~/.claude/.krux-mode when present', () => {
   assert.equal(getDefaultMode(), 'off');
 });
 
-test('env KRUX_DEFAULT_MODE overrides file', () => {
+test('explicit mode file overrides env KRUX_DEFAULT_MODE', () => {
   fs.mkdirSync(path.join(tempHome, '.claude'), { recursive: true });
   fs.writeFileSync(path.join(tempHome, '.claude', '.krux-mode'), 'off');
   process.env.KRUX_DEFAULT_MODE = 'on';
   const { getDefaultMode } = require(CONFIG);
-  assert.equal(getDefaultMode(), 'on');
+  assert.equal(getDefaultMode(), 'off');
+});
+
+test('env KRUX_DEFAULT_MODE supplies default when mode file is absent', () => {
+  process.env.KRUX_DEFAULT_MODE = 'off';
+  const { getDefaultMode } = require(CONFIG);
+  assert.equal(getDefaultMode(), 'off');
 });
 
 test('invalid env value is ignored, falls back to file', () => {

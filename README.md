@@ -24,16 +24,16 @@ Mniej tokenów, pełna treść techniczna. Najmocniej czuć na bugfixach i setup
 <tr>
 <td width="50%">
 
-### Zwykły Claude (81 tokenów)
+### Zwykły Claude
 
-> "Oczywiście, chętnie pomogę! Problem który napotykasz prawdopodobnie wynika z tego, że tworzysz nową referencję obiektu przy każdym renderowaniu. Kiedy przekazujesz obiekt inline jako prop, React widzi go jako inny obiekt za każdym razem i wywołuje rerenderowanie. Powinieneś użyć useMemo do memoizacji obiektu."
+> "Oczywiście, chętnie pomogę! Problem wynika z przekazywania obiektu inline do komponentu opakowanego w React.memo. Przy każdym renderowaniu rodzica powstaje nowa referencja, więc płytkie porównanie propsów uznaje ją za zmianę i nie pomija renderu dziecka. Użyj useMemo ze stabilnymi zależnościami."
 
 </td>
 <td width="50%">
 
-### Krux Claude (18 tokenów)
+### Krux Claude
 
-> "Nowa referencja każdy render. Inline prop → nowy obiekt → rerender. `useMemo`. Zrobione."
+> "`React.memo` child dostaje inline object prop → nowa referencja obala shallow compare przy każdym renderze parenta. Memoizuj obiekt przez `useMemo` ze stabilnymi zależnościami."
 
 </td>
 </tr>
@@ -42,14 +42,14 @@ Mniej tokenów, pełna treść techniczna. Najmocniej czuć na bugfixach i setup
 
 ### Zwykły Claude
 
-> "Świetne pytanie! Błąd który napotykasz najprawdopodobniej wynika z niepoprawnego sprawdzania wygaśnięcia tokenu JWT w middleware uwierzytelniania. Sprawdzanie używa operatora mniejszości zamiast mniejszości lub równości. Pozwól że zaproponuję poprawkę tego problemu."
+> "Świetne pytanie! Middleware sprawdza wygaśnięcie JWT przez `exp < now`. Semantyka `exp` zabrania akceptacji tokenu od tej chwili, więc przy `exp === now` token też musi być wygasły. Zmień warunek na `exp <= now`."
 
 </td>
 <td>
 
 ### Krux Claude
 
-> "Auth middleware padać. Token expiry: `<` zamiast `<=`. Fix linia 14."
+> "JWT expiry: `exp < now` błędnie akceptuje token przy `exp === now`. `exp` obowiązuje do tej chwili, nie włącznie → użyj `exp <= now`."
 
 </td>
 </tr>
@@ -70,34 +70,34 @@ Krux nie gadać więcej niż trzeba.
 | `wiem, że jest błąd` | `wiem: błąd` - bez „że" |
 
 **Górnicza Dolina** uczyć: każde słowo kosztować. Każdy cios musieć trafiać.  
-**Dolina Krzemowa** uczyć: każdy token kosztować magiczna ruda. Model szybszy - myśleć mniej.
+**Dolina Krzemowa** uczyć: każdy token kosztować magiczna ruda. Krótszy output = mniej tokenów do wygenerowania.
 
 ## Orkowie — armia generala Krux
 
-Krux teraz **general**. Dowodzi 14 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `/krux:ork-nazwa`.
+Krux teraz **general**. Dowodzi 14 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `@krux:ork-nazwa`.
 
 ### Kiedy który ork się odpala
 
 | Ork | Rola | Frazy które go wzywają |
 |-----|------|------------------------|
-| ork-architekt | Projekt architektury | „architektura", „projekt", „struktura", „moduły" |
-| ork-badacz | Eksploracja kodu | „znajdź", „gdzie jest", „szukaj", „explore" |
-| ork-czysciciel | Refaktoring (dedup, podział plików, styl) | „refaktoryzuj", „przerób", „uporządkuj", „duplikacja" |
-| ork-kowal | Backend (API, bazy danych, server) | „backend", „API", „endpoint", „baza danych", „SQL" |
-| ork-malarz | UI/frontend | „UI", „frontend", „wygląd", „design", „CSS", „komponent" |
-| ork-niszczyciel | Usuwanie martwego kodu | „usuń", „martwy kod", „unused", „nieużywane", „zbędny" |
-| ork-sedzia | Code review | „review", „przejrzyj", „audyt", „ocena kodu" |
-| ork-skryba | Dokumentacja | „docs", „dokumentacja", „README", „komentarze" |
-| ork-sprawdzacz | Testy/weryfikacja | „test", „testy", „npm test", „verify", „coverage" |
-| ork-straznik | Audyt hooków pluginu krux | po zmianie w `hooks/*.js`, „audytuj hook" |
-| ork-tropiciel | Debugging | „debug", „błąd", „stack trace", „napraw bug", „crash" |
-| ork-wroz | Analiza ryzyka, planowanie | „ryzyko", „co jeśli", „plan", „konsekwencje" |
-| ork-wynalazca | Prototyp, MVP, nowa funkcja | „prototype", „MVP", „nowy", „dodaj funkcję", „szybko" |
-| ork-wyrocznia | Q&A, wyjaśnienia | „wyjaśnij", „co to", „jak działa", „jak zrobić" |
+| `@krux:ork-architekt` | Projekt architektury | „architektura", „projekt", „struktura", „moduły" |
+| `@krux:ork-badacz` | Eksploracja kodu | „znajdź", „gdzie jest", „szukaj", „explore" |
+| `@krux:ork-czysciciel` | Refaktoring (dedup, podział plików, styl) | „refaktoryzuj", „przerób", „uporządkuj", „duplikacja", „podziel plik" |
+| `@krux:ork-kowal` | Backend (API, bazy danych, server) | „backend", „API", „endpoint", „baza danych", „SQL", „server", „model danych" |
+| `@krux:ork-malarz` | UI/frontend | „UI", „frontend", „wygląd", „design", „CSS", „komponent" |
+| `@krux:ork-niszczyciel` | Usuwanie martwego kodu | „usuń", „wywal", „martwy kod", „unused", „nieużywane", „zbędny" |
+| `@krux:ork-sedzia` | Code review | „review", „przejrzyj", „audyt", „ocena kodu" |
+| `@krux:ork-skryba` | Dokumentacja | „dokumentacja", „docs", „opis" |
+| `@krux:ork-sprawdzacz` | Testy/weryfikacja | „test", „testy", „npm test", „verify", „coverage", „unit test", „uruchom testy" |
+| `@krux:ork-straznik` | Audyt hooków pluginu krux | „sprawdź hook", „audytuj hooks", „review hook" |
+| `@krux:ork-tropiciel` | Debugging | „debug", „błąd", „stack trace", „napraw bug", „co pada", „crash" |
+| `@krux:ork-wroz` | Analiza ryzyka | „ryzyko", „co jeśli" |
+| `@krux:ork-wynalazca` | Prototyp, MVP, nowa funkcja | „nowa funkcja", „dodaj funkcję", „feature", „prototype", „MVP" |
+| `@krux:ork-wyrocznia` | Q&A, wyjaśnienia | „wyjaśnij", „co to", „jak działa" |
 
 ### Co zwraca ork
 
-Każdy ork zwraca standardowy JSON z polami: `status` (ok/warning/error), `summary` (1 zdanie dla ciebie), `details` (szczegóły dla kruxa), opcjonalnie `files`, `tests`, `verdict`. Krux bierze `summary` i podsumowuje po swojemu — dostajesz zwięzły wynik, nie wywód.
+Każdy ork zwraca standardowy JSON z polami: `status` (ok/warning/error), `summary` (wynik w 1 zdaniu), `details`, opcjonalnie `files`, `tests`, `verdict`. Krux zaczyna od `summary`, a po nietrywialnej zmianie składa z reszty zwięzły raport: przepływ, powód, kluczowe pliki i wykonana weryfikacja.
 
 ### Wielu orków na raz
 
@@ -114,14 +114,15 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 | Komenda | Co robi |
 |---------|---------|
 | *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
-| `/krux-commit` | Commit message - Conventional Commits, ≤50 znaków |
-| `/krux-review` | Code review - `L42: 🔴 bug: opis. fix.` |
-| `/krux-compress <plik>` | Przepisz markdown w stylu krux, ~40% mniej tokenów |
-| `/krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
-| `/krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
-| `/krux-bump <patch\|minor\|major\|X.Y.Z>` | Atomowy bump wersji w 3 plikach (package.json, plugin.json, marketplace.json) |
-| `/krux-release <bump-spec> [— opis]` | Release flow: bump + commit `feat: vX.Y.Z — opis` + tag `vX.Y.Z` |
-| `/krux-help` | Karta referencyjna - wszystkie prawa i słownik |
+| `/krux:krux-commit` | Commit message - Conventional Commits, ≤50 znaków |
+| `/krux:krux-review` | Code review - `L42: 🔴 bug: opis. fix.` |
+| `/krux:krux-compress <plik>` | Przepisz markdown w stylu krux bez utraty treści technicznej |
+| `/krux:krux-context-threshold <N>` | Ustaw próg tokenów dla context watch (domyślnie 85000) |
+| `/krux:krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
+| `/krux:krux-bump <patch\|minor\|major\|X.Y.Z>` | Atomowy bump wersji w 3 plikach (package.json, plugin.json, marketplace.json) |
+| `/krux:krux-release <bump-spec> [— opis]` | Release flow: bump + commit `feat: vX.Y.Z — opis` + tag `vX.Y.Z` |
+| `/krux:krux-rysownik <temat>` | Zbuduj interaktywny diagram HTML z eksportem PNG/SVG/.excalidraw |
+| `/krux:krux-help` | Karta referencyjna - wszystkie prawa i słownik |
 
 ## Wymagania
 
@@ -165,6 +166,9 @@ export KRUX_CONTEXT_THRESHOLD=85000     # próg ostrzeżenia context watch (toke
 export KRUX_CONTEXT_COOLDOWN=300        # minimalny odstęp między ostrzeżeniami (sekundy)
 export KRUX_CONTEXT_WATCH=off           # wyłącz context watch (persona krux zostaje)
 ```
+
+`KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
+jawny wybór w `~/.claude/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
 
 **Plik stanu** (`~/.claude/.krux-mode`) - automatycznie zarządzany przez hook:
 ```

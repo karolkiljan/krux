@@ -3,14 +3,14 @@ name: krux-bump
 description: >
   Atomowy bump wersji: synchronizuje package.json, .claude-plugin/plugin.json
   i .claude-plugin/marketplace.json. Użyj gdy chcesz podbić wersję pluginu,
-  wywołujesz /krux-bump, albo user mówi "bump wersji", "patch/minor/major", "X.Y.Z".
+  wywołujesz /krux:krux-bump, albo user mówi "bump wersji", "patch/minor/major", "X.Y.Z".
 argument-hint: patch | minor | major | X.Y.Z (np. 1.10.0)
 disable-model-invocation: true
 ---
 
 ## Cel
 
-Jednym ruchem zmienić wersję w trzech plikach źródłowych pluginu. CLAUDE.md:112-114 wymaga synchronizacji — ten skill jest egzekutorem tej reguły.
+Jednym ruchem zmienić wersję w trzech plikach źródłowych pluginu. Sekcja „Wersjonowanie” w CLAUDE.md wymaga synchronizacji — ten skill jest egzekutorem tej reguły.
 
 ## Wykonanie
 
@@ -48,14 +48,14 @@ Wypisz jednym zdaniem: `Wersja NOWA ustawiona. Trzy pliki zsynchronizowane. Czas
 - Nie commituj. Nie taguj. Nie push. To robi `krux-release`.
 - Nie ruszaj innych pól niż `version`.
 - Nie modyfikuj `README.md`, `CHANGELOG.md`, testów — poza scope.
-- Walidacja semver: trzy liczby oddzielone kropkami. Nic więcej. Pre-release (`-rc1`) też dopuszczalny.
+- Walidacja semver: trzy liczby oddzielone kropkami, opcjonalnie suffix pre-release (`-rc1`). Bez build metadata (`+build`).
 
 ## Przykłady
 
 ```
-/krux-bump patch      # 1.9.1 → 1.9.2
-/krux-bump minor      # 1.9.1 → 1.10.0
-/krux-bump major      # 1.9.1 → 2.0.0
-/krux-bump 2.0.0-rc1  # wprost
-/krux-bump            # pokaż obecną + pomoc
+/krux:krux-bump patch      # 1.9.1 → 1.9.2
+/krux:krux-bump minor      # 1.9.1 → 1.10.0
+/krux:krux-bump major      # 1.9.1 → 2.0.0
+/krux:krux-bump 2.0.0-rc1  # wprost
+/krux:krux-bump            # pokaż obecną + pomoc
 ```

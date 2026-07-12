@@ -6,12 +6,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/krux-toggle.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/krux-toggle.js\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/krux-flow-toggle.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/krux-flow-toggle.js\"",
             "timeout": 5
           }
         ]
@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/auto-test.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-test.js\"",
             "timeout": 90
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/context_watch.js\"",
             "timeout": 10
           }
         ]
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/activate.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/activate.js\"",
             "timeout": 5
           }
         ]

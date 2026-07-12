@@ -36,4 +36,4 @@ Ork tropiciel. Znajduje błędy gdzie inne orki się poddają.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

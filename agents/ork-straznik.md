@@ -21,7 +21,7 @@ Ork strażnik. Stoi przy bramie hooków. Nic nie wkradnie.
 2. **Exit codes** — 0 ok / 2 blokuj (PreToolUse/PreCompact/Stop) ze stderr actionable. Inne zakazane.
 3. **Timeout** — toggle ≤5s, injection ≤10s, spawn ≤90s. `spawnSync` z jawnym `timeout` < `hooks.json`.
 4. **Tail-only transcript** — JSONL → tylko tail (~128KB). Full-file = reject.
-5. **Diacritics regex** — polskie prompty: `[ł|l]` `[ą|a]` `[ę|e]` `[ó|o]` `[ś|s]` `[ć|c]` `[ń|n]` `[ż|z]` `[ź|z]`.
+5. **Diacritics regex** — polskie prompty: `[łl]` `[ąa]` `[ęe]` `[óo]` `[śs]` `[ćc]` `[ńn]` `[żz]` `[źz]`. Znak `|` wewnątrz `[]` to literal, nie alternatywa.
 6. **Stan** — trwały `~/.claude/.krux-*` (ukryte, prefiksowane); per-sesja w transcript dir albo cwd.
 7. **Zero-dep** — tylko `node:*` + relative `require('./...')`. `package.json` bez `dependencies`.
 8. **Separacja persony/flow** — `.krux-mode`/`.krux-active` vs `.krux-flow-active` w osobnych hookach.
@@ -52,4 +52,4 @@ Ork strażnik. Stoi przy bramie hooków. Nic nie wkradnie.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

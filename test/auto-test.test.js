@@ -49,7 +49,12 @@ function runHook(cwd, payload, stdinOverride = null, extraEnv = {}) {
   });
 }
 
-test('zmiana w hooks/*.js → odpala npm test, sukces w stdout', () => {
+function additionalContext(result) {
+  if (!result.stdout) return '';
+  return JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+}
+
+test('zmiana w hooks/*.js → odpala npm test, sukces w additionalContext', () => {
   withFakeRepo(cwd => {
     const file = path.join(cwd, 'hooks', 'foo.js');
     fs.writeFileSync(file, '// noop');
@@ -60,6 +65,9 @@ test('zmiana w hooks/*.js → odpala npm test, sukces w stdout', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /przeszły/);
     assert.match(r.stdout, /hooks\/foo\.js/);
+    const parsed = JSON.parse(r.stdout);
+    assert.equal(parsed.hookSpecificOutput.hookEventName, 'PostToolUse');
+    assert.match(parsed.hookSpecificOutput.additionalContext, /przeszły/);
   });
 });
 
@@ -87,6 +95,19 @@ test('testy padają → hook raportuje PADŁY i tail', () => {
     assert.equal(r.status, 0);
     assert.match(r.stdout, /PADŁY/);
   }, { testScript: 'echo "boom" && exit 1' });
+});
+
+test('testy padają tylko na stderr → hook przekazuje stderr modelowi', () => {
+  withFakeRepo(cwd => {
+    const file = path.join(cwd, 'hooks', 'stderr.js');
+    fs.writeFileSync(file, '// noop');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: file },
+    });
+    assert.equal(r.status, 0);
+    assert.match(additionalContext(r), /boom-stderr/);
+  }, { testScript: 'node -e "process.stderr.write(\'boom-stderr\'); process.exit(1)"' });
 });
 
 test('edycja poza hooks/ i test/ → nie odpala testów', () => {
@@ -140,6 +161,19 @@ test('ETIMEDOUT przy przekroczeniu KRUX_AUTO_TEST_TIMEOUT_MS → komunikat TIMEO
     assert.equal(r.status, 0);
     assert.match(r.stdout, /TIMEOUT/);
   }, { testScript: 'node -e "setTimeout(() => process.exit(0), 5000)"' });
+});
+
+test('niepoprawny KRUX_AUTO_TEST_TIMEOUT_MS → bezpieczny fallback zamiast crasha', () => {
+  withFakeRepo(cwd => {
+    const file = path.join(cwd, 'hooks', 'foo.js');
+    fs.writeFileSync(file, '// noop');
+    const r = runHook(cwd, {
+      tool_name: 'Edit',
+      tool_input: { file_path: file },
+    }, null, { KRUX_AUTO_TEST_TIMEOUT_MS: 'garbage' });
+    assert.equal(r.status, 0);
+    assert.match(additionalContext(r), /przeszły/);
+  });
 });
 
 test('cwd to nie repo krux (inne name) → nie odpala', () => {

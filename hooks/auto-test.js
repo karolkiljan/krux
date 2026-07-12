@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// krux — PostToolUse hook: odpala `npm test` gdy edycja dotknęła hooks/*.js
-// albo test/*.js. Zero-dep: tylko node:child_process.
+// krux — PostToolUse hook: odpala `npm test` gdy edycja dotknęła strzeżonych
+// plików w hooks/, test/ albo agents/. Zero-dep: tylko moduły Node.js.
 //
 // Kontrakt:
 // - stdin: JSON z { tool_name, tool_input: { file_path }, cwd? }
 // - exit 0 zawsze (hook informacyjny, nie blokuje workflow)
-// - wynik: stdout z podsumowaniem dla modelu (widoczne w jego contextcie)
+// - wynik: JSON additionalContext z podsumowaniem dla modelu
 //
 // Opt-out: KRUX_AUTO_TEST=off w env. Zero ruchu gdy user nie chce.
 //
@@ -18,6 +18,20 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const WATCH_DIRS = ['hooks', 'test', 'agents'];
+
+function positiveInt(value, fallback) {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function emitAdditionalContext(message) {
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PostToolUse',
+      additionalContext: message,
+    },
+  }));
+}
 
 function isWatchedPath(filePath, repoRoot) {
   if (!filePath) return false;
@@ -56,9 +70,7 @@ process.stdin.on('end', () => {
   if (!isKruxRepo(repoRoot)) process.exit(0);
   if (!isWatchedPath(filePath, repoRoot)) process.exit(0);
 
-  const HOOK_TIMEOUT_MS = parseInt(
-    process.env.KRUX_AUTO_TEST_TIMEOUT_MS || '72000', 10
-  );
+  const HOOK_TIMEOUT_MS = positiveInt(process.env.KRUX_AUTO_TEST_TIMEOUT_MS, 72000);
   const startTs = Date.now();
   const result = spawnSync('npm', ['test', '--silent'], {
     cwd: repoRoot,
@@ -71,9 +83,9 @@ process.stdin.on('end', () => {
   const rel = path.relative(repoRoot, path.isAbsolute(filePath) ? filePath : path.resolve(repoRoot, filePath));
 
   if (result.error && result.error.code === 'ETIMEDOUT') {
-    process.stdout.write(
+    emitAdditionalContext(
       `krux auto-test: TIMEOUT po ${HOOK_TIMEOUT_MS / 1000}s przy zmianie ${rel}. ` +
-      `Test suite rośnie — zwiększ KRUX_AUTO_TEST_TIMEOUT_MS lub przyspiesz testy.\n`
+      'Test suite rośnie — zwiększ KRUX_AUTO_TEST_TIMEOUT_MS lub przyspiesz testy.'
     );
     process.exit(0);
   }
@@ -86,15 +98,18 @@ process.stdin.on('end', () => {
   }
 
   if (result.status === 0) {
-    process.stdout.write(`krux auto-test: wszystkie testy przeszły po zmianie ${rel}\n`);
+    emitAdditionalContext(`krux auto-test: wszystkie testy przeszły po zmianie ${rel}`);
     process.exit(0);
   }
 
-  const tail = (result.stdout || '').split('\n').slice(-40).join('\n');
-  process.stdout.write(
+  const failureOutput = [result.stdout, result.stderr, result.error && result.error.message]
+    .filter(Boolean)
+    .join('\n');
+  const tail = failureOutput.split('\n').slice(-40).join('\n');
+  emitAdditionalContext(
     `krux auto-test: TESTY PADŁY po zmianie ${rel}\n` +
     `---\n${tail}\n---\n` +
-    `Napraw zanim pójdziesz dalej.\n`
+    'Napraw zanim pójdziesz dalej.'
   );
   process.exit(0);
 });

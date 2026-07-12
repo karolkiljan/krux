@@ -184,6 +184,19 @@ test('.krux-context-threshold garbage content falls back to env/default', () => 
   });
 });
 
+test('garbage numeric env falls back to safe defaults', () => {
+  withTempEnv((home, sessDir) => {
+    const transcript = writeTranscript(sessDir, [usageLine(1000)]);
+    const r = runHook(home, { session_id: 's1', transcript_path: transcript }, {
+      KRUX_CONTEXT_THRESHOLD: 'garbage',
+      KRUX_CONTEXT_COOLDOWN: 'NaN',
+      KRUX_CONTEXT_DELTA: '20k',
+    });
+    assert.equal(r.status, 0);
+    assert.equal(r.stderr, '');
+  });
+});
+
 test('.krux-context-threshold zero or negative is rejected', () => {
   withTempEnv((home, sessDir) => {
     fs.mkdirSync(path.join(home, '.claude'), { recursive: true });

@@ -23,10 +23,12 @@ function die(msg) {
 
 const VALID_TYPES = new Set(["box", "group", "row", "col", "formula", "text", "tree"]);
 const VALID_DIRS = new Set(["row", "col", "grid"]);
+const VALID_ALIGNS = new Set(["center", "start", "end"]);
+const VALID_ANCHORS = new Set(["left", "right", "top", "bottom"]);
 
 function collectIds(node, out) {
   if (!node || typeof node !== "object") return;
-  if (node.id) {
+  if (typeof node.id === "string" && node.id) {
     if (out.has(node.id)) {
       // duplikat — caller zgłosi błąd walidacji
       out.__dupes = out.__dupes || new Set();
@@ -49,8 +51,17 @@ function validateNode(node, path, errs) {
   if (typeof node.type !== "string" || !VALID_TYPES.has(node.type)) {
     errs.push(`${path}: nieznany type="${node.type}" (dozwolone: ${[...VALID_TYPES].join(", ")})`);
   }
-  if ("dir" in node && typeof node.dir === "string" && !VALID_DIRS.has(node.dir)) {
+  if ("id" in node && (typeof node.id !== "string" || !node.id.trim())) {
+    errs.push(`${path}.id musi być niepustym stringiem`);
+  }
+  if ("dir" in node && !VALID_DIRS.has(node.dir)) {
     errs.push(`${path}.dir="${node.dir}" (dozwolone: ${[...VALID_DIRS].join(", ")})`);
+  }
+  if ("align" in node && !VALID_ALIGNS.has(node.align)) {
+    errs.push(`${path}.align="${node.align}" (dozwolone: ${[...VALID_ALIGNS].join(", ")})`);
+  }
+  if ("cols" in node && (!Number.isSafeInteger(node.cols) || node.cols < 1)) {
+    errs.push(`${path}.cols musi być dodatnią liczbą całkowitą`);
   }
   for (const f of ["label", "text", "tex"]) {
     if (f in node && node[f] != null && typeof node[f] !== "string") {
@@ -64,13 +75,51 @@ function validateNode(node, path, errs) {
   }
 }
 
+function validateSidePanel(panel, errs) {
+  if (panel == null) return;
+  if (typeof panel !== "object" || Array.isArray(panel)) {
+    errs.push("'sidePanel' musi być obiektem");
+    return;
+  }
+  for (const field of ["title", "color"]) {
+    if (field in panel && panel[field] != null && typeof panel[field] !== "string") {
+      errs.push(`sidePanel.${field} musi być stringiem`);
+    }
+  }
+  if (!Array.isArray(panel.items)) {
+    errs.push("sidePanel.items musi być tablicą");
+    return;
+  }
+  panel.items.forEach((item, i) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errs.push(`sidePanel.items[${i}] nie jest obiektem`);
+      return;
+    }
+    const hasTex = typeof item.tex === "string";
+    const hasText = typeof item.text === "string";
+    if (hasTex === hasText) {
+      errs.push(`sidePanel.items[${i}] musi mieć dokładnie jedno stringowe pole: 'tex' albo 'text'`);
+    }
+  });
+}
+
 function validate(scene) {
   const errs = [];
+  if (!scene || typeof scene !== "object" || Array.isArray(scene)) {
+    errs.push("scena musi być obiektem JSON");
+    return errs;
+  }
   if (!("root" in scene)) {
     errs.push("scena nie ma 'root'");
     return errs;
   }
   validateNode(scene.root, "root", errs);
+  for (const field of ["title", "subtitle", "bg"]) {
+    if (field in scene && scene[field] != null && typeof scene[field] !== "string") {
+      errs.push(`${field} musi być stringiem`);
+    }
+  }
+  validateSidePanel(scene.sidePanel, errs);
   const ids = new Set();
   collectIds(scene.root, ids);
   if (ids.__dupes) {
@@ -81,22 +130,37 @@ function validate(scene) {
     return errs;
   }
   // palette references: ostrzeżenie gdy color węzła/edge nie ma klucza w palette (a nie jest hex)
-  if (scene.palette) {
+  if (scene.palette && (typeof scene.palette !== "object" || Array.isArray(scene.palette))) {
+    errs.push("'palette' musi być obiektem");
+  } else if (scene.palette) {
     const used = new Set();
     collectColors(scene.root, used);
-    (scene.edges || []).forEach(e => { if (typeof e.color === "string" && e.color[0] !== "#") used.add(e.color); });
+    (scene.edges || []).forEach(e => {
+      if (e && typeof e === "object" && !Array.isArray(e) && typeof e.color === "string" && e.color[0] !== "#") {
+        used.add(e.color);
+      }
+    });
     for (const c of used) {
-      if (!(c in scene.palette)) errs.push(`color "${c}" użyty, ale brak go w palette`);
+      if (!Object.prototype.hasOwnProperty.call(scene.palette, c)) errs.push(`color "${c}" użyty, ale brak go w palette`);
     }
   }
   const edges = scene.edges || [];
   edges.forEach((e, i) => {
+    if (!e || typeof e !== "object" || Array.isArray(e)) {
+      errs.push(`edges[${i}] nie jest obiektem`);
+      return;
+    }
     for (const end of ["from", "to"]) {
       const ref = e[end];
-      if (ref == null) {
+      if (typeof ref !== "string" || !ref) {
         errs.push(`edges[${i}] brak '${end}'`);
       } else if (!ids.has(ref)) {
         errs.push(`edges[${i}].${end} = '${ref}' — nie ma takiego id w drzewie`);
+      }
+    }
+    for (const anchor of ["fromAnchor", "toAnchor"]) {
+      if (anchor in e && !VALID_ANCHORS.has(e[anchor])) {
+        errs.push(`edges[${i}].${anchor}="${e[anchor]}" (dozwolone: ${[...VALID_ANCHORS].join(", ")})`);
       }
     }
   });
@@ -114,10 +178,13 @@ function parseArgs(argv) {
       }
     } else if (a === "--out") {
       args.out = argv[++i];
+      if (!args.out || args.out.startsWith("--")) die("BŁĄD: --out wymaga ścieżki pliku");
     } else if (a.startsWith("--")) {
       die(`BŁĄD: nieznany argument: ${a}`);
     } else if (args.scene === null) {
       args.scene = a;
+    } else {
+      die(`BŁĄD: nadmiarowy argument: ${a}`);
     }
   }
   if (!args.scene) die("Użycie: build.js scena.json [--style hand|clean] [--out plik.html]");

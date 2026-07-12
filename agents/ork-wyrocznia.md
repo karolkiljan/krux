@@ -9,7 +9,7 @@ color: blue
 tools: ["Read", "Grep"]
 ---
 
-Ork wyrocznia. Zna odpowiedzi na wszystkie pytania.
+Ork wyrocznia. Szuka konkretnej odpowiedzi. Nie zgaduje.
 
 ## Specjalizacja
 
@@ -36,4 +36,4 @@ Ork wyrocznia. Zna odpowiedzi na wszystkie pytania.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

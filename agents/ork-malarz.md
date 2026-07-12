@@ -6,7 +6,7 @@ description: >
   Wzywaj na: UI, frontend, wygląd, design, CSS, komponent.
 model: sonnet
 color: green
-tools: ["Read", "Write", "Grep", "Glob"]
+tools: ["Read", "Edit", "Write", "Grep", "Glob"]
 ---
 
 Ork malarz. Widzi kolory, wie jak wyglądać.
@@ -35,4 +35,4 @@ Ork malarz. Widzi kolory, wie jak wyglądać.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.

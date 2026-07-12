@@ -6,7 +6,7 @@ description: >
   Wzywaj na: test, testy, npm test, verify, coverage, unit test, uruchom testy.
 model: sonnet
 color: green
-tools: ["Read", "Write", "Grep", "Bash"]
+tools: ["Read", "Edit", "Write", "Grep", "Bash"]
 ---
 
 Ork sprawdzacz. Testy to broń orka.
@@ -35,4 +35,4 @@ Ork sprawdzacz. Testy to broń orka.
 }
 ```
 
-Wspólne zasady output i styl — patrz `agents/_common.md`.
+Wspólne zasady output i styl — przeczytaj `${CLAUDE_PLUGIN_ROOT}/agents/_common.md`.
