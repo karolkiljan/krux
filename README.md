@@ -107,7 +107,6 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 |---------|---------|
 | *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
 | `/krux:krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
-| `/krux:krux-rysownik <temat>` | Zbuduj interaktywny diagram HTML z eksportem PNG/SVG/.excalidraw |
 
 ## Wymagania
 

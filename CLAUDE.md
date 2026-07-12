@@ -38,7 +38,6 @@ Plugin działa na dwóch niezależnych osiach:
 
 - `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** mówią jak Krux mówi; **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`, czytanym przy pracy z kodem. Pozostałe referencje (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) mają jawne warunki doczytania w rdzeniu. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
-- `krux-rysownik` — buduje samodzielne diagramy HTML z deklaratywnej sceny JSON; renderer i przykłady są zasobami bundlowanymi ze skillem.
 
 ## Konwencje — co robić, czego nie
 
@@ -74,7 +73,6 @@ Pokrycie:
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md) (`test/integration.test.js`)
 - `plugin-contract` — synchronizacja 3 manifestów, cytowane i żywe komendy hooków, ścieżka pluginu ze spacją, frontmatter skilli zgodny z katalogiem (`test/plugin-contract.test.js`)
 - `persona-contract` — rdzeń persony mały z jawnymi warunkami doczytania, hierarchia/raport/granice/model A-B-C, delegacja nie ucina raport do summary, ork dostaje jawny stan persony (`test/persona-contract.test.js`)
-- `rysownik` — build wszystkich przykładowych scen oraz kontrolowane błędy walidacji (`test/rysownik.test.js`)
 
 **Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_DEFAULT_MODE=off` ustawione globalnie i zanieczyścić testy.
 
