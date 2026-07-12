@@ -92,6 +92,7 @@ Pokrycie:
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md) (`test/integration.test.js`)
 - `plugin-contract` — synchronizacja 3 manifestów, cytowane i żywe komendy hooków, ścieżka pluginu ze spacją, komendy user-only i kontrakt release (`test/plugin-contract.test.js`)
+- `persona-contract` — rdzeń persony mały z jawnymi warunkami doczytania, hierarchia/raport/granice/model A-B-C, delegacja nie ucina raport do summary, ork dostaje jawny stan persony (`test/persona-contract.test.js`)
 - `rysownik` — build wszystkich przykładowych scen oraz kontrolowane błędy walidacji (`test/rysownik.test.js`)
 
 **Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_CONTEXT_WATCH=off` ustawione globalnie i zanieczyścić testy.
