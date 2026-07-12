@@ -6,7 +6,8 @@
     "claude-code-plugin"
   ],
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "generate:codex-agents": "node scripts/generate-codex-agents.js"
   },
   "author": "Karol Kiljan",
   "license": "MIT",
