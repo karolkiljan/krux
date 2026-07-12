@@ -11,11 +11,12 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
 }
 
-test('trzy manifesty mają tę samą wersję', () => {
+test('cztery manifesty mają tę samą wersję', () => {
   const versions = [
     readJson('package.json').version,
     readJson('.claude-plugin/plugin.json').version,
     readJson('.claude-plugin/marketplace.json').plugins[0].version,
+    readJson('.codex-plugin/plugin.json').version,
   ];
   assert.equal(new Set(versions).size, 1, `wersje rozjechane: ${versions.join(', ')}`);
 });
