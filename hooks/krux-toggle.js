@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { stateDir } = require('./lib/state-dir');
 
 let raw = '';
 process.stdin.setEncoding('utf8');
@@ -18,7 +19,7 @@ process.stdin.on('end', () => {
   }
   if (!prompt) process.exit(0);
 
-  const claudeDir = path.join(os.homedir(), '.claude');
+  const claudeDir = stateDir();
   try {
     fs.mkdirSync(claudeDir, { recursive: true });
   } catch (e) {

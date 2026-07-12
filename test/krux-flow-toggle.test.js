@@ -15,10 +15,10 @@ function withTempHome(fn) {
   try { fn(home); } finally { fs.rmSync(home, { recursive: true, force: true }); }
 }
 
-function runHook(home, prompt) {
+function runHook(home, prompt, extraEnv = {}) {
   return spawnSync('node', [HOOK], {
     input: JSON.stringify({ prompt }),
-    env: { ...process.env, HOME: home, USERPROFILE: home },
+    env: { ...process.env, HOME: home, USERPROFILE: home, ...extraEnv },
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -119,5 +119,19 @@ test('case insensitive: "FLOW" works', () => {
   withTempHome(home => {
     runHook(home, 'FLOW');
     assert.equal(hasFlag(home), true);
+  });
+});
+
+test('PLUGIN_DATA ustawione: "flow" pisze flagę pod PLUGIN_DATA, nie pod ~/.claude', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      const r = runHook(home, 'flow', { PLUGIN_DATA: pluginData });
+      assert.equal(r.status, 0);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-flow-active')), true);
+      assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-flow-active')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
   });
 });

@@ -20,10 +20,10 @@ function buildPayload(prompt) {
   return JSON.stringify({ prompt });
 }
 
-function runHook(home, prompt) {
+function runHook(home, prompt, extraEnv = {}) {
   const result = spawnSync('node', [HOOK], {
     input: buildPayload(prompt),
-    env: { ...process.env, HOME: home, USERPROFILE: home },
+    env: { ...process.env, HOME: home, USERPROFILE: home, ...extraEnv },
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -146,4 +146,18 @@ test('malformed stdin: hook exits cleanly', () => {
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }
+});
+
+test('PLUGIN_DATA ustawione: "krux" pisze stan pod PLUGIN_DATA, nie pod ~/.claude', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      const r = runHook(home, 'krux', { PLUGIN_DATA: pluginData });
+      assert.equal(r.status, 0);
+      assert.equal(fs.readFileSync(path.join(pluginData, '.krux-mode'), 'utf8'), 'on');
+      assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-mode')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
 });
