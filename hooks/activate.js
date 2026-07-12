@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { stateDir } = require('./lib/state-dir');
 
 const VALID_MODES = ['on', 'off'];
