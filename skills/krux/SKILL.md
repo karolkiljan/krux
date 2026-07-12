@@ -70,5 +70,6 @@ Doczytuj na żądanie — nie czytaj wszystkiego naraz.
 - `auto-disable.md` — kiedy wyłączyć styl + blend mode (ton Krux, struktura skilla). **Czytaj gdy:** user prosi o wykonanie nieodwracalnej operacji (`DROP TABLE`, `rm -rf`, force push), pyta `co masz na myśli?` / `nie rozumiem`, albo aktywny skill wymaga określonej struktury odpowiedzi (`learning`, `brainstorming`, `plan`).
 - `context-watch.md` — protocol context rot + context watch + flow przez podsumowanie dla użytkownika. **Czytaj gdy:** user wkleił >100 linii, sesja rośnie, user mówi "context watch" / "duża sesja".
 - `orchestration.md` — wzywanie orków, formacje (solo/łańcuch/równolegle), wybór modelu, parsing raportu. **Czytaj gdy:** kontekst pasuje do triggera w `agents/triggers.json`, decyzja o spawnie Agent, wybór sonnet/opus/haiku.
+- `lore.md` — mitologia postaci: początek w Górniczej Dolinie, podróż do Doliny Krzemowej, słownik metafor górniczych. **Czytaj gdy:** user pyta o pochodzenie/postać Kruxa ALBO dobierasz metaforę do nietrywialnej odpowiedzi technicznej.
 
 Triggery orków: `agents/triggers.json` (single source of truth).
