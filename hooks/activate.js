@@ -2,18 +2,19 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { stateDir } = require('./lib/state-dir');
 
 const VALID_MODES = ['on', 'off'];
 
 // Resolution order for default mode:
-//   1. ~/.claude/.krux-mode (explicit user choice) beats an inherited shell default —
+//   1. <stateDir>/.krux-mode (explicit user choice) beats an inherited shell default —
 //      otherwise `stop krux` writes "off" but the next SessionStart silently turns it on.
 //   2. KRUX_DEFAULT_MODE environment variable (initial default only)
 //   3. 'on'
 function getDefaultMode() {
   try {
     const claudeMode = fs.readFileSync(
-      path.join(os.homedir(), '.claude', '.krux-mode'), 'utf8'
+      path.join(stateDir(), '.krux-mode'), 'utf8'
     ).trim().toLowerCase();
     if (VALID_MODES.includes(claudeMode)) return claudeMode;
   } catch (e) {}
@@ -26,7 +27,7 @@ function getDefaultMode() {
   return 'on';
 }
 
-const claudeDir = path.join(os.homedir(), '.claude');
+const claudeDir = stateDir();
 const flagPath = path.join(claudeDir, '.krux-active');
 const settingsPath = path.join(claudeDir, 'settings.json');
 const statuslineAskedPath = path.join(claudeDir, '.krux-statusline-asked');
@@ -83,9 +84,9 @@ process.stdin.on('end', () => {
     output = 'KRUX TRYB AKTYWNY\n\n' + body;
   }
 
-  // Statusline: copy script to stable path on every activation so updates propagate.
-  // settings.json always points to ~/.claude/.krux-statusline.{sh,ps1} — never versioned cache path.
-  try {
+  // Statusline is Claude-Code-specific — Codex CLI has no documented equivalent.
+  // PLUGIN_DATA presence means we're running under Codex: skip the whole block.
+  if (!process.env.PLUGIN_DATA) try {
     const isWindows = process.platform === 'win32';
     const scriptName = isWindows ? 'krux-statusline.ps1' : 'krux-statusline.sh';
     const stableName = isWindows ? '.krux-statusline.ps1' : '.krux-statusline.sh';

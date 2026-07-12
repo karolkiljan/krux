@@ -299,3 +299,36 @@ test('malformed stdin: exits cleanly without activating persona', () => {
     assert.equal(hasFlag(home), false);
   });
 });
+
+// --- PLUGIN_DATA (Codex CLI) ---
+
+test('PLUGIN_DATA ustawione: stan pod PLUGIN_DATA, nie pod ~/.claude', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      fs.writeFileSync(path.join(pluginData, '.krux-mode'), 'on');
+      const r = runHook(home, { source: 'startup' }, { PLUGIN_DATA: pluginData });
+      assert.equal(r.status, 0);
+      assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-active')), true);
+      assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-active')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
+});
+
+test('PLUGIN_DATA ustawione: statusline całkowicie pominięty', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      fs.writeFileSync(path.join(pluginData, '.krux-mode'), 'on');
+      const r = runHook(home, { source: 'startup' }, { PLUGIN_DATA: pluginData });
+      assert.doesNotMatch(r.stdout, /STATUSLINE/);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-statusline.sh')), false);
+      assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-statusline.sh')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
+});
