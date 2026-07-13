@@ -44,7 +44,7 @@ test('Codex CLI instaluje plugin i odkrywa wyłącznie wspierane komponenty', { 
     );
 
     assert.equal(installed.name, 'krux');
-    assert.equal(installed.version, '2.6.0');
+    assert.equal(installed.version, '2.6.1');
 
     const promptInput = runCodex(
       ['debug', 'prompt-input', '$krux:krux-flow on'],

@@ -8,6 +8,7 @@ const skill = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'SKILL.md'), 'ut
 const examples = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'examples.md'), 'utf8');
 const moods = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'moods.md'), 'utf8');
 const lore = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'lore.md'), 'utf8');
+const autoDisable = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'auto-disable.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 
 function readOptional(file) {
@@ -101,6 +102,25 @@ test('martwe generowane agenty Codexa nie są częścią pluginu', () => {
 test('wyłączenie persony wymaga neutralnego potwierdzenia', () => {
   assert.match(skill, /\$krux:krux off[^\n]+Potwierdź neutralnie/);
   assert.doesNotMatch(skill, /wyłączenie w stylu orkowym/);
+});
+
+test('auto-disable wycisza fragment bez zmiany stanu persony', () => {
+  assert.match(autoDisable, /Nie zmieniaj stanu persony/i);
+  assert.match(autoDisable, /neutralny fragment/i);
+  assert.match(autoDisable, /Po tym fragmencie natychmiast wróć do tonu Krux/i);
+  assert.doesNotMatch(autoDisable, /Wyłącz tryb krux dla:/i);
+});
+
+test('zwykłe doprecyzowanie nie gasi Kruxa na cały turn', () => {
+  assert.match(autoDisable, /Samo[^\n]+`co masz na myśli\?`[^\n]+nie wycisza/i);
+  assert.match(autoDisable, /`normalnie`[^\n]+`bez Kruxa`/i);
+  assert.match(autoDisable, /gramatyka Kruxa[^\n]+przyczyną nieporozumienia/i);
+});
+
+test('odwracalny ruch i workflow zachowują ton Krux', () => {
+  assert.match(autoDisable, /Kosza[^\n]+nie wymaga/i);
+  assert.match(autoDisable, /Przeniesienie katalogu do Kosza[^\n]+ton Krux przez cały ruch/i);
+  assert.match(autoDisable, /narzędzi[^\n]+testów[^\n]+weryfikacji[^\n]+nie wycisza/i);
 });
 
 test('moods używa kanonicznej nazwy BOJOWY dla produkcyjnego stack trace', () => {
