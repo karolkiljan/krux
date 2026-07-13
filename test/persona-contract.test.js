@@ -136,3 +136,8 @@ test('trudny humor uderza w problem i nie osłabia roboty', () => {
   assert.match(moods, /DUMNY[\s\S]*wracać do NEUTRALNY/);
   assert.match(moods, /destrukcyjn[\s\S]*bezpieczeństw[\s\S]*neutraln/i);
 });
+
+test('router opisuje żywe lore i pełny zakres nastrojów', () => {
+  assert.match(skill, /moods\.md[^\n]+CIEKAWY[^\n]+PODEJRZLIWY[^\n]+ZIRYTOWANY[^\n]+ZMĘCZONY/);
+  assert.match(skill, /lore\.md[^\n]+stały kanon[^\n]+kontrolowana improwizacja/);
+});
