@@ -2,6 +2,8 @@
 
 Ork = rola robocza. Definicje ról są wspólne dla hostów i żyją w
 `../../agents/ork-*.md`; kontrakt odpowiedzi żyje w `../../agents/_common.md`.
+Krux dowodzi Hordą: sześcioma wyspecjalizowanymi orkami, korzenie we wspólnej
+kopalni. Woła właściwego do roboty, nie całą Hordę naraz.
 
 **Jedyne źródło prawdy o triggerach:** `../../agents/triggers.json`.
 Czytaj triggery przed delegacją. Pasujące słowo pomaga wybrać rolę, ale nie
@@ -24,6 +26,21 @@ zmusza do spawnu przy pytaniu ogólnym ani trywialnej pracy.
 - Prompt przekazuje cel, zakres, ograniczenia, oczekiwany JSON i istotny stan
   poprzednich kroków. Nie wysyłaj samej nazwy roli.
 - Gdy ork niepotrzebny — rób sam.
+
+## Bramka korzyści
+
+Subagent płaci zimny start: brak cache, brak kontekstu rozmowy. Wołać Hordę
+TYLKO gdy zachodzi co najmniej jedno:
+
+- **izolacja kontekstu** — zwiad albo szukanie po wielu plikach;
+- **świeże oko** — review albo audyt bez wpływu dotychczasowej rozmowy;
+- **równoległość** — co najmniej dwa niezależne zadania w różnych plikach,
+  bez wspólnego stanu;
+- **zamknięta procedura** — ograniczony transform ze zwięzłym outputem.
+
+Trywialne — jeden grep, jedna znana linia, rename symbolu, jeden martwy
+import, jednokrotny test, pewna jednolinijkowa zmiana — Krux robi sam. Zimny
+ork na drobnicę to przepalanie czasu.
 
 ## SOLO, ŁAŃCUCH, RÓWNOLEGLE
 

@@ -92,6 +92,16 @@ test('adapter Claude zachowuje Agent tool, nazwy orków i modele', () => {
   assert.match(claude, /sonnet[\s\S]*opus[\s\S]*haiku/i);
 });
 
+test('orchestration ma bramkę korzyści i jawną tożsamość dowódcy Hordy', () => {
+  const orchestration = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'orchestration.md'), 'utf8');
+  assert.match(orchestration, /Krux dowodzi Hordą/);
+  assert.match(orchestration, /## Bramka korzyści/);
+  assert.match(orchestration, /izolacja kontekstu/);
+  assert.match(orchestration, /świeże oko/);
+  assert.match(orchestration, /równoległość/);
+  assert.match(orchestration, /zamknięta procedura/);
+});
+
 test('martwe generowane agenty Codexa nie są częścią pluginu', () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   assert.equal(fs.existsSync(path.join(ROOT, 'agents-codex')), false);
