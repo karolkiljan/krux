@@ -76,6 +76,43 @@ test('flow i persona są ortogonalne', () => {
   }
 });
 
+test('drift-guard: pełny cykl — cisza, przypomnienie na progu, powtórka, reset przez compact', () => {
+  const home = makeIsolatedHome();
+  try {
+    const env = { KRUX_DRIFT_INTERVAL: '3' };
+    const countFile = path.join(home, '.claude', '.krux-turn-count');
+
+    let r = runHook('hooks/activate.js', { source: 'startup' }, home, env);
+    assert.equal(r.status, 0);
+
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1' }, home, env);
+    assert.equal(r.stdout, '', 'turn 1/3: cisza');
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2' }, home, env);
+    assert.equal(r.stdout, '', 'turn 2/3: cisza');
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 3' }, home, env);
+    assert.match(r.stdout, /KRUX DRIFT-GUARD/, 'turn 3/3: próg osiągnięty');
+    assert.equal(fs.existsSync(countFile), false, 'licznik zresetowany po przypomnieniu');
+
+    // Cykl się powtarza — kolejne okno liczy znów od zera, nie jest one-shot.
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 4' }, home, env);
+    assert.equal(r.stdout, '', 'nowe okno turn 1/3: znów cisza');
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 5' }, home, env);
+    assert.equal(r.stdout, '', 'nowe okno turn 2/3: znów cisza');
+    assert.equal(fs.readFileSync(countFile, 'utf8'), '2');
+
+    // Compact w środku okna przerywa liczenie — pełna reinjekcja to nowe wzmocnienie.
+    r = runHook('hooks/activate.js', { source: 'compact' }, home, env);
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /PRAWO 1/, 'compact wstrzykuje pełne SKILL.md');
+    assert.equal(fs.existsSync(countFile), false, 'compact zresetował licznik w trakcie okna');
+
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn po compact' }, home, env);
+    assert.equal(r.stdout, '', 'świeże okno po compact: cisza, nie natychmiastowe przypomnienie');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test('resume nie wstrzykuje pełnego SKILL.md', () => {
   const home = makeIsolatedHome();
   try {

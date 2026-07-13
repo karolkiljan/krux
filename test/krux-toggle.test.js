@@ -21,9 +21,13 @@ function buildPayload(prompt) {
 }
 
 function buildEnv(home, extraEnv = {}) {
-  const env = { ...process.env, HOME: home, ...extraEnv };
-  if (!('PLUGIN_DATA' in extraEnv)) delete env.PLUGIN_DATA;
-  return env;
+  // Strip ambient KRUX_*/PLUGIN_DATA so a developer's shell can't leak into
+  // deterministic env-driven assertions (e.g. KRUX_DRIFT_INTERVAL below).
+  const cleanEnv = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (!k.startsWith('KRUX_') && k !== 'PLUGIN_DATA') cleanEnv[k] = v;
+  }
+  return { ...cleanEnv, HOME: home, ...extraEnv };
 }
 
 function runHook(home, prompt, extraEnv = {}) {
@@ -227,5 +231,66 @@ test('persona OFF nie potwierdza trwałego wyłączenia, gdy mode jest niezapisy
     } finally {
       fs.rmSync(pluginData, { recursive: true, force: true });
     }
+  });
+});
+
+// --- drift-guard: periodic reminder while persona active on unrelated turns ---
+
+function turnCountFile(home) {
+  return path.join(home, '.claude', '.krux-turn-count');
+}
+
+test('drift-guard: zwykły prompt poniżej progu nie emituje nic (cisza jak dziś)', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '5' };
+    runHook(home, 'krux', env);
+    const r = runHook(home, 'explain this code', env);
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '');
+  });
+});
+
+test('drift-guard: persona nieaktywna → zwykły prompt nic nie robi, brak pliku licznika', () => {
+  withTempHome(home => {
+    const r = runHook(home, 'explain this code', { KRUX_DRIFT_INTERVAL: '2' });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '');
+    assert.equal(fs.existsSync(turnCountFile(home)), false);
+  });
+});
+
+test('drift-guard: po KRUX_DRIFT_INTERVAL turach emituje KRUX DRIFT-GUARD i resetuje licznik', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '3' };
+    runHook(home, 'krux', env);
+    assert.equal(runHook(home, 'turn 1', env).stdout, '');
+    assert.equal(runHook(home, 'turn 2', env).stdout, '');
+    const r = runHook(home, 'turn 3', env);
+    assert.match(additionalContext(r), /KRUX DRIFT-GUARD/);
+    assert.match(additionalContext(r), /examples\.md/);
+    assert.equal(fs.existsSync(turnCountFile(home)), false, 'licznik zresetowany po przypomnieniu');
+  });
+});
+
+test('drift-guard: jawne włączenie ("krux") resetuje licznik turnów', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '3' };
+    runHook(home, 'krux', env);
+    runHook(home, 'turn 1', env);
+    runHook(home, 'turn 2', env);
+    assert.equal(fs.readFileSync(turnCountFile(home), 'utf8'), '2');
+    runHook(home, 'krux', env);
+    assert.equal(fs.existsSync(turnCountFile(home)), false, 'jawne ON czyści licznik');
+  });
+});
+
+test('drift-guard: jawne wyłączenie ("stop krux") czyści plik licznika', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '5' };
+    runHook(home, 'krux', env);
+    runHook(home, 'turn 1', env);
+    assert.equal(fs.existsSync(turnCountFile(home)), true);
+    runHook(home, 'stop krux', env);
+    assert.equal(fs.existsSync(turnCountFile(home)), false, 'OFF czyści licznik');
   });
 });

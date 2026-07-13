@@ -15,8 +15,8 @@ Plugin działa na dwóch niezależnych osiach:
 
 | Hook | Plik | Kiedy | Rola |
 |------|------|-------|------|
-| `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
-| `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony. |
+| `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Resetuje licznik turnów drift-guard (`.krux-turn-count`) — każde wstrzyknięcie to świeże wzmocnienie. Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
+| `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony (reset licznika drift-guard). Inaczej, gdy persona aktywna: liczy tury od ostatniego wzmocnienia (`hooks/lib/drift-guard.js`) i po progu (`KRUX_DRIFT_INTERVAL`, domyślnie 10) wstrzykuje mechaniczny `KRUX DRIFT-GUARD` reminder. |
 | `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
 
 **Kolejność UserPromptSubmit:** oba hooki (`krux-toggle`, `krux-flow-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
@@ -30,6 +30,7 @@ Plugin działa na dwóch niezależnych osiach:
 | `<stateDir>/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
 | `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Runtime flag aktywnej persony. |
 | `<stateDir>/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
+| `<stateDir>/.krux-turn-count` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Licznik tur od ostatniego wzmocnienia persony. Reset przy SessionStart mode=on i przy jawnym `krux`/`stop krux`. Brak pliku = 0. |
 | `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag. `/krux:krux` i `$krux:krux` zapisują tylko `.krux-active`, bez zmiany `.krux-mode`. `$krux:krux on|off` jawnie zmienia stan trwały.
@@ -66,6 +67,8 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 
 **Resume → krótki reminder, compact → pełny reinject SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Compact przepisuje kontekst, więc `activate.js` ponownie wstrzykuje pełne SKILL.md, tak samo jak przy `startup`.
 
+**Drift-guard: mechaniczne, nie samoobserwacyjne, przypomnienie.** Przed tym wzmocnienie persony było czysto zdarzeniowe (SessionStart, jawna fraza toggle) — między zdarzeniami `krux-toggle.js` milczał na każdym prompt, a jedyna siatka bezpieczeństwa (`context-watch.md`) zależała od tego, czy model sam zauważy własny dryf w długiej rozmowie (zawodne z definicji: dryf jest stopniowy i lokalnie niewidoczny). `hooks/lib/drift-guard.js` liczy tury od ostatniego wzmocnienia i po progu wstrzykuje przypomnienie, reużywając dokładnie tekst dotychczasowego `resume` reminderu (`REMINDER_CORE`) zamiast trzymać dwie kopie. Zobacz `docs/superpowers/specs/2026-07-14-drift-guard-design.md`.
+
 **Statusline copy przy aktywacji.** Settings wskazują na stabilną ścieżkę `~/.claude/.krux-statusline.sh`, a skrypt jest kopiowany z wersjonowanego cache pluginu na SessionStart. Ponowne wywołanie w ciągu 5 sekund pomija zbędną kopię. Update pluginu → update statusline bez zmiany settings.json.
 
 ## Testy
@@ -73,12 +76,13 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install). Uruchomienie: `npm test`.
 
 Pokrycie:
-- `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin (`test/krux-toggle.test.js`)
+- `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, drift-guard periodic reminder + reset na on/off (`test/krux-toggle.test.js`)
 - `krux-flow-toggle.js` — toggle flag, emit JSON, per-turn reminder, aliasy (katalog `test`, plik `krux-flow-toggle.test.js`)
-- `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts (`test/activate.test.js`)
+- `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts, reset licznika drift-guard na każdym mode=on źródle (`test/activate.test.js`)
+- `hooks/lib/drift-guard.js` — próg domyślny i przez `KRUX_DRIFT_INTERVAL`, bump/reset licznika, uszkodzony plik licznika = 0 (`test/drift-guard.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
-- `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md) (`test/integration.test.js`)
+- `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, pełny cykl drift-guard włącznie z resetem przez compact) (`test/integration.test.js`)
 - `plugin-contract` — synchronizacja 4 manifestów, cytowane i żywe komendy hooków, ścieżka pluginu ze spacją, frontmatter skilli zgodny z katalogiem (`test/plugin-contract.test.js`)
 - `persona-contract` — rdzeń persony mały z jawnymi warunkami doczytania, hierarchia/raport/granice/model A-B-C, delegacja nie ucina raport do summary, ork dostaje jawny stan persony (`test/persona-contract.test.js`)
 - `state-dir` — resolver katalogu stanu (`PLUGIN_DATA` vs `~/.claude/`) (`test/state-dir.test.js`)
@@ -97,6 +101,8 @@ Pokrycie:
 ## Wersjonowanie
 
 `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `package.json` i `.codex-plugin/plugin.json` muszą być zsynchronizowane. Plugin.json to źródło prawdy dla zainstalowanego pluginu Claude Code, marketplace.json dla listingu w `/plugin` UI (Claude Code czyta stąd wersję przy refresh marketplace), package.json dla npm-style metadanych, `.codex-plugin/plugin.json` dla instalacji przez Codex CLI. Bumpować wszystkie cztery razem ręcznie — test `plugin-contract.test.js` blokuje rozjazd wersji.
+
+**Dwa testy mają dodatkowo zahardkodowaną dokładną wartość** (nie tylko spójność między plikami) — `plugin-contract.test.js` (`assert.equal(versions[0], ...)`) i `codex-cli-integration.test.js` (`assert.equal(installed.version, ...)`, uruchamia się tylko z zainstalowanym Codex CLI). Bump wersji bez aktualizacji tych dwóch asercji = czerwony `npm test`.
 
 ## Publikacja
 

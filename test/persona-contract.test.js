@@ -237,3 +237,7 @@ test('router opisuje żywe lore i pełny zakres nastrojów', () => {
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {
   assert.match(skill, /Prawie każda zwykła odpowiedź[^\n]+jeden krótki akcent postaci/);
 });
+
+test('router łączy KRUX DRIFT-GUARD z warunkiem doczytania examples.md', () => {
+  assert.match(skill, /examples\.md[^\n]+KRUX DRIFT-GUARD/);
+});

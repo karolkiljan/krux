@@ -196,6 +196,30 @@ test('correct krux statusline already set: no prompt', () => {
   });
 });
 
+// --- drift-guard: reinjection resets the mid-session turn counter ---
+
+function writeTurnCount(home, n) {
+  const dir = path.join(home, '.claude');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, '.krux-turn-count'), String(n));
+}
+
+function hasTurnCount(home) {
+  return fs.existsSync(path.join(home, '.claude', '.krux-turn-count'));
+}
+
+for (const source of ['startup', 'resume', 'compact']) {
+  test(`mode=on + source=${source}: resetuje istniejący licznik turnów drift-guard`, () => {
+    withTempHome(home => {
+      writeMode(home, 'on');
+      writeTurnCount(home, 7);
+      const r = runHook(home, { source });
+      assert.equal(r.status, 0);
+      assert.equal(hasTurnCount(home), false, 'reinjection persony musi zresetować okno drift-guard');
+    });
+  });
+}
+
 // --- flag persistence ---
 
 test('mode=on writes flag with current mode value', () => {

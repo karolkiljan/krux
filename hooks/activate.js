@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
+const { REMINDER_CORE, resetTurnCount } = require('./lib/drift-guard');
 
 const VALID_MODES = ['on', 'off'];
 
@@ -60,13 +61,18 @@ process.stdin.on('end', () => {
     console.error('krux: flag write failed:', e.message);
   }
 
+  // Every SessionStart re-injection (any source) is a fresh reinforcement —
+  // the mid-conversation drift-guard window (hooks/krux-toggle.js) should
+  // count turns since THIS event, not since the session originally started.
+  resetTurnCount(claudeDir);
+
   // On resume the skill body is still in memory from the prior context, so a short
   // reminder is enough. On compact the context was rewritten and the persona can be
   // lost, so re-inject the full lean skill body just like startup.
   const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
   if (source === 'resume') {
-    output = 'KRUX TRYB AKTYWNY — persona Krux dalej działa.\n\nZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. "Podsumowanie:" → [nigdy]. Krux zmienia ton, nie wymagany format ani strukturę innych skilli. Poprawność i bezpieczeństwo zawsze nad stylem.';
+    output = 'KRUX TRYB AKTYWNY — ' + REMINDER_CORE;
   } else if (useNativeSkill) {
     output = 'KRUX TRYB AKTYWNY';
   } else {
