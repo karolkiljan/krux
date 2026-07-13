@@ -20,10 +20,16 @@ function buildPayload(prompt) {
   return JSON.stringify({ prompt });
 }
 
+function buildEnv(home, extraEnv = {}) {
+  const env = { ...process.env, HOME: home, ...extraEnv };
+  if (!('PLUGIN_DATA' in extraEnv)) delete env.PLUGIN_DATA;
+  return env;
+}
+
 function runHook(home, prompt, extraEnv = {}) {
   const result = spawnSync('node', [HOOK], {
     input: buildPayload(prompt),
-    env: { ...process.env, HOME: home, USERPROFILE: home, ...extraEnv },
+    env: buildEnv(home, extraEnv),
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -70,6 +76,31 @@ test('slash /krux:krux aktywuje runtime bez nadpisania trwałego mode', () => {
     assert.equal(r.status, 0);
     assert.equal(readMode(home), 'off');
     assert.equal(hasActive(home), true);
+  });
+});
+
+test('Codex $krux:krux aktywuje runtime bez nadpisania trwałego mode', () => {
+  withTempHome(home => {
+    fs.mkdirSync(path.join(home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'off');
+    const r = runHook(home, '$krux:krux');
+    assert.equal(r.status, 0);
+    assert.equal(readMode(home), 'off');
+    assert.equal(hasActive(home), true);
+  });
+});
+
+test('Codex $krux:krux on/off przełącza trwały mode', () => {
+  withTempHome(home => {
+    const on = runHook(home, '$krux:krux on');
+    assert.equal(on.status, 0);
+    assert.equal(readMode(home), 'on');
+    assert.equal(hasActive(home), true);
+
+    const off = runHook(home, '$krux:krux off');
+    assert.equal(off.status, 0);
+    assert.equal(readMode(home), 'off');
+    assert.equal(hasActive(home), false);
   });
 });
 
@@ -137,7 +168,7 @@ test('malformed stdin: hook exits cleanly', () => {
   try {
     const r = spawnSync('node', [HOOK], {
       input: 'not-json',
-      env: { ...process.env, HOME: home, USERPROFILE: home },
+      env: buildEnv(home),
       encoding: 'utf8',
       timeout: 5000,
     });
@@ -156,6 +187,43 @@ test('PLUGIN_DATA ustawione: "krux" pisze stan pod PLUGIN_DATA, nie pod ~/.claud
       assert.equal(r.status, 0);
       assert.equal(fs.readFileSync(path.join(pluginData, '.krux-mode'), 'utf8'), 'on');
       assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-mode')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
+});
+
+test('persona ON nie potwierdza trwałego włączenia, gdy mode jest niezapisywalny', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      fs.mkdirSync(path.join(pluginData, '.krux-mode'));
+
+      const r = runHook(home, 'krux', { PLUGIN_DATA: pluginData });
+
+      assert.equal(r.status, 0);
+      assert.equal(r.stdout, '');
+      assert.match(r.stderr, /write \.krux-mode failed/);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-active')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
+});
+
+test('persona OFF nie potwierdza trwałego wyłączenia, gdy mode jest niezapisywalny', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      fs.mkdirSync(path.join(pluginData, '.krux-mode'));
+      fs.closeSync(fs.openSync(path.join(pluginData, '.krux-active'), 'w'));
+
+      const r = runHook(home, 'stop krux', { PLUGIN_DATA: pluginData });
+
+      assert.equal(r.status, 0);
+      assert.equal(r.stdout, '');
+      assert.match(r.stderr, /write \.krux-mode failed/);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-active')), true);
     } finally {
       fs.rmSync(pluginData, { recursive: true, force: true });
     }

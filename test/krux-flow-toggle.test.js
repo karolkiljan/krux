@@ -15,10 +15,16 @@ function withTempHome(fn) {
   try { fn(home); } finally { fs.rmSync(home, { recursive: true, force: true }); }
 }
 
+function buildEnv(home, extraEnv = {}) {
+  const env = { ...process.env, HOME: home, ...extraEnv };
+  if (!('PLUGIN_DATA' in extraEnv)) delete env.PLUGIN_DATA;
+  return env;
+}
+
 function runHook(home, prompt, extraEnv = {}) {
   return spawnSync('node', [HOOK], {
     input: JSON.stringify({ prompt }),
-    env: { ...process.env, HOME: home, USERPROFILE: home, ...extraEnv },
+    env: buildEnv(home, extraEnv),
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -58,7 +64,19 @@ test('"flow off" disables flow mode', () => {
 });
 
 test('aliases: "iterate", "tryb krokowy", "krux-flow"', () => {
-  for (const phrase of ['iterate', 'tryb krokowy', 'krux-flow', 'krux-flow on', 'flow on', '/krux:krux-flow', '/krux:krux-flow on', '/krux:krux-flow naprawić parser']) {
+  for (const phrase of [
+    'iterate',
+    'tryb krokowy',
+    'krux-flow',
+    'krux-flow on',
+    'flow on',
+    '/krux:krux-flow',
+    '/krux:krux-flow on',
+    '/krux:krux-flow naprawić parser',
+    '$krux:krux-flow',
+    '$krux:krux-flow on',
+    '$krux:krux-flow naprawić parser',
+  ]) {
     withTempHome(home => {
       const r = runHook(home, phrase);
       assert.equal(r.status, 0, `phrase=${phrase} should exit 0`);
@@ -68,7 +86,7 @@ test('aliases: "iterate", "tryb krokowy", "krux-flow"', () => {
 });
 
 test('off aliases: "stop flow", "koniec flow", "krux-flow off"', () => {
-  for (const phrase of ['stop flow', 'koniec flow', 'krux-flow off', '/krux:krux-flow off']) {
+  for (const phrase of ['stop flow', 'koniec flow', 'krux-flow off', '/krux:krux-flow off', '$krux:krux-flow off']) {
     withTempHome(home => {
       runHook(home, 'flow');
       const r = runHook(home, phrase);
@@ -104,7 +122,7 @@ test('malformed stdin exits cleanly without creating flag', () => {
   try {
     const r = spawnSync('node', [HOOK], {
       input: 'not-json',
-      env: { ...process.env, HOME: home, USERPROFILE: home },
+      env: buildEnv(home),
       encoding: 'utf8',
       timeout: 5000,
     });
@@ -130,6 +148,37 @@ test('PLUGIN_DATA ustawione: "flow" pisze flagę pod PLUGIN_DATA, nie pod ~/.cla
       assert.equal(r.status, 0);
       assert.equal(fs.existsSync(path.join(pluginData, '.krux-flow-active')), true);
       assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-flow-active')), false);
+    } finally {
+      fs.rmSync(pluginData, { recursive: true, force: true });
+    }
+  });
+});
+
+test('flow ON nie potwierdza aktywacji, gdy katalog stanu jest niedostępny', () => {
+  withTempHome(home => {
+    const blocked = path.join(home, 'not-a-directory');
+    fs.writeFileSync(blocked, 'x');
+
+    const r = runHook(home, 'flow', { PLUGIN_DATA: blocked });
+
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /state directory creation failed/);
+  });
+});
+
+test('flow OFF nie potwierdza wyłączenia, gdy aktywnej flagi nie da się usunąć', () => {
+  withTempHome(home => {
+    const pluginData = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-plugin-data-'));
+    try {
+      fs.mkdirSync(path.join(pluginData, '.krux-flow-active'));
+
+      const r = runHook(home, 'flow off', { PLUGIN_DATA: pluginData });
+
+      assert.equal(r.status, 0);
+      assert.equal(r.stdout, '');
+      assert.match(r.stderr, /flag removal failed/);
+      assert.equal(fs.existsSync(path.join(pluginData, '.krux-flow-active')), true);
     } finally {
       fs.rmSync(pluginData, { recursive: true, force: true });
     }

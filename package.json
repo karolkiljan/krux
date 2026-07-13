@@ -1,13 +1,13 @@
 {
   "name": "krux",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "keywords": [
-    "claude-code-plugin"
+    "claude-code-plugin",
+    "codex-plugin"
   ],
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
-    "generate:codex-agents": "node scripts/generate-codex-agents.js"
+    "test": "node --test \"test/**/*.test.js\""
   },
   "author": "Karol Kiljan",
   "license": "MIT",

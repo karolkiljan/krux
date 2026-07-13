@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <sub>Plugin pod Claude Code (persona ork-programisty). <strong>Nie powiązany</strong> z <a href="https://github.com/selfcustody/krux">selfcustody/krux</a> (Bitcoin signing device firmware).</sub>
+  <sub>Plugin pod Claude Code i Codex (persona ork-programisty). <strong>Nie powiązany</strong> z <a href="https://github.com/selfcustody/krux">selfcustody/krux</a> (Bitcoin signing device firmware).</sub>
 </p>
 
 ---
 
-Ork wiedzieć dużo. Ork gadać mało. Claude Code słuchać.
+Ork wiedzieć dużo. Ork gadać mało. Claude Code i Codex słuchać.
 
 Mniej tokenów, pełna treść techniczna. Najmocniej czuć na bugfixach i setupie.
 
@@ -74,7 +74,7 @@ Krux nie gadać więcej niż trzeba.
 
 ## Orkowie — armia generala Krux
 
-Krux teraz **general**. Dowodzi 6 orków — specjalistycznych agentów, każdy do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux sam wzywa właściwego orka na podstawie kontekstu. Możesz też wywołać wprost: `@krux:ork-nazwa`.
+Krux teraz **general**. Dowodzi 6 rolami roboczymi, każda do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux dobiera rolę na podstawie kontekstu. Claude Code ładuje nazwanych agentów pluginu i pozwala wywołać `@krux:ork-nazwa`. Codex przekazuje te same instrukcje ról swoim natywnym subagentom; nie instaluje osobnych custom agents.
 
 ### Kiedy który ork się odpala
 
@@ -107,23 +107,43 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 |---------|---------|
 | *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
 | `/krux:krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
+| `$krux:krux [on\|off]` | Codex: załaduj personę jednorazowo albo zmień trwały stan |
+| `$krux:krux-flow [on\|off\|cel]` | Codex: tryb iteracyjny — jeden ruch na raz |
 
 ## Wymagania
 
-- Claude Code (dostarcza Node.js — plugin nie wymaga dodatkowych zależności)
+- macOS lub Linux
+- Claude Code albo Codex CLI / Codex app
+- Node.js dostępny jako `node` w `PATH` — hooki są skryptami Node.js
+- Brak zależności npm i brak kroku `npm install`
 
-## Instalacja
+## Instalacja — Claude Code
 
 ```bash
 claude plugin marketplace add karolkiljan/krux
 claude plugin install krux@krux-marketplace
 ```
 
+## Codex CLI
+
+```bash
+codex plugin marketplace add karolkiljan/krux
+codex plugin add krux@krux-marketplace
+```
+
+Po instalacji rozpocznij nowy wątek. Otwórz `/hooks`, przejrzyj trzy komendy z
+`hooks/hooks.json` i zaufaj im. Codex celowo nie uruchamia nowych ani zmienionych
+hooków pluginu bez jednorazowego zatwierdzenia.
+
+Skille pojawiają się jako `$krux:krux` i `$krux:krux-flow`. Orki nie pojawiają
+się jako osobne custom agents — skill przekazuje ich role natywnym subagentom
+Codexa, gdy delegacja ma sens.
+
 ## Użycie
 
-Aktywuje się sam przy starcie sesji. Plugin sam proponuje konfigurację statusline `[KRUX]` przy pierwszym uruchomieniu.
+Po zaufaniu hookom persona aktywuje się przy starcie sesji. Statusline jest tylko dla Claude Code — tam plugin proponuje konfigurację `[KRUX]` przy pierwszym uruchomieniu; Codex pomija ten krok.
 
-**Trwałe przełączanie** (persystuje między sesjami — zapisuje stan do `~/.claude/.krux-mode`):
+**Trwałe przełączanie** (persystuje między sesjami):
 
 | Fraza | Efekt |
 |-------|-------|
@@ -132,9 +152,14 @@ Aktywuje się sam przy starcie sesji. Plugin sam proponuje konfigurację statusl
 
 **Ważne:** fraza musi być **całą wiadomością** — bez dodatkowego tekstu. `krux` działa, `hej krux włącz się` nie. Polskie znaki opcjonalne (regex ogarnie obie wersje).
 
-**Slash command `/krux:krux`** — jednorazowy. Wciąga skill do bieżącej sesji, ale **nie zmienia** `.krux-mode`. Następna sesja wróci do zapisanego stanu.
+**Claude `/krux:krux` i Codex `$krux:krux`** — jednorazowe. Wciągają skill do bieżącej sesji, ale **nie zmieniają** `.krux-mode`. Codex obsługuje też `$krux:krux on` i `$krux:krux off` jako trwałe przełączniki.
 
-**Sprawdzenie stanu:**
+**Stan hosta:**
+
+- Claude Code: `~/.claude/.krux-*`.
+- Codex: pliki `.krux-*` w zarządzanym katalogu `PLUGIN_DATA` danego pluginu.
+
+Sprawdzenie stanu Claude Code:
 ```bash
 cat ~/.claude/.krux-mode   # on albo off
 ```
@@ -149,14 +174,14 @@ export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
 ```
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
-jawny wybór w `~/.claude/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
+jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
 
-**Plik stanu** (`~/.claude/.krux-mode`) - automatycznie zarządzany przez hook:
+**Plik stanu** (`<stateDir>/.krux-mode`) - automatycznie zarządzany przez hook:
 ```
 off
 ```
 
-## Odinstalowanie
+## Odinstalowanie — Claude Code
 
 `claude plugin uninstall krux` usuwa plugin, ale plugin zostawia w `~/.claude/` kilka plików stanu. Do wyczyszczenia ręcznie:
 
@@ -164,12 +189,22 @@ off
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
       ~/.claude/.krux-flow-active \
       ~/.claude/.krux-statusline-asked \
-      ~/.claude/.krux-statusline.sh ~/.claude/.krux-statusline.ps1
+      ~/.claude/.krux-statusline.sh
 ```
 
 Jeśli zarejestrowany był statusline `[KRUX]`, usuń pole `statusLine` z `~/.claude/settings.json`.
 
 Projektowe `.claude/settings.local.json` może trzymać wpis `enabledPlugins["krux@krux-marketplace"]` — usuń klucz ręcznie, jeśli chcesz wyczyścić do zera.
+
+## Odinstalowanie — Codex
+
+```bash
+codex plugin remove krux@krux-marketplace
+```
+
+Codex może pozostawić pliki `.krux-*` w katalogu `PLUGIN_DATA`. Nie usuwaj
+ręcznie całego `PLUGIN_DATA`, jeśli współdzieli go przyszła wersja pluginu;
+usuń tylko pliki z prefiksem `.krux-`, gdy potrzebny jest pełny reset.
 
 ## Granice
 

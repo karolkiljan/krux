@@ -1,13 +1,13 @@
 # CLAUDE.md — architektura pluginu krux
 
-Ten plik to mapa dla maintainerów i dla Claude Code pracującego nad tym projektem. README.md jest dla użytkowników pluginu — ten plik jest dla osób które modyfikują plugin.
+Ten plik to mapa dla maintainerów oraz agentów pracujących nad pluginem dla Claude Code i Codex. README.md jest dla użytkowników pluginu — ten plik jest dla osób które modyfikują plugin.
 
 ## Koncepcja — dwie ortogonalne osi
 
 Plugin działa na dwóch niezależnych osiach:
 
-1. **Persona krux** (skill `krux`) — kompresja tokenów przez ork persona + ultra-zwięzły styl. Stan: `~/.claude/.krux-mode` + `~/.claude/.krux-active`.
-2. **Flow iteracyjny** (skill `krux-flow`) — tryb „jeden ruch na raz, bez upfront planu". Stan: `~/.claude/.krux-flow-active`.
+1. **Persona krux** (skill `krux`) — kompresja tokenów przez ork persona + ultra-zwięzły styl. Stan: `<stateDir>/.krux-mode` + `<stateDir>/.krux-active`.
+2. **Flow iteracyjny** (skill `krux-flow`) — tryb „jeden ruch na raz, bez upfront planu". Stan: `<stateDir>/.krux-flow-active`.
 
 **Te tryby są niezależne.** Flow może działać bez persony. Persona może działać bez flow. Obydwa mogą być aktywne jednocześnie. Nie mieszaj logiki toggle — każdy ma osobny hook (`krux-toggle.js`, `krux-flow-toggle.js`).
 
@@ -27,33 +27,31 @@ Plugin działa na dwóch niezależnych osiach:
 
 | Plik | Kto pisze | Kto czyta | Cel |
 |------|-----------|-----------|-----|
-| `~/.claude/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
-| `~/.claude/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script | Runtime flag dla statusline badge `[KRUX]`. |
-| `~/.claude/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
-| `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Marker że pluginowy prompt o statusline już wyleciał (nie nagaduj). |
+| `<stateDir>/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
+| `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Runtime flag aktywnej persony. |
+| `<stateDir>/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
+| `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
 
-**Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag dla UI. Slash command `/krux:krux` zapisuje tylko `.krux-active`, bez zmiany `.krux-mode`. Dzięki temu jednorazowa aktywacja nie nadpisuje globalnego opt-out użytkownika.
+**Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag. `/krux:krux` i `$krux:krux` zapisują tylko `.krux-active`, bez zmiany `.krux-mode`. `$krux:krux on|off` jawnie zmienia stan trwały.
 
 ## Dystrybucja — Claude Code i Codex CLI
 
-Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-plugin/plugin.json` (Claude Code) i `.codex-plugin/plugin.json` (Codex CLI). `hooks/` i `skills/` są fizycznie współdzielone — żadnej kopii treści. Jedyne naprawdę osobne artefakty to manifesty i orki (format subagentów się rozjeżdża, patrz niżej).
+Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-plugin/plugin.json` (Claude Code) i `.codex-plugin/plugin.json` (Codex). `hooks/`, `skills/` i źródłowe role w `agents/` są współdzielone — żadnej kopii persony ani instrukcji roli.
 
 **Stan między hostami.** `hooks/lib/state-dir.js` eksportuje `stateDir()`: zwraca `process.env.PLUGIN_DATA` gdy ustawione (Codex ustawia ten host-neutralny, zapisywalny katalog per-plugin), inaczej `~/.claude/` (Claude Code, dzisiejsze zachowanie 1:1). `activate.js`, `krux-toggle.js`, `krux-flow-toggle.js` czytają katalog stanu przez ten resolver zamiast twardo kodować `~/.claude/`. Statusline (Claude-Code-specific, brak odpowiednika w Codex) jest owinięty w `if (!process.env.PLUGIN_DATA)` w `activate.js` — pod Codexem sekcja w ogóle się nie wykonuje.
 
-**Orki pod Codex.** Codex nie ma granularnej listy `tools:` — ma tylko `sandbox_mode` (`read-only` | `workspace-write`). `agents/ork-*.md` (Markdown + frontmatter) zostaje jedynym źródłem prawdy dla obu hostów. `scripts/generate-codex-agents.js` czyta te pliki i pisze `agents-codex/*.toml` (format Codeksa: `name`, `description`, `sandbox_mode`, `developer_instructions`). Mapowanie `tools → sandbox_mode`: obecność `Edit` lub `Write` → `workspace-write`, inaczej → `read-only`. Wygenerowane `.toml` są **commitowane** (Codex czyta gotowe pliki, nie odpala generatora sam) — odśwież ręcznie przez `npm run generate:codex-agents` po każdej zmianie w `agents/ork-*.md`. Test `agents-codex-sync.test.js` pilnuje że commitowany output nie jest przestarzały, analogicznie do `triggers-sync.test.js`.
-
-Design pełnego portu: `docs/specs/2026-07-12-codex-port-design.md` (lokalny, niecommitowany).
+**Orki pod Codex.** Manifest pluginu nie instaluje custom agents. `agents/ork-*.md` zostaje jedynym źródłem prawdy: `skills/krux/orchestration-codex.md` każe głównemu agentowi przeczytać właściwą rolę i przekazać jej kluczowe instrukcje natywnemu subagentowi Codexa. `skills/krux/orchestration.md` jest routerem wspólnym, a `orchestration-claude.md` zachowuje `Agent` tool, nazwy `@krux:ork-*` i modele Claude.
 
 ## Skille — jak są ze sobą powiązane
 
-- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** mówią jak Krux mówi; **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`, czytanym przy pracy z kodem. Pozostałe referencje (`moods.md`, `orchestration.md`, `auto-disable.md`, `context-watch.md`, `examples.md`) mają jawne warunki doczytania w rdzeniu. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
+- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** mówią jak Krux mówi; **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`. `orchestration.md` wybiera `orchestration-claude.md` albo `orchestration-codex.md`. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
 
 ## Konwencje — co robić, czego nie
 
 **Co robić:**
-- Nowe hooki → `hooks/*.js`, wszystkie Node.js, bez zewnętrznych zależności (Claude Code dostarcza Node).
-- Nowe skille → `skills/{name}/SKILL.md`. Slash `/krux:{name}` rejestrowany automatycznie. Nie dodawać `commands/` — legacy format, skill i tak wygrywa.
+- Nowe hooki → `hooks/*.js`, wszystkie Node.js, bez zewnętrznych zależności. Node.js jest jawnym wymaganiem obu hostów.
+- Nowe skille → `skills/{name}/SKILL.md`. Claude używa `/krux:{name}`, Codex `$krux:{name}`. Nie dodawać `commands/` — legacy format, skill i tak wygrywa.
 - Diacritics w regex → zawsze tolerować warianty: `[łl]`, `[ąa]` albo `(ł|l)`, `(ą|a)`. Nigdy `[ł|l]` — taki zbiór dopuszcza znak `|`. Wzorce są w `krux-toggle.js` i `krux-flow-toggle.js`.
 - Stan w `~/.claude/` → ukryte pliki prefiksowane `.krux-`.
 - Triggery orków → `agents/triggers.json` (single source of truth). Każde słowo z listy MUSI być w `description` agenta — test `triggers-sync.test.js` to wymusza. Tabela w README jest tylko dokumentacyjną kopią dla użytkownika.
@@ -68,11 +66,11 @@ Design pełnego portu: `docs/specs/2026-07-12-codex-port-design.md` (lokalny, ni
 
 **Resume → krótki reminder, compact → pełny reinject SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Compact przepisuje kontekst, więc `activate.js` ponownie wstrzykuje pełne SKILL.md, tak samo jak przy `startup`.
 
-**Statusline copy przy aktywacji.** Settings wskazują na stabilną ścieżkę `~/.claude/.krux-statusline.sh` (Unix) albo `~/.claude/.krux-statusline.ps1` (Windows/PowerShell), a właściwy skrypt jest kopiowany z wersjonowanego cache pluginu na SessionStart. Ponowne wywołanie w ciągu 5 sekund pomija zbędną kopię. Update pluginu → update statusline bez zmiany settings.json.
+**Statusline copy przy aktywacji.** Settings wskazują na stabilną ścieżkę `~/.claude/.krux-statusline.sh`, a skrypt jest kopiowany z wersjonowanego cache pluginu na SessionStart. Ponowne wywołanie w ciągu 5 sekund pomija zbędną kopię. Update pluginu → update statusline bez zmiany settings.json.
 
 ## Testy
 
-Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install). Uruchomienie: `npm test`. Glob w `package.json` używa podwójnych cudzysłowów, żeby działał także przez `cmd.exe` na Windows.
+Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install). Uruchomienie: `npm test`.
 
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin (`test/krux-toggle.test.js`)
@@ -85,14 +83,14 @@ Pokrycie:
 - `persona-contract` — rdzeń persony mały z jawnymi warunkami doczytania, hierarchia/raport/granice/model A-B-C, delegacja nie ucina raport do summary, ork dostaje jawny stan persony (`test/persona-contract.test.js`)
 - `state-dir` — resolver katalogu stanu (`PLUGIN_DATA` vs `~/.claude/`) (`test/state-dir.test.js`)
 - `codex-plugin-contract` — `.codex-plugin/plugin.json` istnieje, wymagane pola, ścieżki żywe (`test/codex-plugin-contract.test.js`)
-- `agents-codex-sync` — `agents-codex/*.toml` zsynchronizowane z `agents/ork-*.md` (`test/agents-codex-sync.test.js`)
+- `codex-cli-integration` — izolowana instalacja marketplace/pluginu i sprawdzenie skilli przez `codex debug prompt-input` (`test/codex-cli-integration.test.js`)
 
-**Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*`** z `process.env` — shell użytkownika może mieć np. `KRUX_DEFAULT_MODE=off` ustawione globalnie i zanieczyścić testy.
+**Konwencja testowa:** spawn hook jako podprocess z izolowanym `HOME`, karm JSONem na stdin, asertuj plik stanu + exit code + stdout/stderr. Dla hooków czytających env: w `spawnSync` **strippuj ambient `KRUX_*` i `PLUGIN_DATA`** z `process.env`, chyba że test przekazuje daną zmienną jawnie — konfiguracja hosta lub shell użytkownika może inaczej zanieczyścić testy i współdzielić ich stan.
 
 ## Orki (subprocessy)
 
 - Nazwa: **orki** — nie "agenci". Pasuje do persony.
-- Armia 6 orków w `agents/ork-*.md`: tropiciel (debug + eksploracja kodu), kowal (backend), sedzia (review), malarz (frontend), tester (testy), burzyciel (refaktoring + martwy kod). **Mapowanie triggerów → `agents/triggers.json`** (single source of truth). Krux sam wybiera orka i model (`sonnet`/`opus`/`haiku`/`inherit`) przy `Agent` spawn.
+- Armia 6 ról w `agents/ork-*.md`: tropiciel, kowal, sedzia, malarz, tester, burzyciel. **Mapowanie triggerów → `agents/triggers.json`**. Claude ładuje je jako nazwanych agentów; Codex dostaje ich instrukcje inline przez `orchestration-codex.md`.
 - **Frontmatter orka — konwencja:** `description: >` (folded scalar) z listą triggerów po przecinku. **Nie używać** `<example>` / inline `user:`/`assistant:` w description — YAML parser Claude Code interpretuje je jako nested keys i cała description + pole `tools` nie łykają (efekt: auto-invocation po triggerach nie działa, ork wygląda jak generic „Agent from krux plugin" w system prompt).
 - Orki zwracają standardowy JSON z kluczami `status` / `summary` / `details` / opcjonalnie `files` / `tests` / `verdict` — Krux parsuje `summary` dla usera, reszta dla niego.
 

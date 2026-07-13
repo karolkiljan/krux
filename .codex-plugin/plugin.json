@@ -1,6 +1,6 @@
 {
   "name": "krux",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
   "author": {
     "name": "Karol Kiljan",
@@ -11,6 +11,18 @@
   "license": "MIT",
   "keywords": ["polish", "compression", "persona", "terse", "orc"],
   "skills": "./skills/",
-  "hooks": "./hooks/hooks.json",
-  "agents": "./agents-codex/"
+  "interface": {
+    "displayName": "Krux",
+    "shortDescription": "Zwięzła persona i iteracyjny flow do pracy z kodem",
+    "longDescription": "Krux kompresuje odpowiedzi bez utraty treści technicznej i dodaje opcjonalny tryb pracy jeden ruch na raz.",
+    "developerName": "Karol Kiljan",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive"],
+    "websiteURL": "https://github.com/karolkiljan/krux",
+    "defaultPrompt": [
+      "$krux:krux — włącz zwięzłą personę Krux",
+      "$krux:krux-flow — pracuj jeden ruch na raz"
+    ],
+    "brandColor": "#FF6B35"
+  }
 }

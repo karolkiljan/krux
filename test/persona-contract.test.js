@@ -6,7 +6,13 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const skill = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'SKILL.md'), 'utf8');
 const examples = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'examples.md'), 'utf8');
+const moods = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'moods.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+
+function readOptional(file) {
+  try { return fs.readFileSync(path.join(ROOT, file), 'utf8'); }
+  catch { return ''; }
+}
 
 test('rdzeń persony zostaje mały i ma jawne warunki doczytania', () => {
   const words = (skill.match(/\S+/g) || []).length;
@@ -52,4 +58,51 @@ test('ork dostaje jawny stan persony zamiast udawać dziedziczenie kontekstu', (
   assert.match(common, /Subagent nie dziedziczy kontekstu persony/);
   assert.match(common, /Brak jawnego stanu → bezpieczny fallback `off`/);
   assert.match(orchestration, /Każdy prompt spawnu zawiera jawne `persona=on` albo `persona=off`/);
+});
+
+test('orkiestracja rozdziela wspólne zasady od adapterów hosta', () => {
+  const orchestration = readOptional('skills/krux/orchestration.md');
+  assert.match(skill, /\.\.\/\.\.\/agents\/triggers\.json/);
+  assert.match(orchestration, /orchestration-claude\.md/);
+  assert.match(orchestration, /orchestration-codex\.md/);
+  assert.match(orchestration, /agents\/triggers\.json/);
+  assert.match(orchestration, /persona=on/);
+  assert.match(orchestration, /SOLO[\s\S]*ŁAŃCUCH[\s\S]*RÓWNOLEGLE/);
+});
+
+test('adapter Codexa używa natywnych subagentów i wspólnych definicji ról', () => {
+  const codex = readOptional('skills/krux/orchestration-codex.md');
+  assert.match(codex, /natywn(?:y|e|ych) subagent/i);
+  assert.match(codex, /agents\/ork-\*\.md/);
+  assert.match(codex, /agents\/_common\.md/);
+  assert.match(codex, /persona=on\|off/);
+  assert.match(codex, /czekaj|wait/i);
+  assert.match(codex, /Pomiń[\s\S]*`tools`[\s\S]*`model`[\s\S]*`color`/);
+  assert.match(codex, /Pomiń[\s\S]*\$\{CLAUDE_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(codex, /`Agent`|@krux:|sonnet|opus|haiku/i);
+});
+
+test('adapter Claude zachowuje Agent tool, nazwy orków i modele', () => {
+  const claude = readOptional('skills/krux/orchestration-claude.md');
+  assert.match(claude, /`Agent`/);
+  assert.match(claude, /@krux:ork-/);
+  assert.match(claude, /sonnet[\s\S]*opus[\s\S]*haiku/i);
+});
+
+test('martwe generowane agenty Codexa nie są częścią pluginu', () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  assert.equal(fs.existsSync(path.join(ROOT, 'agents-codex')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'scripts', 'generate-codex-agents.js')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'test', 'agents-codex-sync.test.js')), false);
+  assert.equal('generate:codex-agents' in packageJson.scripts, false);
+});
+
+test('wyłączenie persony wymaga neutralnego potwierdzenia', () => {
+  assert.match(skill, /\$krux:krux off[^\n]+Potwierdź neutralnie/);
+  assert.doesNotMatch(skill, /wyłączenie w stylu orkowym/);
+});
+
+test('moods używa kanonicznej nazwy BOJOWY dla produkcyjnego stack trace', () => {
+  assert.match(moods, /Stack trace produkcyjny = bojowy/);
+  assert.doesNotMatch(moods, /Stack trace produkcyjny = wściekły/);
 });

@@ -1,7 +1,7 @@
 {
   "name": "krux-marketplace",
   "metadata": {
-    "description": "Marketplace krux — ork-programista w Claude Code. Persona ścina wodę bez utraty treści technicznej; flow to niezależny tryb iteracyjny."
+    "description": "Marketplace krux — ork-programista w Claude Code i Codex. Persona ścina wodę bez utraty treści technicznej; flow to niezależny tryb iteracyjny."
   },
   "owner": {
     "name": "karolkiljan"
@@ -11,7 +11,7 @@
       "name": "krux",
       "source": "./",
       "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
-      "version": "2.5.0",
+      "version": "2.6.0",
       "author": {
         "name": "Karol Kiljan"
       }

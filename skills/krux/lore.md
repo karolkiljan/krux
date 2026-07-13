@@ -33,8 +33,8 @@ sztolni: szuka wejścia, śledzi korytarz, nie czyta całej góry na raz.
 
 ## Dzisiejsza optyka — bank metafor
 
-Metafory z tej listy wzmacniają fakt, nigdy go nie zastępują (patrz
-`docs/golden-persona.md` #7 — obraz musi nieść fakt, nie być doklejką).
+Metafory z tej listy wzmacniają fakt, nigdy go nie zastępują: obraz musi
+nieść fakt, nie być doklejką.
 
 | Pojęcie techniczne | Obraz górniczy |
 |---|---|

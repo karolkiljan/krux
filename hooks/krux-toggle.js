@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// krux — UserPromptSubmit toggle hook (cross-platform)
+// krux — UserPromptSubmit toggle hook
 // Reads JSON payload from stdin, updates ~/.claude/.krux-mode and .krux-active.
 
 const fs = require('fs');
@@ -48,21 +48,23 @@ process.stdin.on('end', () => {
   };
 
   // Polish diacritics optional — `wylacz krux`, `wlacz krux` also work.
-  const oneShotRe = /^\/krux:krux$/iu;
-  const offRe = /^(stop krux|normalny tryb|wy(ł|l)(ą|a)cz krux)$/iu;
-  const onRe = /^(krux|w(ł|l)(ą|a)cz krux|start krux|aktywuj krux)$/iu;
+  const oneShotRe = /^(\/|\$)krux:krux$/iu;
+  const offRe = /^(stop krux|normalny tryb|wy(ł|l)(ą|a)cz krux|\$krux:krux off)$/iu;
+  const onRe = /^(krux|w(ł|l)(ą|a)cz krux|start krux|aktywuj krux|\$krux:krux on)$/iu;
 
   if (oneShotRe.test(prompt)) {
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
   } else if (offRe.test(prompt)) {
     try { fs.writeFileSync(modeFile, 'off'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
+      return;
     }
     try { fs.unlinkSync(flag); } catch (e) {}
     emit('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
   } else if (onRe.test(prompt)) {
     try { fs.writeFileSync(modeFile, 'on'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
+      return;
     }
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
     const body = personaBody();

@@ -86,14 +86,9 @@ process.stdin.on('end', () => {
   // Statusline is Claude-Code-specific — Codex CLI has no documented equivalent.
   // PLUGIN_DATA presence means we're running under Codex: skip the whole block.
   if (!process.env.PLUGIN_DATA) try {
-    const isWindows = process.platform === 'win32';
-    const scriptName = isWindows ? 'krux-statusline.ps1' : 'krux-statusline.sh';
-    const stableName = isWindows ? '.krux-statusline.ps1' : '.krux-statusline.sh';
-    const srcScript = path.join(__dirname, scriptName);
-    const stableScript = path.join(claudeDir, stableName);
-    const stableCommand = isWindows
-      ? `powershell -ExecutionPolicy Bypass -File "${stableScript}"`
-      : `bash "${stableScript}"`;
+    const srcScript = path.join(__dirname, 'krux-statusline.sh');
+    const stableScript = path.join(claudeDir, '.krux-statusline.sh');
+    const stableCommand = `bash "${stableScript}"`;
 
     let needsCopy = true;
     try {
@@ -106,9 +101,7 @@ process.stdin.on('end', () => {
       try {
         fs.copyFileSync(srcScript, tmpPath);
         fs.renameSync(tmpPath, stableScript);
-        if (!isWindows) {
-          try { fs.chmodSync(stableScript, 0o755); } catch (e) {}
-        }
+        try { fs.chmodSync(stableScript, 0o755); } catch (e) {}
       } catch (e) {
         try { fs.unlinkSync(tmpPath); } catch (e2) {}
         throw e;

@@ -25,11 +25,16 @@ process.stdin.on('end', () => {
   }
 
   const claudeDir = stateDir();
-  try { fs.mkdirSync(claudeDir, { recursive: true }); } catch (e) {}
+  try {
+    fs.mkdirSync(claudeDir, { recursive: true });
+  } catch (e) {
+    console.error('[KRUX-FLOW] state directory creation failed:', e.message);
+    process.exit(0);
+  }
   const flagFile = path.join(claudeDir, '.krux-flow-active');
 
-  const onRe = /^(flow|flow on|krux-flow|krux-flow on|\/krux:krux-flow(?: on| (?!off$).+)?|iterate|tryb krokowy)$/iu;
-  const offRe = /^(flow off|stop flow|koniec flow|krux-flow off|\/krux:krux-flow off|stop iterate|koniec iterate)$/iu;
+  const onRe = /^(flow|flow on|krux-flow|krux-flow on|(\/|\$)krux:krux-flow(?: on| (?!off$).+)?|iterate|tryb krokowy)$/iu;
+  const offRe = /^(flow off|stop flow|koniec flow|krux-flow off|(\/|\$)krux:krux-flow off|stop iterate|koniec iterate)$/iu;
 
   const emit = (msg) => {
     process.stdout.write(JSON.stringify({
@@ -41,13 +46,25 @@ process.stdin.on('end', () => {
   };
 
   if (offRe.test(prompt)) {
-    try { fs.unlinkSync(flagFile); } catch (e) {}
+    try {
+      fs.unlinkSync(flagFile);
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
+        console.error('[KRUX-FLOW] flag removal failed:', e.message);
+        process.exit(0);
+      }
+    }
     emit('KRUX-FLOW OFF: tryb iteracyjny wyłączony. Potwierdź wyłączenie w stylu orkowym (jeśli krux aktywny), dalej pracuj normalnie.');
     process.exit(0);
   }
 
   if (onRe.test(prompt)) {
-    try { fs.closeSync(fs.openSync(flagFile, 'w')); } catch (e) {}
+    try {
+      fs.closeSync(fs.openSync(flagFile, 'w'));
+    } catch (e) {
+      console.error('[KRUX-FLOW] flag creation failed:', e.message);
+      process.exit(0);
+    }
     emit(
       'KRUX-FLOW ON: tryb iteracyjny aktywny. ZASADY: ' +
       '(1) Zero upfront planów — nie rozpisuj kroków 1-N. ' +

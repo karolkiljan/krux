@@ -2,7 +2,7 @@
 // Responsibilities:
 //   1. mode=off → remove flag, exit 0 with "OK"
 //   2. mode=on + startup → emit full SKILL.md body (frontmatter stripped)
-//   3. mode=on + resume/compact → emit short reminder (no SKILL.md)
+//   3. mode=on + resume → short reminder; compact → full SKILL.md reinjection
 //   4. Copy statusline script to ~/.claude/ on every run
 //   5. Prompt for statusline setup on first run when settings missing
 
@@ -20,15 +20,19 @@ function withTempHome(fn) {
   try { fn(home); } finally { fs.rmSync(home, { recursive: true, force: true }); }
 }
 
-function runHook(home, payload = null, extraEnv = {}) {
-  // Strip ambient KRUX_* to avoid test pollution from shell-level config.
+function buildEnv(home, extraEnv = {}) {
+  // Strip ambient host/plugin config; tests opt in through extraEnv.
   const cleanEnv = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (!k.startsWith('KRUX_')) cleanEnv[k] = v;
+    if (!k.startsWith('KRUX_') && k !== 'PLUGIN_DATA') cleanEnv[k] = v;
   }
+  return { ...cleanEnv, HOME: home, ...extraEnv };
+}
+
+function runHook(home, payload = null, extraEnv = {}) {
   return spawnSync('node', [HOOK], {
     input: payload === null ? '' : JSON.stringify(payload),
-    env: { ...cleanEnv, HOME: home, USERPROFILE: home, ...extraEnv },
+    env: buildEnv(home, extraEnv),
     encoding: 'utf8',
     timeout: 5000,
   });
@@ -136,9 +140,7 @@ test('copies statusline script to ~/.claude/.krux-statusline.sh on every activat
   withTempHome(home => {
     writeMode(home, 'on');
     runHook(home, { source: 'startup' });
-    const expected = process.platform === 'win32'
-      ? path.join(home, '.claude', '.krux-statusline.ps1')
-      : path.join(home, '.claude', '.krux-statusline.sh');
+    const expected = path.join(home, '.claude', '.krux-statusline.sh');
     assert.equal(fs.existsSync(expected), true);
   });
 });
@@ -186,12 +188,8 @@ test('stale krux statusline path: emits UPDATE AVAILABLE prompt', () => {
 test('correct krux statusline already set: no prompt', () => {
   withTempHome(home => {
     writeMode(home, 'on');
-    const stablePath = process.platform === 'win32'
-      ? path.join(home, '.claude', '.krux-statusline.ps1')
-      : path.join(home, '.claude', '.krux-statusline.sh');
-    const cmd = process.platform === 'win32'
-      ? `powershell -ExecutionPolicy Bypass -File "${stablePath}"`
-      : `bash "${stablePath}"`;
+    const stablePath = path.join(home, '.claude', '.krux-statusline.sh');
+    const cmd = `bash "${stablePath}"`;
     writeSettings(home, { statusLine: { type: 'command', command: cmd } });
     const r = runHook(home, { source: 'startup' });
     assert.doesNotMatch(r.stdout, /STATUSLINE/);
@@ -247,9 +245,7 @@ test('KRUX_NATIVE_SKILL=0 (default): startup nadal wstrzykuje body SKILL.md', ()
 test('statusline: świeży plik (<5s mtime) nie jest nadpisywany', () => {
   withTempHome(home => {
     writeMode(home, 'on');
-    const stable = process.platform === 'win32'
-      ? path.join(home, '.claude', '.krux-statusline.ps1')
-      : path.join(home, '.claude', '.krux-statusline.sh');
+    const stable = path.join(home, '.claude', '.krux-statusline.sh');
     fs.mkdirSync(path.dirname(stable), { recursive: true });
     fs.writeFileSync(stable, '#!/bin/bash\necho "FRESH"');
     const mtimeBefore = fs.statSync(stable).mtimeMs;
@@ -266,9 +262,7 @@ test('statusline: świeży plik (<5s mtime) nie jest nadpisywany', () => {
 test('statusline: stary plik (>5s mtime) jest atomowo zastąpiony', () => {
   withTempHome(home => {
     writeMode(home, 'on');
-    const stable = process.platform === 'win32'
-      ? path.join(home, '.claude', '.krux-statusline.ps1')
-      : path.join(home, '.claude', '.krux-statusline.sh');
+    const stable = path.join(home, '.claude', '.krux-statusline.sh');
     fs.mkdirSync(path.dirname(stable), { recursive: true });
     fs.writeFileSync(stable, '#!/bin/bash\necho "OLD"');
     const oldTime = (Date.now() - 10000) / 1000;
@@ -290,7 +284,7 @@ test('malformed stdin: exits cleanly without activating persona', () => {
     writeMode(home, 'on');
     const r = spawnSync('node', [HOOK], {
       input: 'not-json',
-      env: { ...process.env, HOME: home, USERPROFILE: home },
+      env: buildEnv(home),
       encoding: 'utf8',
       timeout: 5000,
     });

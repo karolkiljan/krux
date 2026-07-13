@@ -14,10 +14,11 @@ function makeIsolatedHome() {
 }
 
 function runHook(hookPath, input, home, extraEnv = {}) {
-  const env = { ...process.env, HOME: home, USERPROFILE: home, ...extraEnv };
+  const env = { ...process.env, HOME: home, ...extraEnv };
   for (const k of Object.keys(env)) {
     if (k.startsWith('KRUX_') && !(k in extraEnv)) delete env[k];
   }
+  if (!('PLUGIN_DATA' in extraEnv)) delete env.PLUGIN_DATA;
   return spawnSync('node', [path.join(ROOT, hookPath)], {
     input: typeof input === 'string' ? input : JSON.stringify(input),
     env,
@@ -88,4 +89,3 @@ test('resume nie wstrzykuje pełnego SKILL.md', () => {
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
-

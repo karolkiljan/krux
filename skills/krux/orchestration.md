@@ -1,67 +1,47 @@
-# Orkowie — armia generala
+# Orkowie — wspólna orkiestracja
 
-Gdy widzę pasujący kontekst → wzywam orka przez `Agent` tool. Nikt nie musi prosić.
+Ork = rola robocza. Definicje ról są wspólne dla hostów i żyją w
+`../../agents/ork-*.md`; kontrakt odpowiedzi żyje w `../../agents/_common.md`.
 
-**Jedyne źródło prawdy o triggerach:** `agents/triggers.json`.
-Czytaj ten plik PRZED wzywaniem orka. Każdy ork ma listę słów kluczowych zsynchronizowanych z jego `description` (test `triggers-sync.test.js` to wymusza).
+**Jedyne źródło prawdy o triggerach:** `../../agents/triggers.json`.
+Czytaj triggery przed delegacją. Pasujące słowo pomaga wybrać rolę, ale nie
+zmusza do spawnu przy pytaniu ogólnym ani trywialnej pracy.
 
-Reguły:
-- Ork wzywany GDY widzę pasujący kontekst — nie gdy user pyta o coś ogólnego
-- Każdy prompt spawnu zawiera jawne `persona=on` albo `persona=off`; subagent nie dziedziczy kontekstu persony. Stan bierz z bieżącego trybu Krux, a przy niepewności z pliku `~/.claude/.krux-active`
-- `summary` orka daje pierwsze zdanie dla usera. Po nietrywialnej zmianie składam
-  z `details`, `files` i `tests` pełny kontrakt raportu z `robota.md`; nie chowam
-  przepływu, powodu, ścieżki błędu ani weryfikacji za jednym zdaniem.
-- Gdy ork niepotrzebny — robię sam, nie marnuję zasobów
-- User nadal może użyć `@krux:ork-nazwa` wprost
+## Wybór adaptera hosta
 
-## Solo, łańcuch, równolegle — Krux sam decyduje
+- Dostępne natywne narzędzia subagentów Codexa → przeczytaj
+  `orchestration-codex.md` i stosuj wyłącznie ten adapter.
+- Dostępny Claude Code `Agent` tool → przeczytaj `orchestration-claude.md` i
+  stosuj wyłącznie ten adapter.
+- Brak obu powierzchni → pracuj sam. Nie wymyślaj wywołania narzędzia.
 
-Krux ocenia zadanie i dobiera formację. Nikt nie prosi — kontekst mówi.
+## Reguły wspólne
 
-**SOLO — jeden ork:** zadanie wąskie, jedna domena, jeden plik/obszar.
-- `napraw bug w krux-toggle.js` → `@krux:ork-tropiciel`
-- `napisz testy dla krux-flow-toggle` → `@krux:ork-tester`
+- Deleguj tylko zadanie wystarczająco duże, specjalistyczne albo niezależne,
+  żeby koszt zimnego subagenta miał sens.
+- Każdy prompt spawnu zawiera jawne `persona=on` albo `persona=off`; subagent
+  nie dziedziczy bezpiecznie stanu głosu. Brak pewności → `persona=off`.
+- Prompt przekazuje cel, zakres, ograniczenia, oczekiwany JSON i istotny stan
+  poprzednich kroków. Nie wysyłaj samej nazwy roli.
+- Gdy ork niepotrzebny — rób sam.
 
-**ŁAŃCUCH — sekwencja orków:** output A = input B, kolejność wymuszona.
-- `naprawić → sprawdzić że nie padło` → `@krux:ork-tropiciel` → `@krux:ork-tester`
-- `projekt → kod → testy` → `@krux:ork-kowal` → `@krux:ork-tester`
-- `review → posprzątać → review` → `@krux:ork-sedzia` → `@krux:ork-burzyciel` → `@krux:ork-sedzia`
-- Przekazanie: każdy następny dostać `persona=on|off` oraz co poprzedni znalazł/zmienił. Plik:linia, diagnoza, zakres.
+## SOLO, ŁAŃCUCH, RÓWNOLEGLE
 
-**RÓWNOLEGLE — kilku orków naraz:** 2+ zadania niezależne, różne domeny/pliki.
-- `trzy bugi w trzech plikach` → 3× `@krux:ork-tropiciel` równolegle
-- `przetestuj te 5 modułów` → 5× `@krux:ork-tester` równolegle
-- Wywołać przez wiele `Agent` wywołań w jednej wiadomości.
-- Po powrocie: sprawdzić konflikty edycji + pełny test suite.
+**SOLO:** jeden wąski problem i jedna dominująca rola → jeden ork.
 
-**ANTY — kiedy NIE:**
-- ten sam plik dla dwóch orków → nie równolegle (konflikt edycji)
-- brak zależności między zadaniami → nie łańcuch (niepotrzebna sekwencja)
-- jedno trywialne zadanie → nie ork wcale, Krux robi sam
+**ŁAŃCUCH:** rezultat A jest wejściem B. Następny ork dostaje `persona=on|off`,
+diagnozę, pliki, wykonane zmiany i wynik testów poprzednika. Nie układaj
+łańcucha, gdy etapy są niezależne.
 
-## Model — sonnet czy opus
+**RÓWNOLEGLE:** co najmniej dwa niezależne zadania w różnych plikach lub
+domenach. Nie dawaj dwóm orkom zapisu do tego samego pliku. Po powrocie sprawdź
+konflikty i uruchom pełną adekwatną weryfikację.
 
-Krux wybiera model przy każdym spawnie orka. Parametr `model` w `Agent` tool: `"sonnet"` | `"opus"` | `"haiku"`. Pominięcie = dziedziczy po parent (zwykle Opus) = drogo.
+## Raport
 
-Reguła kciuka:
-- zadanie w jednym pliku + jedna akcja → **sonnet**
-- rozumowanie między plikami, projekt, trade-off → **opus**
-- trywialne lookup (grep jednego stringa, odczyt jednej linii) → **haiku**
-
-Mapowanie orków (default, można łamać gdy kontekst mówi inaczej):
-- **sonnet:** `@krux:ork-tester`, `@krux:ork-malarz`, `@krux:ork-burzyciel` (prosty case), `@krux:ork-tropiciel` (prosty case/lookup), `@krux:ork-kowal` (jeden endpoint)
-- **opus:** `@krux:ork-sedzia`, `@krux:ork-tropiciel` (wielowarstwowy bug), `@krux:ork-burzyciel` (refactor wieloplikowy), `@krux:ork-kowal` (projekt API)
-- **haiku:** rzadko — tylko gdy zadanie mieści się w jednym grep/read
-
-Powód: subagent zawsze startować zimny — cache miss zapłacony przez spawn. Sonnet zamiast Opus = tańszy token, szybszy output, ten sam cold start. Default Opus dla grep = przepalanie kasy.
-
-## Parsing raportu od orka
-
-- Każdy ork zwraca TYLKO JSON — bez tekstu przed ani po (instrukcja wbudowana w każdy plik orka)
-- Schemat: `{ status, summary, details, files?, tests?, verdict? }`
-- Do usera: `summary` jako wynik — 1 zdanie max 30 słów.
-- `status`: `ok` = sukces, `warning` = ostrzeżenie, `error` = błąd.
-- Przy prostej odpowiedzi `summary` może wystarczyć. Po nietrywialnej zmianie
-  użyj `details`, `files` i `tests`, żeby raport zawierał: Jak działa, Dlaczego
-  tak, Czytaj od i Weryfikacja. Nie wklejaj surowego JSON.
-- Jeśli JSON parse error → `summary` = cały output orka jako plain text
+- Oczekiwany schemat: `{ status, summary, details, files?, tests?, verdict? }`.
+- `summary` daje pierwsze zdanie dla użytkownika, nie cały raport.
+- Po nietrywialnej zmianie użyj `details`, `files` i `tests`, żeby zachować:
+  Jak działa, Dlaczego tak, Czytaj od i Weryfikacja.
+- Nie wklejaj użytkownikowi surowego JSON. Błąd parsowania → potraktuj output
+  jako tekst, nazwij niezgodność kontraktu i nie udawaj pól, których nie ma.

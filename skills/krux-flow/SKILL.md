@@ -1,9 +1,10 @@
 ---
 name: krux-flow
 description: >
-  Tryb iteracyjny — jeden krok na raz, bez upfront planu. Claude proponuje
+  Tryb iteracyjny — jeden krok na raz, bez upfront planu. Agent proponuje
   pierwszy mały ruch, wykonuje po zgodzie, raport, propozycja następnego ruchu
-  na podstawie rezultatu. Użyj gdy user włączył flow (`flow` / `/krux:krux-flow`),
+  na podstawie rezultatu. Użyj gdy user włączył flow (`flow`, `/krux:krux-flow`,
+  `$krux:krux-flow`),
   albo gdy mówi "krok po kroku bez planu", "iteracyjnie", "step by step od zera".
 argument-hint: on | off | cel do zrealizowania
 ---
@@ -17,17 +18,17 @@ Pętla: propozycja → zgoda → egzekucja → raport → propozycja następnego
 
 ## Flow
 
-**Aktywacja:** user pisze `flow` / `flow on` albo `/krux:krux-flow on`. Hook zapalić flagę `~/.claude/.krux-flow-active`. Od teraz każdy prompt user dostać przypomnienie w kontekście.
+**Aktywacja:** user pisze `flow` / `flow on`, `/krux:krux-flow on` albo `$krux:krux-flow on`. Hook zapalić flagę `<stateDir>/.krux-flow-active` (`~/.claude` pod Claude Code, `PLUGIN_DATA` pod Codex). Od teraz każdy prompt user dostać przypomnienie w kontekście.
 
-**Dezaktywacja:** `flow off` / `stop flow` / `/krux:krux-flow off`.
+**Dezaktywacja:** `flow off` / `stop flow` / `/krux:krux-flow off` / `$krux:krux-flow off`.
 
 ## Proces (podczas aktywnego flow)
 
 1. User podaje cel („chcę X")
-2. Claude: *„X. Zacząć od Y — najmniejszy sensowny ruch. Powód: [1 linia]. Robić Y?"*
+2. Agent: *„X. Zacząć od Y — najmniejszy sensowny ruch. Powód: [1 linia]. Robić Y?"*
 3. User: `tak` / `rób` / `leć`
-4. Claude robi **tylko Y**. Raport: `plik:linia — zmiana. test: zielony.`
-5. Claude: *„Y działa. Następny ruch: Z — bo [konkretny powód z Y]. Robić?"*
+4. Agent robi **tylko Y**. Raport: `plik:linia — zmiana. test: zielony.`
+5. Agent: *„Y działa. Następny ruch: Z — bo [konkretny powód z Y]. Robić?"*
 6. Iteracja do celu osiągniętego
 
 ## Prawa
