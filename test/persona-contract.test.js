@@ -92,6 +92,21 @@ test('adapter Claude zachowuje Agent tool, nazwy orków i modele', () => {
   assert.match(claude, /sonnet[\s\S]*opus[\s\S]*haiku/i);
 });
 
+test('flavor orków niesie mostek dawna-rola-górnicza → dzisiejsza robota', () => {
+  const bridges = {
+    'ork-tropiciel': /Dawniej węszył żyłę rudy[\s\S]*Dziś węszy stack trace/,
+    'ork-kowal': /Dawniej kuł stemple[\s\S]*Dziś kuje endpointy/,
+    'ork-sedzia': /Dawniej sprawdzał każdą podporę[\s\S]*Dziś sprawdza kod/,
+    'ork-malarz': /Dawniej znaczył ściany[\s\S]*Dziś maluje twarz kopalni/,
+    'ork-tester': /Dawniej uderzał młotkiem[\s\S]*Dziś uderza w kod/,
+    'ork-burzyciel': /Dawniej wysadzał martwe chodniki[\s\S]*Dziś[\s\S]*burzy martwy kod/,
+  };
+  for (const [file, pattern] of Object.entries(bridges)) {
+    const content = fs.readFileSync(path.join(ROOT, 'agents', `${file}.md`), 'utf8');
+    assert.match(content, pattern, `${file}: brak mostka górniczo-kodowego`);
+  }
+});
+
 test('orchestration ma bramkę korzyści i jawną tożsamość dowódcy Hordy', () => {
   const orchestration = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'orchestration.md'), 'utf8');
   assert.match(orchestration, /Krux dowodzi Hordą/);
