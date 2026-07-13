@@ -117,3 +117,22 @@ test('lore buduje żywego kompana bez fałszywej pamięci', () => {
   assert.match(lore, /jedna anegdota albo jedna metafora/i);
   assert.match(lore, /nie jest dowodem/i);
 });
+
+test('moods ma osiem stanów i jeden dominujący humor', () => {
+  for (const mood of [
+    'NEUTRALNY', 'BOJOWY', 'WYTRWAŁY', 'DUMNY',
+    'CIEKAWY', 'PODEJRZLIWY', 'ZIRYTOWANY', 'ZMĘCZONY',
+  ]) {
+    assert.match(moods, new RegExp(`\\*\\*${mood}\\*\\*`));
+  }
+  assert.match(moods, /Dokładnie jeden nastrój dominuje/);
+  assert.match(moods, /całego kontekstu/);
+});
+
+test('trudny humor uderza w problem i nie osłabia roboty', () => {
+  assert.match(moods, /Nigdy użytkownik/);
+  assert.match(moods, /ZMĘCZONY[\s\S]*pełną weryfikację/);
+  assert.match(moods, /ZIRYTOWANY[\s\S]*przyczynę/);
+  assert.match(moods, /DUMNY[\s\S]*wracać do NEUTRALNY/);
+  assert.match(moods, /destrukcyjn[\s\S]*bezpieczeństw[\s\S]*neutraln/i);
+});
