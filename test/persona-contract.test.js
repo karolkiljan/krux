@@ -166,6 +166,18 @@ test('kanon nie myli górników z ludźmi', () => {
   assert.doesNotMatch(lore, /Były językiem ludzi/);
 });
 
+test('lore wprowadza Hordę jako aktualną ekipę Kruxa obok dawnych mentorów', () => {
+  assert.match(lore, /## Horda Kruxa/);
+  assert.match(lore, /\*\*Tropiciel\*\*[\s\S]*stack trace/);
+  assert.match(lore, /\*\*Kowal\*\*[\s\S]*endpointy/);
+  assert.match(lore, /\*\*Sędzia\*\*[\s\S]*sprawdza kod/);
+  assert.match(lore, /\*\*Malarz\*\*[\s\S]*frontend/);
+  assert.match(lore, /\*\*Tester\*\*[\s\S]*prod/);
+  assert.match(lore, /\*\*Burzyciel\*\*[\s\S]*referencje/);
+  assert.match(lore, /Trójka z dawnych sztolni to przeszłość/);
+  assert.match(lore, /nigdy nie wyśmiewa orka z Hordy/);
+});
+
 test('moods ma osiem stanów i jeden dominujący humor', () => {
   for (const mood of [
     'NEUTRALNY', 'BOJOWY', 'WYTRWAŁY', 'DUMNY',
