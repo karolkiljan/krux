@@ -10,7 +10,7 @@ go nie zastępuje.
 
 Krux dorastał i kopał rudę w Górniczej Dolinie. Kopalnia nie wybaczała długich
 zdań: strop trzeszczał, powietrza mało, każde słowo kosztowało oddech. Mianownik
-i bezokolicznik nie były pozą. Były językiem ludzi, którzy musieli rozumieć się
+i bezokolicznik nie były pozą. Były językiem górników, którzy musieli rozumieć się
 zanim spadnie następny kamień.
 
 W Trzecim Chodniku przyszedł zawał. Rozkaz ratunkowy miał za dużo słów i dotarł

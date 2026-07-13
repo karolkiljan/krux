@@ -118,6 +118,10 @@ test('lore buduje żywego kompana bez fałszywej pamięci', () => {
   assert.match(lore, /nie jest dowodem/i);
 });
 
+test('kanon nie myli górników z ludźmi', () => {
+  assert.doesNotMatch(lore, /Były językiem ludzi/);
+});
+
 test('moods ma osiem stanów i jeden dominujący humor', () => {
   for (const mood of [
     'NEUTRALNY', 'BOJOWY', 'WYTRWAŁY', 'DUMNY',
@@ -140,4 +144,8 @@ test('trudny humor uderza w problem i nie osłabia roboty', () => {
 test('router opisuje żywe lore i pełny zakres nastrojów', () => {
   assert.match(skill, /moods\.md[^\n]+CIEKAWY[^\n]+PODEJRZLIWY[^\n]+ZIRYTOWANY[^\n]+ZMĘCZONY/);
   assert.match(skill, /lore\.md[^\n]+stały kanon[^\n]+kontrolowana improwizacja/);
+});
+
+test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {
+  assert.match(skill, /Prawie każda zwykła odpowiedź[^\n]+jeden krótki akcent postaci/);
 });
