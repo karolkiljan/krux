@@ -10,6 +10,7 @@ const moods = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'moods.md'), 'ut
 const lore = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'lore.md'), 'utf8');
 const autoDisable = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'auto-disable.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+const compact = text => text.replace(/\s+/g, ' ');
 
 function readOptional(file) {
   try { return fs.readFileSync(path.join(ROOT, file), 'utf8'); }
@@ -112,15 +113,38 @@ test('auto-disable wycisza fragment bez zmiany stanu persony', () => {
 });
 
 test('zwykłe doprecyzowanie nie gasi Kruxa na cały turn', () => {
-  assert.match(autoDisable, /Samo[^\n]+`co masz na myśli\?`[^\n]+nie wycisza/i);
-  assert.match(autoDisable, /`normalnie`[^\n]+`bez Kruxa`/i);
-  assert.match(autoDisable, /gramatyka Kruxa[^\n]+przyczyną nieporozumienia/i);
+  const contract = compact(autoDisable);
+  assert.match(contract, /Samo.+`co masz na myśli\?`.+nie wycisza/i);
+  assert.match(contract, /`normalnie`.+`bez Kruxa`/i);
+  assert.match(contract, /gramatyka Kruxa.+przyczyną nieporozumienia/i);
 });
 
 test('odwracalny ruch i workflow zachowują ton Krux', () => {
-  assert.match(autoDisable, /Kosza[^\n]+nie wymaga/i);
-  assert.match(autoDisable, /Przeniesienie katalogu do Kosza[^\n]+ton Krux przez cały ruch/i);
-  assert.match(autoDisable, /narzędzi[^\n]+testów[^\n]+weryfikacji[^\n]+nie wycisza/i);
+  const contract = compact(autoDisable);
+  assert.match(contract, /Kosza.+nie wymaga/i);
+  assert.match(contract, /Przeniesienie katalogu do Kosza.+ton Krux przez cały ruch/i);
+  assert.match(contract, /narzędzi.+testów.+weryfikacji.+nie wycisza/i);
+});
+
+test('router doczytuje prostszy Krux dla zwykłego doprecyzowania', () => {
+  const router = compact(skill);
+  assert.match(router, /auto-disable\.md.+`co masz na myśli\?`.+`nie rozumiem`.+prostszy Krux/i);
+});
+
+test('rdzeń, auto-disable i moods zgadzają się na lokalny zakres', () => {
+  const contract = compact(autoDisable);
+  const moodRules = compact(moods);
+
+  assert.match(contract, /`co masz na myśli\?` \/ `nie rozumiem` \| prostszy Krux \| tylko wyjaśnienie; dalsza robota = standardowy Krux/i);
+  assert.match(moodRules, /neutralny fragment.+bezpośrednio przed.+nieodwracaln/i);
+
+  for (const [name, document] of [['SKILL.md', skill], ['auto-disable.md', autoDisable], ['moods.md', moods]]) {
+    assert.doesNotMatch(
+      compact(document),
+      /(?:cały|całego) (?:turn|odpowiedź).{0,80}(?:neutraln|wycisz)/i,
+      `${name}: neutralność nie może objąć całego turnu`,
+    );
+  }
 });
 
 test('moods używa kanonicznej nazwy BOJOWY dla produkcyjnego stack trace', () => {
@@ -158,7 +182,7 @@ test('trudny humor uderza w problem i nie osłabia roboty', () => {
   assert.match(moods, /ZMĘCZONY[\s\S]*pełną weryfikację/);
   assert.match(moods, /ZIRYTOWANY[\s\S]*przyczynę/);
   assert.match(moods, /DUMNY[\s\S]*wracać do NEUTRALNY/);
-  assert.match(moods, /destrukcyjn[\s\S]*bezpieczeństw[\s\S]*neutraln/i);
+  assert.match(compact(moods), /neutralny fragment.+bezpośrednio przed.+nieodwracaln.+niepewności wysokiej stawki/i);
 });
 
 test('router opisuje żywe lore i pełny zakres nastrojów', () => {
