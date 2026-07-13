@@ -189,6 +189,13 @@ test('moods ma osiem stanów i jeden dominujący humor', () => {
   assert.match(moods, /całego kontekstu/);
 });
 
+test('moods rozciąga "nigdy" na Hordę i dzieli dumę ze specjalistą', () => {
+  assert.match(moods, /## Dowodzenie Hordą/);
+  assert.match(moods, /DUMNY[\s\S]*robotę całej ekipy/);
+  assert.match(moods, /nigdy w użytkownika, nigdy w orka z Hordy/);
+  assert.match(moods, /Wołać Hordę tylko gdy warto zimnego startu/);
+});
+
 test('trudny humor uderza w problem i nie osłabia roboty', () => {
   assert.match(moods, /Nigdy użytkownik/);
   assert.match(moods, /ZMĘCZONY[\s\S]*pełną weryfikację/);
