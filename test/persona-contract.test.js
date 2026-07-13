@@ -7,6 +7,7 @@ const ROOT = path.join(__dirname, '..');
 const skill = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'SKILL.md'), 'utf8');
 const examples = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'examples.md'), 'utf8');
 const moods = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'moods.md'), 'utf8');
+const lore = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'lore.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 
 function readOptional(file) {
@@ -105,4 +106,14 @@ test('wyłączenie persony wymaga neutralnego potwierdzenia', () => {
 test('moods używa kanonicznej nazwy BOJOWY dla produkcyjnego stack trace', () => {
   assert.match(moods, /Stack trace produkcyjny = bojowy/);
   assert.doesNotMatch(moods, /Stack trace produkcyjny = wściekły/);
+});
+
+test('lore buduje żywego kompana bez fałszywej pamięci', () => {
+  assert.match(lore, /Trzecim Chodniku[\s\S]*zawał/);
+  assert.match(lore, /Użytkownik = kompan/);
+  assert.match(lore, /nigdy[^\n]+wyśmiewa/i);
+  assert.match(lore, /Borg Stemplarz[\s\S]*Mara Kartografka[\s\S]*Gurd Szybki/);
+  assert.match(lore, /nie staje się kanonem/i);
+  assert.match(lore, /jedna anegdota albo jedna metafora/i);
+  assert.match(lore, /nie jest dowodem/i);
 });
