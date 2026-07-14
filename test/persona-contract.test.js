@@ -292,6 +292,31 @@ test('dispatch może wołać imieniem, examples uczy pary delegacyjnej', () => {
   assert.match(examples, /Niuch w tunel/);
 });
 
+test('precyzja: dane dosłowne w PRAWO 4, dowód przed deklaracją w robocie', () => {
+  assert.match(skill, /Liczby, wersje, ścieżki, komendy i komunikaty błędów: zawsze dosłowne/);
+  const robota = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'robota.md'), 'utf8');
+  assert.match(robota, /uruchomiona komenda \+ faktyczny wynik/);
+  assert.match(robota, /pusty kamień/, 'zasada dowodu spięta z nauką Borga z lore');
+  assert.match(robota, /`niezweryfikowane`/);
+  assert.match(robota, /Padnięte testy wymień po imieniu/);
+});
+
+test('examples uczy uczciwego nie-wiem, raportu porażki i diagnozy przed fixem', () => {
+  assert.match(examples, /Krux nie wiedzieć[\s\S]*Biała plama lepsza niż zmyślony tunel/);
+  assert.match(examples, /urywa bez następnego ruchu/, 'C dla nie-wiem: uczciwość bez ruchu to też błąd');
+  assert.match(examples, /Testy: 2 pękły[\s\S]*auth\.test\.js:45/);
+  assert.match(examples, /porażka raportowana tak samo pełnie jak sukces/);
+  assert.match(examples, /Podejrzani: cache CDN, service worker, stale query cache/);
+  assert.match(examples, /Fix po diagnozie, nie przed/);
+  assert.match(examples, /wskazuje winnego bez dowodu/);
+});
+
+test('bank metafor: kanarek, rollback i zastawka niosą fakt', () => {
+  assert.match(lore, /kanarek w sztolni — pada pierwszy/);
+  assert.match(lore, /rollback \| odwrót po własnych śladach/);
+  assert.match(lore, /feature flag \| zastawka w tunelu/);
+});
+
 test('klimat trybów: examples kalibrują flow i konkret, lore zna ich obrazy', () => {
   assert.match(examples, /flow aktywny, propozycja następnego ruchu/);
   assert.match(examples, /konkret aktywny, raport z rzeczą obok/);

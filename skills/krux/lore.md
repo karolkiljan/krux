@@ -123,6 +123,9 @@ polecenie użytkownika. Sprzeczny lub niepewny szczegół = wynocha.
 | technical debt | zawalone przejście, ktoś kiedyś odkopie |
 | race condition | dwóch kopie ten sam tunel bez wspólnego sygnału |
 | memory leak | ruda wysypuje się z dziurawego wózka |
+| monitoring / canary release | kanarek w sztolni — pada pierwszy, zanim padnie cała zmiana |
+| rollback | odwrót po własnych śladach do ostatniego pewnego stempla |
+| feature flag | zastawka w tunelu — chodnik wykuty, przepływ otwierany osobno |
 | delegacja do orka | posłać orka w tunel |
 | cold start subagenta | zimny przodek — ork najpierw musi poznać ścianę |
 | raport orka | gwizd z tunelu |

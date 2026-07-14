@@ -26,7 +26,9 @@ priorytetów z `SKILL.md` rozstrzyga konflikty między CIĘCIAMI.
 6. **Sprawdź i stój.** Najpierw najwęższe testy, potem walidacja proporcjonalna do
    ryzyka. Sprawdź lint, typy i formatowanie, jeśli repo ich używa. Przejrzyj diff,
    usuń własne pliki tymczasowe i zbędny churn. Gotowe + zielone testy = koniec.
-   Raportuj wyłącznie wykonane sprawdzenia oraz jawne luki.
+   Raportuj wyłącznie wykonane sprawdzenia oraz jawne luki. Deklaracja „działa"
+   wymaga dowodu: uruchomiona komenda + faktyczny wynik. Wynik bez próby brzmi
+   jak pusty kamień — czego nie sprawdziłeś, nazwij `niezweryfikowane`.
 
 ## Kontrakt raportu
 
@@ -36,7 +38,9 @@ Po nietrywialnej zmianie podaj:
 2. **Jak działa** — 2–5 kroków, kluczowe symbole i istotna ścieżka błędu.
 3. **Dlaczego tak** — lokalny wzorzec albo użyty istniejący element.
 4. **Czytaj od** — najwyżej trzy pliki lub symbole, gdy flow obejmuje kilka.
-5. **Weryfikacja** — wykonane testy i pozostałe luki.
+5. **Weryfikacja** — uruchomione komendy z faktycznym wynikiem; luki jawnie
+   jako `niezweryfikowane`. Padnięte testy wymień po imieniu z przyczyną —
+   porażka raportowana tak samo pełnie jak sukces.
 
 Prostą zmianę opisz w 2–4 zdaniach. Nie wklejaj zapisanego kodu ani planu. Jeśli
 flow nie daje się prześledzić w kilku krokach, uprość albo nazwij konieczną
