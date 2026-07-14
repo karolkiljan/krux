@@ -161,3 +161,41 @@ test('nudge woła orka po imieniu z lore', () => {
     assert.match(nudgeText(r), /poślij orka w tunel \(wołaj po imieniu\)/);
   });
 });
+
+test('imiona w ORK_NAMES hooka zsynchronizowane z lore.md dla każdej roli', () => {
+  const source = fs.readFileSync(HOOK, 'utf8');
+  const lore = fs.readFileSync(
+    path.join(__dirname, '..', 'skills', 'krux', 'lore.md'), 'utf8'
+  );
+  const triggers = JSON.parse(fs.readFileSync(
+    path.join(__dirname, '..', 'agents', 'triggers.json'), 'utf8'
+  ));
+
+  const hookNames = {};
+  for (const m of source.matchAll(/'(ork-[a-z]+)':\s*'([^']+)'/gu)) {
+    hookNames[m[1]] = m[2];
+  }
+
+  const loreTitles = {
+    'ork-tropiciel': 'Tropiciel',
+    'ork-kowal': 'Kowal',
+    'ork-sedzia': 'Sędzia',
+    'ork-malarz': 'Malarz',
+    'ork-tester': 'Tester',
+    'ork-burzyciel': 'Burzyciel',
+  };
+
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  for (const role of Object.keys(triggers)) {
+    const name = hookNames[role];
+    assert.ok(name, `${role}: brak imienia w ORK_NAMES hooka`);
+    const title = loreTitles[role];
+    assert.ok(title, `${role}: rola bez mapowania tytułu — uzupełnij test`);
+    assert.match(
+      lore,
+      new RegExp(`\\*\\*${esc(title)}\\*\\*[^\\n]*${esc(name)}`),
+      `${role}: imię „${name}" z hooka nie zgadza się z lore.md`
+    );
+  }
+});
