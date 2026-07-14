@@ -37,9 +37,12 @@ process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { raw += chunk; });
 process.stdin.on('end', () => {
   let source = 'startup';
+  let sessionId;
   if (raw) {
     try {
-      source = JSON.parse(raw).source || 'startup';
+      const payload = JSON.parse(raw);
+      source = payload.source || 'startup';
+      sessionId = payload.session_id;
     } catch (e) {
       process.stdout.write('OK');
       process.exit(0);
@@ -64,7 +67,8 @@ process.stdin.on('end', () => {
   // Every SessionStart re-injection (any source) is a fresh reinforcement —
   // the mid-conversation drift-guard window (hooks/krux-toggle.js) should
   // count turns since THIS event, not since the session originally started.
-  resetTurnCount(claudeDir);
+  // Reset touches only this session's entry; parallel sessions keep theirs.
+  resetTurnCount(claudeDir, sessionId);
 
   // On resume the skill body is still in memory from the prior context, so a short
   // reminder is enough. On compact the context was rewritten and the persona can be

@@ -196,29 +196,47 @@ test('correct krux statusline already set: no prompt', () => {
   });
 });
 
-// --- drift-guard: reinjection resets the mid-session turn counter ---
+// --- drift-guard: reinjection resets the mid-session turn counter (own session only) ---
 
-function writeTurnCount(home, n) {
+function writeTurnCounts(home, map) {
   const dir = path.join(home, '.claude');
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, '.krux-turn-count'), String(n));
+  const store = {};
+  for (const [sid, n] of Object.entries(map)) store[sid] = { n, t: Date.now() };
+  fs.writeFileSync(path.join(dir, '.krux-turn-count'), JSON.stringify(store));
 }
 
-function hasTurnCount(home) {
-  return fs.existsSync(path.join(home, '.claude', '.krux-turn-count'));
+function turnCount(home, sid) {
+  try {
+    const entry = JSON.parse(
+      fs.readFileSync(path.join(home, '.claude', '.krux-turn-count'), 'utf8')
+    )[sid];
+    return entry ? entry.n : undefined;
+  } catch { return undefined; }
 }
 
 for (const source of ['startup', 'resume', 'compact']) {
-  test(`mode=on + source=${source}: resetuje istniejący licznik turnów drift-guard`, () => {
+  test(`mode=on + source=${source}: resetuje licznik drift-guard własnej sesji, cudzy zostaje`, () => {
     withTempHome(home => {
       writeMode(home, 'on');
-      writeTurnCount(home, 7);
-      const r = runHook(home, { source });
+      writeTurnCounts(home, { 'sid-self': 7, 'sid-other': 4 });
+      const r = runHook(home, { source, session_id: 'sid-self' });
       assert.equal(r.status, 0);
-      assert.equal(hasTurnCount(home), false, 'reinjection persony musi zresetować okno drift-guard');
+      assert.equal(turnCount(home, 'sid-self'), undefined, 'reinjection persony resetuje własne okno');
+      assert.equal(turnCount(home, 'sid-other'), 4, 'okno równoległej sesji nietknięte');
     });
   });
 }
+
+test('mode=on bez session_id w payload: resetuje wpis "default"', () => {
+  withTempHome(home => {
+    writeMode(home, 'on');
+    writeTurnCounts(home, { default: 5 });
+    const r = runHook(home, { source: 'startup' });
+    assert.equal(r.status, 0);
+    assert.equal(turnCount(home, 'default'), undefined);
+  });
+});
 
 // --- flag persistence ---
 

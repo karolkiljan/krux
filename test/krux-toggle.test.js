@@ -16,8 +16,8 @@ function withTempHome(fn) {
   try { fn(home); } finally { fs.rmSync(home, { recursive: true, force: true }); }
 }
 
-function buildPayload(prompt) {
-  return JSON.stringify({ prompt });
+function buildPayload(prompt, sessionId) {
+  return JSON.stringify(sessionId ? { prompt, session_id: sessionId } : { prompt });
 }
 
 function buildEnv(home, extraEnv = {}) {
@@ -30,9 +30,9 @@ function buildEnv(home, extraEnv = {}) {
   return { ...cleanEnv, HOME: home, ...extraEnv };
 }
 
-function runHook(home, prompt, extraEnv = {}) {
+function runHook(home, prompt, extraEnv = {}, sessionId) {
   const result = spawnSync('node', [HOOK], {
-    input: buildPayload(prompt),
+    input: buildPayload(prompt, sessionId),
     env: buildEnv(home, extraEnv),
     encoding: 'utf8',
     timeout: 5000,
@@ -240,6 +240,13 @@ function turnCountFile(home) {
   return path.join(home, '.claude', '.krux-turn-count');
 }
 
+function turnCount(home, sid = 'default') {
+  try {
+    const entry = JSON.parse(fs.readFileSync(turnCountFile(home), 'utf8'))[sid];
+    return entry ? entry.n : undefined;
+  } catch { return undefined; }
+}
+
 test('drift-guard: zwykły prompt poniżej progu nie emituje nic (cisza jak dziś)', () => {
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '5' };
@@ -268,29 +275,44 @@ test('drift-guard: po KRUX_DRIFT_INTERVAL turach emituje KRUX DRIFT-GUARD i rese
     const r = runHook(home, 'turn 3', env);
     assert.match(additionalContext(r), /KRUX DRIFT-GUARD/);
     assert.match(additionalContext(r), /examples\.md/);
-    assert.equal(fs.existsSync(turnCountFile(home)), false, 'licznik zresetowany po przypomnieniu');
+    assert.equal(turnCount(home), undefined, 'licznik zresetowany po przypomnieniu');
   });
 });
 
-test('drift-guard: jawne włączenie ("krux") resetuje licznik turnów', () => {
+test('drift-guard: sesje liczą niezależnie — prompt sesji B nie dolicza do okna A', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '3' };
+    runHook(home, 'krux', env, 'sid-a');
+    runHook(home, 'turn a1', env, 'sid-a');
+    runHook(home, 'turn a2', env, 'sid-a');
+    const rB = runHook(home, 'turn b1', env, 'sid-b');
+    assert.equal(rB.stdout, '', 'sesja B na swoim pierwszym turnie milczy');
+    assert.equal(turnCount(home, 'sid-a'), 2, 'okno A nietknięte przez B');
+    const rA = runHook(home, 'turn a3', env, 'sid-a');
+    assert.match(additionalContext(rA), /KRUX DRIFT-GUARD/, 'A osiąga próg po własnych 3 turach');
+    assert.equal(turnCount(home, 'sid-b'), 1, 'okno B dalej rośnie osobno');
+  });
+});
+
+test('drift-guard: jawne włączenie ("krux") resetuje licznik własnej sesji', () => {
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '3' };
     runHook(home, 'krux', env);
     runHook(home, 'turn 1', env);
     runHook(home, 'turn 2', env);
-    assert.equal(fs.readFileSync(turnCountFile(home), 'utf8'), '2');
+    assert.equal(turnCount(home), 2);
     runHook(home, 'krux', env);
-    assert.equal(fs.existsSync(turnCountFile(home)), false, 'jawne ON czyści licznik');
+    assert.equal(turnCount(home), undefined, 'jawne ON czyści licznik');
   });
 });
 
-test('drift-guard: jawne wyłączenie ("stop krux") czyści plik licznika', () => {
+test('drift-guard: jawne wyłączenie ("stop krux") czyści licznik własnej sesji', () => {
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '5' };
     runHook(home, 'krux', env);
     runHook(home, 'turn 1', env);
-    assert.equal(fs.existsSync(turnCountFile(home)), true);
+    assert.equal(turnCount(home), 1);
     runHook(home, 'stop krux', env);
-    assert.equal(fs.existsSync(turnCountFile(home)), false, 'OFF czyści licznik');
+    assert.equal(turnCount(home), undefined, 'OFF czyści licznik');
   });
 });

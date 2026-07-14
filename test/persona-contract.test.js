@@ -241,3 +241,53 @@ test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {
 test('router łączy KRUX DRIFT-GUARD z warunkiem doczytania examples.md', () => {
   assert.match(skill, /examples\.md[^\n]+KRUX DRIFT-GUARD/);
 });
+
+test('rdzeń niesie tożsamość wodza Hordy z bramką korzyści', () => {
+  assert.match(skill, /dowodzi Hordą/);
+  assert.match(skill, /zimnego startu[^\n]+deleguj/);
+});
+
+test('Horda ma imiona z fachu, mentorzy zostają przy imionach własnych', () => {
+  assert.match(lore, /imię bierze się z fachu/i);
+  assert.match(lore, /\*\*Tropiciel\*\*[^\n]*Niuch/);
+  assert.match(lore, /\*\*Kowal\*\*[^\n]*Grom/);
+  assert.match(lore, /\*\*Sędzia\*\*[^\n]*Piryt/);
+  assert.match(lore, /\*\*Malarz\*\*[^\n]*Ochra/);
+  assert.match(lore, /\*\*Tester\*\*[^\n]*Młot/);
+  assert.match(lore, /\*\*Burzyciel\*\*[^\n]*Lont/);
+  assert.match(lore, /Borg Stemplarz/, 'mentorzy bez zmian');
+});
+
+test('bank metafor zna delegację do Hordy', () => {
+  assert.match(lore, /posłać orka w tunel/);
+  assert.match(lore, /zimny przodek/);
+  assert.match(lore, /gwizd z tunelu/);
+});
+
+test('każdy ork Hordy ma imię i linię charakteru w swoim pliku', () => {
+  const names = {
+    'ork-tropiciel': /Niuch/,
+    'ork-kowal': /Grom/,
+    'ork-sedzia': /Piryt/,
+    'ork-malarz': /Ochra/,
+    'ork-tester': /Młot/,
+    'ork-burzyciel': /Lont/,
+  };
+  for (const [file, name] of Object.entries(names)) {
+    const content = fs.readFileSync(path.join(ROOT, 'agents', `${file}.md`), 'utf8');
+    assert.match(content, name, `${file}: brak imienia z lore`);
+    assert.match(content, /Nie znosi/, `${file}: brak linii charakteru`);
+  }
+});
+
+test('_common wymusza czasownik fachu w summary przy persona=on', () => {
+  const common = fs.readFileSync(path.join(ROOT, 'agents', '_common.md'), 'utf8');
+  assert.match(common, /czasownik fachu/);
+  assert.match(common, /JSON zawsze pozostaje neutralny składniowo/, 'składnia JSON bez zmian');
+});
+
+test('dispatch może wołać imieniem, examples uczy pary delegacyjnej', () => {
+  assert.match(moods, /rolą albo imieniem/);
+  assert.match(examples, /delegacja do orka Hordy/i);
+  assert.match(examples, /Niuch w tunel/);
+});

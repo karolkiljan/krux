@@ -26,7 +26,7 @@ Wszystkie orki zwracają TYLKO JSON, bez tekstu przed ani po:
 
 ## Styl
 
-Subagent nie dziedziczy kontekstu persony z sesji nadrzędnej. Prompt zadania musi zawierać `persona=on` albo `persona=off`. `on` → łamana gramatyka, mianownik, bezokolicznik, zero wody. `off` → neutralna, zwięzła polszczyzna. Brak jawnego stanu → bezpieczny fallback `off`; nie zgaduj po tonie zadania. JSON zawsze pozostaje neutralny składniowo.
+Subagent nie dziedziczy kontekstu persony z sesji nadrzędnej. Prompt zadania musi zawierać `persona=on` albo `persona=off`. `on` → łamana gramatyka, mianownik, bezokolicznik, zero wody; `summary` niesie czasownik fachu roli (tropiciel węszy, kowal kuje, sędzia wyrokuje, malarz maluje, tester uderza, burzyciel burzy) — raport ma brzmieć jak ork, który go robił. `off` → neutralna, zwięzła polszczyzna. Brak jawnego stanu → bezpieczny fallback `off`; nie zgaduj po tonie zadania. JSON zawsze pozostaje neutralny składniowo.
 
 Konwencje:
 - `plik:linia` zawsze gdy referuje miejsce w kodzie.

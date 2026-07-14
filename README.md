@@ -74,7 +74,9 @@ Krux nie gadać więcej niż trzeba.
 
 ## Orkowie — armia generala Krux
 
-Krux teraz **general**. Dowodzi 6 rolami roboczymi, każda do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux dobiera rolę na podstawie kontekstu. Claude Code ładuje nazwanych agentów pluginu i pozwala wywołać `@krux:ork-nazwa`. Codex przekazuje te same instrukcje ról swoim natywnym subagentom; nie instaluje osobnych custom agents.
+Krux teraz **general**. Dowodzi 6 rolami roboczymi, każda do konkretnej roboty. Nie musisz wybierać — piszesz po polsku, krux dobiera rolę na podstawie kontekstu, a hook `krux-horda-trigger` dodatkowo podpowiada delegację, gdy prompt pasuje do triggera (max 1 podpowiedź na 5 turnów; wyłączenie: `KRUX_HORDA_NUDGE=0`). Claude Code ładuje nazwanych agentów pluginu i pozwala wywołać `@krux:ork-nazwa`. Codex przekazuje te same instrukcje ról swoim natywnym subagentom; nie instaluje osobnych custom agents.
+
+Każdy ork Hordy nosi w lore imię z fachu: **Niuch** (tropiciel), **Grom** (kowal), **Piryt** (sędzia), **Ochra** (malarz), **Młot** (tester), **Lont** (burzyciel).
 
 ### Kiedy który ork się odpala
 
@@ -131,7 +133,7 @@ codex plugin marketplace add karolkiljan/krux
 codex plugin add krux@krux-marketplace
 ```
 
-Po instalacji rozpocznij nowy wątek. Otwórz `/hooks`, przejrzyj trzy komendy z
+Po instalacji rozpocznij nowy wątek. Otwórz `/hooks`, przejrzyj cztery komendy z
 `hooks/hooks.json` i zaufaj im. Codex celowo nie uruchamia nowych ani zmienionych
 hooków pluginu bez jednorazowego zatwierdzenia.
 
@@ -171,6 +173,9 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 **Zmienne środowiskowe:**
 ```bash
 export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
+export KRUX_DRIFT_INTERVAL=10           # co ile turnów przypomnienie stylu (drift-guard)
+export KRUX_HORDA_NUDGE=0               # wyłącz podpowiedzi delegacji do orków
+export KRUX_HORDA_NUDGE_INTERVAL=5      # minimalny odstęp turnów między podpowiedziami
 ```
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
@@ -188,6 +193,7 @@ off
 ```bash
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
       ~/.claude/.krux-flow-active \
+      ~/.claude/.krux-turn-count ~/.claude/.krux-horda-nudge \
       ~/.claude/.krux-statusline-asked \
       ~/.claude/.krux-statusline.sh
 ```

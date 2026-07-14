@@ -76,37 +76,45 @@ test('flow i persona są ortogonalne', () => {
   }
 });
 
-test('drift-guard: pełny cykl — cisza, przypomnienie na progu, powtórka, reset przez compact', () => {
+test('drift-guard: pełny cykl per-sesja — cisza, przypomnienie na progu, powtórka, reset przez compact', () => {
   const home = makeIsolatedHome();
   try {
     const env = { KRUX_DRIFT_INTERVAL: '3' };
-    const countFile = path.join(home, '.claude', '.krux-turn-count');
+    const SID = 'session-one';
+    const countOf = (sid) => {
+      try {
+        const entry = JSON.parse(
+          fs.readFileSync(path.join(home, '.claude', '.krux-turn-count'), 'utf8')
+        )[sid];
+        return entry ? entry.n : undefined;
+      } catch { return undefined; }
+    };
 
-    let r = runHook('hooks/activate.js', { source: 'startup' }, home, env);
+    let r = runHook('hooks/activate.js', { source: 'startup', session_id: SID }, home, env);
     assert.equal(r.status, 0);
 
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1', session_id: SID }, home, env);
     assert.equal(r.stdout, '', 'turn 1/3: cisza');
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2', session_id: SID }, home, env);
     assert.equal(r.stdout, '', 'turn 2/3: cisza');
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 3' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 3', session_id: SID }, home, env);
     assert.match(r.stdout, /KRUX DRIFT-GUARD/, 'turn 3/3: próg osiągnięty');
-    assert.equal(fs.existsSync(countFile), false, 'licznik zresetowany po przypomnieniu');
+    assert.equal(countOf(SID), undefined, 'licznik zresetowany po przypomnieniu');
 
     // Cykl się powtarza — kolejne okno liczy znów od zera, nie jest one-shot.
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 4' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 4', session_id: SID }, home, env);
     assert.equal(r.stdout, '', 'nowe okno turn 1/3: znów cisza');
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 5' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 5', session_id: SID }, home, env);
     assert.equal(r.stdout, '', 'nowe okno turn 2/3: znów cisza');
-    assert.equal(fs.readFileSync(countFile, 'utf8'), '2');
+    assert.equal(countOf(SID), 2);
 
     // Compact w środku okna przerywa liczenie — pełna reinjekcja to nowe wzmocnienie.
-    r = runHook('hooks/activate.js', { source: 'compact' }, home, env);
+    r = runHook('hooks/activate.js', { source: 'compact', session_id: SID }, home, env);
     assert.equal(r.status, 0);
     assert.match(r.stdout, /PRAWO 1/, 'compact wstrzykuje pełne SKILL.md');
-    assert.equal(fs.existsSync(countFile), false, 'compact zresetował licznik w trakcie okna');
+    assert.equal(countOf(SID), undefined, 'compact zresetował licznik w trakcie okna');
 
-    r = runHook('hooks/krux-toggle.js', { prompt: 'turn po compact' }, home, env);
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn po compact', session_id: SID }, home, env);
     assert.equal(r.stdout, '', 'świeże okno po compact: cisza, nie natychmiastowe przypomnienie');
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
@@ -119,7 +127,7 @@ test('resume nie wstrzykuje pełnego SKILL.md', () => {
     fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'on');
     const r = runHook('hooks/activate.js', { source: 'resume' }, home);
     assert.equal(r.status, 0);
-    assert.ok(r.stdout.length < 800, `resume output za długi: ${r.stdout.length} znaków`);
+    assert.ok(r.stdout.length < 1100, `resume output za długi: ${r.stdout.length} znaków`);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
     assert.doesNotMatch(r.stdout, /## Persona/, 'resume NIE wstrzykuje sekcji Persona');
   } finally {

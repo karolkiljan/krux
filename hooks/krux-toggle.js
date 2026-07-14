@@ -12,8 +12,11 @@ process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => { raw += chunk; });
 process.stdin.on('end', () => {
   let prompt = '';
+  let sessionId;
   try {
-    prompt = (JSON.parse(raw).prompt || '').trim();
+    const payload = JSON.parse(raw);
+    prompt = (payload.prompt || '').trim();
+    sessionId = payload.session_id;
   } catch (e) {
     process.exit(0);
   }
@@ -61,7 +64,7 @@ process.stdin.on('end', () => {
       return;
     }
     try { fs.unlinkSync(flag); } catch (e) {}
-    resetTurnCount(claudeDir);
+    resetTurnCount(claudeDir, sessionId);
     emit('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
   } else if (onRe.test(prompt)) {
     try { fs.writeFileSync(modeFile, 'on'); } catch (e) {
@@ -69,16 +72,16 @@ process.stdin.on('end', () => {
       return;
     }
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
-    resetTurnCount(claudeDir);
+    resetTurnCount(claudeDir, sessionId);
     const body = personaBody();
     emit(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
   } else if (fs.existsSync(flag)) {
-    // Persona aktywna, prompt nie dotyka toggle — licz tury od ostatniego
-    // wzmocnienia. Cisza poniżej progu (koszt tokenowy = 0 w typowej turze).
-    if (bumpTurnCount(claudeDir)) {
+    // Persona aktywna, prompt nie dotyka toggle — licz tury tej sesji od
+    // ostatniego wzmocnienia. Cisza poniżej progu (koszt tokenowy = 0).
+    if (bumpTurnCount(claudeDir, sessionId)) {
       emit(
         'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
-        ' Styl mógł się rozjechać przez długi wątek (Regresja A) — doczytaj `examples.md` i wróć do formy B.'
+        ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.'
       );
     }
   }

@@ -13,6 +13,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/krux-flow-toggle.js\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/krux-horda-trigger.js\"",
+            "timeout": 5
           }
         ]
       }
