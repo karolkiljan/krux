@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // krux — UserPromptSubmit toggle hook
-// Reads JSON payload from stdin, updates ~/.claude/.krux-mode and .krux-active.
+// Reads JSON payload from stdin, updates <stateDir>/.krux-mode and .krux-active.
 
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
+const { onPromptPayload, emitContext, stripFrontmatter } = require('./lib/hook-io');
 const {
   TURN_REMINDER,
   REMINDER_CORE,
@@ -17,21 +18,7 @@ const {
   isSessionActive,
 } = require('./lib/drift-guard');
 
-let raw = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => { raw += chunk; });
-process.stdin.on('end', () => {
-  let prompt = '';
-  let sessionId;
-  try {
-    const payload = JSON.parse(raw);
-    prompt = (payload.prompt || '').trim();
-    sessionId = payload.session_id;
-  } catch (e) {
-    process.exit(0);
-  }
-  if (!prompt) process.exit(0);
-
+onPromptPayload(({ prompt, sessionId }) => {
   const claudeDir = stateDir();
   try {
     fs.mkdirSync(claudeDir, { recursive: true });
@@ -42,19 +29,10 @@ process.stdin.on('end', () => {
   const modeFile = path.join(claudeDir, '.krux-mode');
   const flag = path.join(claudeDir, '.krux-active');
 
-  const emit = (additionalContext) => {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'UserPromptSubmit',
-        additionalContext,
-      },
-    }));
-  };
-
   const personaBody = () => {
     const skillPath = path.join(__dirname, '..', 'skills', 'krux', 'SKILL.md');
     try {
-      return fs.readFileSync(skillPath, 'utf8').replace(/^---[\s\S]*?---\s*/, '');
+      return stripFrontmatter(fs.readFileSync(skillPath, 'utf8'));
     } catch (e) {
       console.error('[KRUX] SKILL.md read failed:', e.message);
       return '';
@@ -81,7 +59,7 @@ process.stdin.on('end', () => {
     try { fs.unlinkSync(flag); } catch (e) {}
     clearSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
-    emit('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
+    emitContext('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
   } else if (onRe.test(prompt)) {
     try { fs.writeFileSync(modeFile, 'on'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
@@ -91,16 +69,16 @@ process.stdin.on('end', () => {
     markSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
     const body = personaBody();
-    emit(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
+    emitContext(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
   } else if (isSessionActive(claudeDir, sessionId)) {
     if (bumpTurnCount(claudeDir, sessionId)) {
-      emit(
+      emitContext(
         'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
         ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.' +
         ' Kalibracja: ' + nextMicroExample(claudeDir, sessionId)
       );
     } else if (turnReminderEnabled()) {
-      emit('KRUX TURN — ' + TURN_REMINDER);
+      emitContext('KRUX TURN — ' + TURN_REMINDER);
     }
   }
 });

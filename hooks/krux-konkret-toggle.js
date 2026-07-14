@@ -14,18 +14,9 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
+const { onPromptPayload, emitContext } = require('./lib/hook-io');
 
-let raw = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => { raw += chunk; });
-process.stdin.on('end', () => {
-  let prompt = '';
-  try {
-    prompt = (JSON.parse(raw).prompt || '').trim();
-  } catch (e) {
-    process.exit(0);
-  }
-
+onPromptPayload(({ prompt }) => {
   const claudeDir = stateDir();
   try {
     fs.mkdirSync(claudeDir, { recursive: true });
@@ -38,15 +29,6 @@ process.stdin.on('end', () => {
   const onRe = /^(konkret|konkret on|strict|strict on|krux-konkret|krux-konkret on|(\/|\$)krux:krux-konkret(?: on| (?!off$).+)?)$/iu;
   const offRe = /^(konkret off|stop konkret|koniec konkret|strict off|krux-konkret off|(\/|\$)krux:krux-konkret off)$/iu;
 
-  const emit = (msg) => {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'UserPromptSubmit',
-        additionalContext: msg
-      }
-    }));
-  };
-
   if (offRe.test(prompt)) {
     try {
       fs.unlinkSync(flagFile);
@@ -56,7 +38,7 @@ process.stdin.on('end', () => {
         process.exit(0);
       }
     }
-    emit('KRUX-KONKRET OFF: tryb chirurgicznej precyzji wyłączony. Potwierdź wyłączenie zwięźle (persona krux aktywna → ton orkowy, inaczej neutralnie), dalej pracuj normalnie.');
+    emitContext('KRUX-KONKRET OFF: tryb chirurgicznej precyzji wyłączony. Potwierdź wyłączenie zwięźle (persona krux aktywna → ton orkowy, inaczej neutralnie), dalej pracuj normalnie.');
     process.exit(0);
   }
 
@@ -67,7 +49,7 @@ process.stdin.on('end', () => {
       console.error('[KRUX-KONKRET] flag creation failed:', e.message);
       process.exit(0);
     }
-    emit(
+    emitContext(
       'KRUX-KONKRET ON: tryb chirurgicznej precyzji aktywny. ZASADY: ' +
       '(1) Rób DOKŁADNIE to o co user prosił — nic ponad. ' +
       '(2) Najprostsze działające rozwiązanie — zero abstrakcji, opcji, warstw i konfigów na zapas. ' +
@@ -84,7 +66,7 @@ process.stdin.on('end', () => {
 
   // Flag active → inject short reminder every turn so the model stays in mode.
   if (fs.existsSync(flagFile)) {
-    emit(
+    emitContext(
       'KRUX-KONKRET aktywny: rób tylko to o co user prosił, nic ponad. ' +
       'Najprostsze działające. Czytaj tylko potrzebne pliki. ' +
       'Rzeczy obok → 1 linia "obok: X, nie ruszone", nie ruszaj. ' +

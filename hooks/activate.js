@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
+const { collectStdin, parsePayload, stripFrontmatter } = require('./lib/hook-io');
 const {
   REMINDER_CORE,
   resetTurnCount,
@@ -37,21 +38,17 @@ const flagPath = path.join(claudeDir, '.krux-active');
 const settingsPath = path.join(claudeDir, 'settings.json');
 const statuslineAskedPath = path.join(claudeDir, '.krux-statusline-asked');
 
-let raw = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => { raw += chunk; });
-process.stdin.on('end', () => {
+collectStdin(raw => {
   let source = 'startup';
   let sessionId;
   if (raw) {
-    try {
-      const payload = JSON.parse(raw);
-      source = payload.source || 'startup';
-      sessionId = payload.session_id;
-    } catch (e) {
+    const payload = parsePayload(raw);
+    if (!payload) {
       process.stdout.write('OK');
       process.exit(0);
     }
+    source = payload.source || 'startup';
+    sessionId = payload.session_id;
   }
 
   const mode = getDefaultMode();
@@ -98,8 +95,7 @@ process.stdin.on('end', () => {
       process.stdout.write('OK');
       process.exit(0);
     }
-    const body = skillContent.replace(/^---[\s\S]*?---\s*/, '');
-    output = 'KRUX TRYB AKTYWNY\n\n' + body;
+    output = 'KRUX TRYB AKTYWNY\n\n' + stripFrontmatter(skillContent);
   }
 
   // Statusline is Claude-Code-specific — Codex CLI has no documented equivalent.
