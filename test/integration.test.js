@@ -76,7 +76,7 @@ test('flow i persona są ortogonalne', () => {
   }
 });
 
-test('drift-guard: pełny cykl per-sesja — cisza, przypomnienie na progu, powtórka, reset przez compact', () => {
+test('drift-guard: pełny cykl per-sesja — reminder per-turn, pełny guard na progu, reset przez compact', () => {
   const home = makeIsolatedHome();
   try {
     const env = { KRUX_DRIFT_INTERVAL: '3' };
@@ -94,18 +94,20 @@ test('drift-guard: pełny cykl per-sesja — cisza, przypomnienie na progu, powt
     assert.equal(r.status, 0);
 
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1', session_id: SID }, home, env);
-    assert.equal(r.stdout, '', 'turn 1/3: cisza');
+    assert.match(r.stdout, /Techniczny konkret/, 'turn 1/3: krótki reminder');
+    assert.doesNotMatch(r.stdout, /KRUX DRIFT-GUARD/);
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2', session_id: SID }, home, env);
-    assert.equal(r.stdout, '', 'turn 2/3: cisza');
+    assert.match(r.stdout, /Techniczny konkret/, 'turn 2/3: krótki reminder');
+    assert.doesNotMatch(r.stdout, /KRUX DRIFT-GUARD/);
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 3', session_id: SID }, home, env);
     assert.match(r.stdout, /KRUX DRIFT-GUARD/, 'turn 3/3: próg osiągnięty');
     assert.equal(countOf(SID), undefined, 'licznik zresetowany po przypomnieniu');
 
     // Cykl się powtarza — kolejne okno liczy znów od zera, nie jest one-shot.
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 4', session_id: SID }, home, env);
-    assert.equal(r.stdout, '', 'nowe okno turn 1/3: znów cisza');
+    assert.match(r.stdout, /Techniczny konkret/, 'nowe okno turn 1/3: krótki reminder');
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 5', session_id: SID }, home, env);
-    assert.equal(r.stdout, '', 'nowe okno turn 2/3: znów cisza');
+    assert.match(r.stdout, /Techniczny konkret/, 'nowe okno turn 2/3: krótki reminder');
     assert.equal(countOf(SID), 2);
 
     // Compact w środku okna przerywa liczenie — pełna reinjekcja to nowe wzmocnienie.
@@ -115,7 +117,25 @@ test('drift-guard: pełny cykl per-sesja — cisza, przypomnienie na progu, powt
     assert.equal(countOf(SID), undefined, 'compact zresetował licznik w trakcie okna');
 
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn po compact', session_id: SID }, home, env);
-    assert.equal(r.stdout, '', 'świeże okno po compact: cisza, nie natychmiastowe przypomnienie');
+    assert.match(r.stdout, /Techniczny konkret/, 'świeże okno po compact: krótki reminder');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('drift-guard: KRUX_TURN_REMINDER=0 zachowuje ciszę poniżej progu i pełny guard', () => {
+  const home = makeIsolatedHome();
+  try {
+    const env = { KRUX_DRIFT_INTERVAL: '2', KRUX_TURN_REMINDER: '0' };
+    const SID = 'session-opt-out';
+
+    let r = runHook('hooks/activate.js', { source: 'startup', session_id: SID }, home, env);
+    assert.equal(r.status, 0);
+
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1', session_id: SID }, home, env);
+    assert.equal(r.stdout, '', 'turn 1/2: opt-out zachowuje ciszę');
+    r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2', session_id: SID }, home, env);
+    assert.match(r.stdout, /KRUX DRIFT-GUARD/, 'turn 2/2: pełny guard nadal działa');
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }

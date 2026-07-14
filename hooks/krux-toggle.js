@@ -5,7 +5,14 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
-const { REMINDER_CORE, resetTurnCount, bumpTurnCount, nextMicroExample } = require('./lib/drift-guard');
+const {
+  TURN_REMINDER,
+  REMINDER_CORE,
+  turnReminderEnabled,
+  resetTurnCount,
+  bumpTurnCount,
+  nextMicroExample,
+} = require('./lib/drift-guard');
 
 let raw = '';
 process.stdin.setEncoding('utf8');
@@ -76,14 +83,14 @@ process.stdin.on('end', () => {
     const body = personaBody();
     emit(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
   } else if (fs.existsSync(flag)) {
-    // Persona aktywna, prompt nie dotyka toggle — licz tury tej sesji od
-    // ostatniego wzmocnienia. Cisza poniżej progu (koszt tokenowy = 0).
     if (bumpTurnCount(claudeDir, sessionId)) {
       emit(
         'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
         ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.' +
         ' Kalibracja: ' + nextMicroExample(claudeDir, sessionId)
       );
+    } else if (turnReminderEnabled()) {
+      emit('KRUX TURN — ' + TURN_REMINDER);
     }
   }
 });
