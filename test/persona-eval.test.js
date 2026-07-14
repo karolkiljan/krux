@@ -113,6 +113,19 @@ test('retry score łapie każdy wymagany warunek', () => {
   assert.ok(truncated.task.requiredHits < truncated.task.requiredTotal);
 });
 
+test('task score uznaje poprawne polskie odpowiedniki i Idempotency-Key', () => {
+  const causal = scoreResponse(
+    scenario('causal-chain'),
+    'Pamięć podręczna jest pusta, więc każde zapytanie trafia do bazy. Baza jest przeciążona.'
+  );
+  const retry = scoreResponse(
+    scenario('retry-contract'),
+    'Tylko timeout/429/5xx. Maksymalnie 3 próby. Backoff + jitter. Mutacja: Idempotency-Key.'
+  );
+  assert.equal(causal.task.pass, true);
+  assert.equal(retry.task.pass, true);
+});
+
 test('gładka odpowiedź przechodzi zadanie, ale oblewa personę', () => {
   const score = scoreResponse(
     scenario('causal-chain'),
@@ -204,6 +217,38 @@ test('commandForHost buduje argv bez shell=true', () => {
   });
 });
 
+test('run Codexa izoluje globalne AGENTS.md, ale zachowuje uwierzytelnienie', () => {
+  withTempDir(outputRoot => {
+    const sourceHome = path.join(outputRoot, 'source-codex-home');
+    fs.mkdirSync(sourceHome);
+    fs.writeFileSync(path.join(sourceHome, 'AGENTS.md'), 'ZAWSZE PERSONA GLOBALNA');
+    fs.writeFileSync(path.join(sourceHome, 'auth.json'), '{"fixture":"auth"}');
+
+    let isolatedHome;
+    const result = runEvaluation({
+      host: 'codex',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      environment: { CODEX_HOME: sourceHome },
+      spawn: (command, args, options) => {
+        isolatedHome = options.env.CODEX_HOME;
+        assert.match(isolatedHome, /krux-persona-eval-/);
+        assert.notEqual(isolatedHome, sourceHome);
+        assert.equal(fs.existsSync(path.join(isolatedHome, 'AGENTS.md')), false);
+        assert.equal(
+          fs.readFileSync(path.join(isolatedHome, 'auth.json'), 'utf8'),
+          '{"fixture":"auth"}'
+        );
+        return { status: 0, stdout: '', stderr: '' };
+      },
+    });
+
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(fs.existsSync(isolatedHome), false, 'izolowany home usunięty po runie');
+  });
+});
+
 test('brak binarki hosta daje SKIP, nigdy PASS', () => {
   const result = runEvaluation({
     host: 'codex',
@@ -275,4 +320,20 @@ test('niezerowy exit hosta daje ERROR z zachowanym stderr', () => {
   assert.equal(result.status, 'ERROR');
   assert.equal(result.exitCode, 2);
   assert.match(result.reason, /auth failed/);
+});
+
+test('niezerowy exit hosta zachowuje diagnostykę ze stdout gdy stderr jest pusty', () => {
+  const result = runEvaluation({
+    host: 'claude',
+    reps: 1,
+    variant: 'control',
+    spawn: () => ({
+      status: 1,
+      stdout: 'You have hit your session limit',
+      stderr: '',
+    }),
+  });
+  assert.equal(result.status, 'ERROR');
+  assert.equal(result.exitCode, 1);
+  assert.match(result.reason, /session limit/);
 });

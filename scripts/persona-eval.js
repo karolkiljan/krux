@@ -78,6 +78,24 @@ function commandForHost(host, prompt, outputFile) {
   throw new Error(`Nieznany host: ${host}`);
 }
 
+function environmentForHost(host, scratch, environment) {
+  if (host !== 'codex') return environment;
+
+  // --ignore-user-config pomija config.toml, ale Codex nadal czyta globalne
+  // AGENTS.md z CODEX_HOME. Benchmark potrzebuje czystej kontroli, więc daje
+  // osobny home z samym uwierzytelnieniem i usuwa go razem ze scratch dir.
+  const isolatedHome = path.join(scratch, 'codex-home');
+  fs.mkdirSync(isolatedHome, { mode: 0o700 });
+  const sourceHome = environment.CODEX_HOME || path.join(os.homedir(), '.codex');
+  const sourceAuth = path.join(sourceHome, 'auth.json');
+  if (fs.existsSync(sourceAuth)) {
+    const targetAuth = path.join(isolatedHome, 'auth.json');
+    fs.copyFileSync(sourceAuth, targetAuth);
+    fs.chmodSync(targetAuth, 0o600);
+  }
+  return { ...environment, CODEX_HOME: isolatedHome };
+}
+
 function plannedCalls({ host, reps, variant }, outputFile) {
   const variants = variant === 'all' ? VARIANTS : [variant];
   const calls = [];
@@ -107,6 +125,7 @@ function runEvaluation(options) {
   const spawn = options.spawn || spawnSync;
   const now = options.now || (() => new Date());
   const outputRoot = options.outputRoot || DEFAULT_OUTPUT_ROOT;
+  const environment = options.environment || process.env;
 
   if (!HOSTS.includes(host)) throw new Error(`Nieznany host: ${host}`);
   if (variant !== 'all' && !VARIANTS.includes(variant)) {
@@ -123,6 +142,7 @@ function runEvaluation(options) {
     fs.rmSync(scratch, { recursive: true, force: true });
     return { status: 'DRY_RUN', calls };
   }
+  const hostEnvironment = environmentForHost(host, scratch, environment);
 
   const runId = `${now().toISOString().replace(/[:.]/g, '-')}-${host}`;
   const runDir = path.join(outputRoot, runId);
@@ -137,7 +157,7 @@ function runEvaluation(options) {
         encoding: 'utf8',
         shell: false,
         cwd: scratch,
-        env: process.env,
+        env: hostEnvironment,
       });
 
       if (completed.error?.code === 'ENOENT') {
@@ -157,7 +177,9 @@ function runEvaluation(options) {
       if (completed.status !== 0) {
         return {
           status: 'ERROR',
-          reason: (completed.stderr || `Host zakończył kodem ${completed.status}`).trim(),
+          reason: (
+            completed.stderr || completed.stdout || `Host zakończył kodem ${completed.status}`
+          ).trim(),
           exitCode: completed.status,
           host,
         };
@@ -220,5 +242,6 @@ if (require.main === module) main();
 module.exports = {
   parseArgs,
   commandForHost,
+  environmentForHost,
   runEvaluation,
 };

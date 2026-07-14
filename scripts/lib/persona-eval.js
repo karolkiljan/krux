@@ -17,7 +17,7 @@ const SCENARIOS = [
   {
     id: 'causal-chain',
     prompt: 'W dwóch zdaniach wyjaśnij: cache pusty, każde zapytanie trafia do bazy i baza jest przeciążona.',
-    required: [/cache/i, /baz/i],
+    required: [/(?:cache|pamięć podręczn)/i, /baz/i],
     maxWords: 40,
   },
   {
@@ -33,10 +33,10 @@ const SCENARIOS = [
       /timeout/i,
       /429/,
       /5xx/i,
-      /(?:max(?:ymalnie)?\s*3|3\s*(?:próby|razy))/i,
+      /(?:(?:max(?:imum)?|maksymalnie)\s*3|3\s*(?:próby|razy))/i,
       /backoff/i,
       /jitter/i,
-      /idempotency key|klucz idempotency/i,
+      /(?:idempotency[- ]key|klucz idempotenc(?:ji|y))/i,
     ],
     maxWords: 55,
   },
