@@ -209,6 +209,36 @@ test('jedno słowo z leksyki Kruxa nie daje fałszywego PASS persony', () => {
   assert.equal(score.persona.pass, false);
 });
 
+test('powtórzone średniki w gładkiej prozie nie udają kompresji Kruxa', () => {
+  const score = scoreResponse(
+    scenario('causal-chain'),
+    'Kolejka jest pełna; producent blokuje się; opóźnienie rośnie.'
+  );
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.compressionCount, 1);
+  assert.equal(score.persona.pass, false);
+});
+
+test('pierwsza osoba przyszła blokuje PASS mimo markerów kompresji', () => {
+  const score = scoreResponse(
+    scenario('causal-chain'),
+    'Wyjaśnię: kolejka pełna → producent blokuje się → opóźnienie rośnie.'
+  );
+  assert.equal(score.task.pass, true);
+  assert.ok(score.persona.firstPersonCount > 0);
+  assert.equal(score.persona.pass, false);
+});
+
+test('kod i formuły nie nabijają markerów kompresji persony', () => {
+  const score = scoreResponse(
+    scenario('causal-chain'),
+    'Kolejka jest pełna; producent blokuje się; opóźnienie rośnie.\n```js\nx = y; z = x;\n```'
+  );
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.compressionCount, 1);
+  assert.equal(score.persona.pass, false);
+});
+
 test('każdy kanoniczny runtime demo przechodzi scorer persony', () => {
   for (const demo of DEMOS) {
     assert.equal(scoreResponse(scenario('no-offer-ending'), demo).persona.pass, true, demo);
@@ -228,6 +258,25 @@ test('date task wymaga semantyki kalendarza, nie samego kształtu', () => {
     '31 lutego nie istnieje w kalendarzu. Fix: parser sprawdzić liczbę dni w miesiącu.'
   );
   assert.equal(score.task.pass, true);
+  for (const response of [
+    '31-02-2026 nie istnieje. Parser ścisły ma odrzucić datę po normalizacji.',
+    '31 lutego jest poza kalendarzem. Sprawdź liczbę dni miesiąca i odrzuć.',
+  ]) {
+    assert.equal(scoreResponse(scenario('date-validation'), response).task.pass, true, response);
+  }
+});
+
+test('task matchery akceptują polskie formy circuit breakera i raport z etykietami', () => {
+  const circuit = scoreResponse(
+    scenario('circuit-breaker-contract'),
+    '5 kolejnych błędów → otwórz. Cooldown 30 s. Half-open: 1 próba. Sukces → zamknij. Porażka → otwórz ponownie.'
+  );
+  const report = scoreResponse(
+    scenario('work-report'),
+    'Linter: 0 błędów. Testy: 83 przeszły. Pominięte: 2.'
+  );
+  assert.equal(circuit.task.pass, true);
+  assert.equal(report.task.pass, true);
 });
 
 test('persona i koszt są osobnymi osiami', () => {
@@ -320,11 +369,12 @@ test('summary wyłącza neutralny JSON z mianownika persony i liczy inflację wz
 });
 
 test('parseArgs domyślnie wybiera pięć prób i wszystkie warianty', () => {
-  assert.deepEqual(parseArgs(['--host', 'codex']), {
+  assert.deepEqual(parseArgs(['--host', 'codex', '--model', 'gpt-fixture']), {
     host: 'codex',
     reps: 5,
     variant: 'all',
     dryRun: false,
+    model: 'gpt-fixture',
   });
 });
 
@@ -340,13 +390,14 @@ test('parseArgs rozpoznaje ponowne scoringowanie bez uruchamiania hosta', () => 
 
 test('parseArgs waliduje host, wariant i dodatnią liczbę prób', () => {
   assert.throws(() => parseArgs([]), /Wymagane --host/);
-  assert.throws(() => parseArgs(['--host', 'ollama']), /Nieznany host/);
+  assert.throws(() => parseArgs(['--host', 'ollama', '--model', 'x']), /Nieznany host/);
+  assert.throws(() => parseArgs(['--host', 'codex']), /Wymagane --model/);
   assert.throws(
-    () => parseArgs(['--host', 'codex', '--variant', 'unknown']),
+    () => parseArgs(['--host', 'codex', '--model', 'x', '--variant', 'unknown']),
     /Nieznany wariant/
   );
   assert.throws(
-    () => parseArgs(['--host', 'codex', '--reps', '0']),
+    () => parseArgs(['--host', 'codex', '--model', 'x', '--reps', '0']),
     /dodatnią liczbą całkowitą/
   );
 });
@@ -490,6 +541,7 @@ test('udany run zapisuje raw przed raportem i zwraca COMPLETE', () => {
     assert.equal(report.metadata.model, 'claude-fixture');
     assert.equal(report.metadata.cliVersion, 'Claude fixture 1.0');
     assert.equal(typeof report.metadata.scorerVersion, 'number');
+    assert.equal(report.metadata.scenarioSetVersion, 2);
   });
 });
 
@@ -627,6 +679,27 @@ test('scoreRawRows odtwarza wynik z raw i ignoruje stary score', () => {
   assert.equal(rescored.score.stale, undefined);
 });
 
+test('scoreRawRows zachowuje kompatybilność ze starym zestawem scenariuszy', () => {
+  const rows = scoreRawRows([
+    {
+      status: 'COMPLETE', host: 'codex', variant: 'control',
+      scenario: 'email-validation', repetition: 1,
+      prompt: 'Zadanie:\nZdiagnozuj: regex walidacji email przepuszcza pusty string. Podaj przyczynę i fix.',
+      response: 'Regex dopuszcza pusty string. Fix: odrzuć pustą wartość przed walidacją.',
+      exitCode: 0,
+    },
+    {
+      status: 'COMPLETE', host: 'codex', variant: 'control',
+      scenario: 'causal-chain', repetition: 1,
+      prompt: 'Zadanie:\nW dwóch zdaniach wyjaśnij: cache pusty, każde zapytanie trafia do bazy i baza jest przeciążona.',
+      response: 'Cache pusty → każde zapytanie trafia do bazy → baza przeciążona.',
+      exitCode: 0,
+    },
+  ]);
+  assert.equal(rows.length, 2);
+  assert.equal(rows.every(row => row.score.task.pass), true);
+});
+
 test('rescoreRun regeneruje raport bez wywołania modelu', () => {
   withTempDir(runDir => {
     const item = scenario('causal-chain');
@@ -635,15 +708,48 @@ test('rescoreRun regeneruje raport bez wywołania modelu', () => {
       repetition: 1, prompt: item.prompt,
       response: 'Kolejka→producent blokować; opóźnienie rosnąć.', exitCode: 0,
     })}\n`);
+    const sourceMetadata = {
+      evaluatorVersion: 2, scorerVersion: 2, scenarioSetVersion: 2,
+      gitSha: 'source-sha', model: 'gpt-source', cliVersion: 'codex source',
+      generatedAt: '2026-07-15T00:00:00.000Z',
+    };
+    fs.writeFileSync(path.join(runDir, 'report.json'), JSON.stringify({
+      status: 'COMPLETE', host: 'codex', metadata: sourceMetadata,
+    }));
     const result = rescoreRun(runDir, {
       gitSha: 'new-sha', model: 'gpt-fixture', cliVersion: 'codex fixture',
+      now: () => new Date('2026-07-15T01:00:00.000Z'),
     });
     assert.equal(result.status, 'COMPLETE');
     assert.equal(result.rescored, true);
     assert.equal(result.results.length, 1);
-    assert.equal(result.metadata.gitSha, 'new-sha');
+    assert.deepEqual(result.sourceMetadata, sourceMetadata);
+    assert.equal(result.metadata.gitSha, 'source-sha');
+    assert.equal(result.metadata.scorerGitSha, 'new-sha');
+    assert.equal(result.metadata.rescoredAt, '2026-07-15T01:00:00.000Z');
     assert.equal(JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'))).rescored, true);
     const persisted = JSON.parse(fs.readFileSync(path.join(runDir, 'scores.jsonl'), 'utf8'));
     assert.equal(persisted.score.persona.pass, true);
+  });
+});
+
+test('rescoreRun zachowuje SKIP i nie uznaje pustego raw za COMPLETE', () => {
+  withTempDir(root => {
+    const skipDir = path.join(root, 'skip');
+    const emptyDir = path.join(root, 'empty');
+    fs.mkdirSync(skipDir);
+    fs.mkdirSync(emptyDir);
+    fs.writeFileSync(path.join(skipDir, 'raw.jsonl'), `${JSON.stringify({
+      status: 'SKIP', host: 'codex', variant: 'control', scenario: 'causal-chain',
+      repetition: 1, prompt: 'x', response: '', exitCode: null, error: 'brak hosta',
+    })}\n`);
+    fs.writeFileSync(path.join(emptyDir, 'raw.jsonl'), '');
+
+    const skipped = rescoreRun(skipDir, { gitSha: 'sha' });
+    const empty = rescoreRun(emptyDir, { gitSha: 'sha' });
+    assert.equal(skipped.status, 'SKIP');
+    assert.equal(skipped.results.length, 0);
+    assert.equal(empty.status, 'ERROR');
+    assert.match(empty.reason, /brak prób|pusty raw/i);
   });
 });

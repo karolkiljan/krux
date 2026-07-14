@@ -96,11 +96,11 @@ nie potwierdzają, że konkretny model wykona personę. Opt-in benchmark urucham
 świeże procesy hosta dla wariantów `control|identity|demo|combined`:
 
 ```bash
-npm run eval:persona -- --host codex --reps 5 --variant all
-npm run eval:persona -- --host claude --reps 5 --variant all
+npm run eval:persona -- --host codex --model <model-id> --reps 5 --variant all
+npm run eval:persona -- --host claude --model <model-id> --reps 5 --variant all
 ```
 
-Komendy uruchamiaj z checkoutu repozytorium; `--model <id>` przypina model.
+Komendy uruchamiaj z checkoutu repozytorium; wymagane `--model <id>` przypina model.
 Raw jest zapisywany przed scoringiem, pochodny `scores.jsonl` rozdziela personę,
 zadanie i koszt, a raport agreguje stabilność per scenariusz i sparowaną inflację
 oraz zapisuje git SHA, model, CLI i wersję scorera. `--rescore <run-dir>` regeneruje

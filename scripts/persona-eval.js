@@ -7,10 +7,12 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const {
   VARIANTS,
   SCORER_VERSION,
+  SCENARIO_SET_VERSION,
   SCENARIOS,
   composePrompt,
   scoreResponse,
   scoreRawRows,
+  scenarioSetVersionForRows,
   summarizeResults,
 } = require('./lib/persona-eval');
 
@@ -41,6 +43,7 @@ function reportMetadata(options, generatedAt) {
   return {
     evaluatorVersion: EVALUATOR_VERSION,
     scorerVersion: SCORER_VERSION,
+    scenarioSetVersion: options.scenarioSetVersion || SCENARIO_SET_VERSION,
     gitSha: options.gitSha || currentGitSha(),
     model: options.model || 'host-default',
     cliVersion: options.cliVersion || 'unknown',
@@ -73,6 +76,7 @@ function parseArgs(argv) {
   }
   if (!options.host) throw new Error('Wymagane --host codex|claude');
   if (!HOSTS.includes(options.host)) throw new Error(`Nieznany host: ${options.host}`);
+  if (!options.model) throw new Error('Wymagane --model <model-id>');
   if (options.variant !== 'all' && !VARIANTS.includes(options.variant)) {
     throw new Error(`Nieznany wariant: ${options.variant}`);
   }
@@ -348,15 +352,38 @@ function rescoreRun(runDir, options = {}) {
   }
 
   const now = options.now || (() => new Date());
+  const rescoredAt = now().toISOString();
   const host = rawRows[0]?.host || previous.host || 'unknown';
-  const metadata = reportMetadata({
+  const sourceMetadata = previous.sourceMetadata || previous.metadata;
+  const currentMetadata = reportMetadata({
     gitSha: options.gitSha,
-    model: options.model || previous.metadata?.model || 'unknown',
-    cliVersion: options.cliVersion || previous.metadata?.cliVersion || 'unknown',
-  }, now().toISOString());
-  const completeRaw = rawRows.filter(row => row.status === undefined || row.status === 'COMPLETE');
+    model: options.model || sourceMetadata?.model || 'unknown',
+    cliVersion: options.cliVersion || sourceMetadata?.cliVersion || 'unknown',
+    scenarioSetVersion: scenarioSetVersionForRows(rawRows),
+  }, rescoredAt);
+  const metadata = {
+    ...currentMetadata,
+    gitSha: sourceMetadata?.gitSha || currentMetadata.gitSha,
+    model: sourceMetadata?.model || currentMetadata.model,
+    cliVersion: sourceMetadata?.cliVersion || currentMetadata.cliVersion,
+    generatedAt: sourceMetadata?.generatedAt || currentMetadata.generatedAt,
+    scorerGitSha: currentMetadata.gitSha,
+    rescoredAt,
+  };
+  const isComplete = row => (
+    (row.status === undefined || row.status === 'COMPLETE') &&
+    typeof row.response === 'string' &&
+    row.response.trim()
+  );
+  const allSkipped = rawRows.length > 0 && rawRows.every(row => row.status === 'SKIP');
+  const status = rawRows.length === 0
+    ? 'ERROR'
+    : (allSkipped ? 'SKIP' : (rawRows.every(isComplete) ? 'COMPLETE' : 'ERROR'));
+  const reason = rawRows.length === 0
+    ? 'Pusty raw: brak prób do ponownego scoringu'
+    : (allSkipped ? (rawRows[0].error || 'Run pominięty') : undefined);
   const report = {
-    status: completeRaw.length === rawRows.length ? 'COMPLETE' : 'ERROR',
+    status,
     rescored: true,
     host,
     reps: Math.max(0, ...rawRows.map(row => Number(row.repetition) || 0)),
@@ -365,7 +392,9 @@ function rescoreRun(runDir, options = {}) {
     attempts: rawRows.length,
     results: results.length,
     metadata,
+    sourceMetadata,
     summary: summarizeResults(results),
+    ...(reason ? { reason } : {}),
   };
   fs.writeFileSync(
     path.join(runDir, 'scores.jsonl'),

@@ -195,9 +195,8 @@ mierzy jawnie uruchamiany benchmark na świeżych sesjach i czterech wariantach:
 Uruchom go z katalogu checkoutu repozytorium:
 
 ```bash
-npm run eval:persona -- --host codex --reps 5 --variant all
-npm run eval:persona -- --host claude --reps 5 --variant all
-# opcjonalnie przypnij model: --model <model-id>
+npm run eval:persona -- --host codex --model <model-id> --reps 5 --variant all
+npm run eval:persona -- --host claude --model <model-id> --reps 5 --variant all
 ```
 
 Wyniki trafiają do ignorowanego `benchmarks/persona-eval/<run>/`. Surowe
@@ -207,7 +206,8 @@ pochodny `scores.jsonl` rozdziela `score.persona`, `score.task` i `score.cost`, 
 wersję scorera, git SHA, model i wersję CLI. Automatyczne markery są diagnostyką — trafienia sprawdź w surowej
 odpowiedzi. Scenariusz syntetyczny `context-summary-probe` bada odpowiedź po
 podanym streszczeniu, ale nie udaje natywnego compactu ani rozmowy wieloturowej.
-Brak CLI hosta daje `SKIP`, nie `PASS`. Plan bez modelu: `--dry-run`. Ponowne
+`--model <model-id>` jest wymagane, żeby raport nie ukrywał użytego modelu.
+Brak CLI hosta daje `SKIP`, nie `PASS`. Plan wywołań: `--dry-run`. Ponowne
 przeliczenie istniejącego raw bez wywołania modelu:
 
 ```bash

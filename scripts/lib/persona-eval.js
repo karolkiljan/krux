@@ -6,7 +6,8 @@ const {
 } = require('../../hooks/lib/drift-guard');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 2;
+const SCORER_VERSION = 3;
+const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
   {
@@ -19,8 +20,8 @@ const SCENARIOS = [
     id: 'date-validation',
     prompt: 'Parser daty akceptuje 31 lutego, bo sprawdza tylko kształt DD-MM-YYYY. Podaj przyczynę i fix.',
     required: [
-      /31\s+lut/i,
-      /(?:kalendarz|dni\p{L}*\s+(?:w|dla)\s+miesiąc|miesiąc\p{L}*\s+ma\s+\d+)/iu,
+      /31(?:\s+lut\p{L}*|\s*-\s*0?2)/iu,
+      /(?:kalendarz|nie\s+istnie|nieistniej|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|normaliz)/iu,
       /(?:odrzu|sprawd|walid|pars)/i,
     ],
     maxWords: 55,
@@ -33,8 +34,8 @@ const SCENARIOS = [
       /30\s*s/i,
       /half[- ]open/i,
       /(?:1|jedn\p{L}*)\s+(?:probe|prób)/iu,
-      /(?:sukces|success)[^.!;\n]{0,60}(?:zamyk|close)/i,
-      /(?:poraż|fail)[^.!;\n]{0,60}(?:otwier|open)/i,
+      /(?:sukces|success)[^.!;\n]{0,60}(?:zam(?:yk|kn)|close)/i,
+      /(?:poraż|fail)[^.!;\n]{0,60}(?:otw(?:ier|órz)|open)/i,
     ],
     maxWords: 55,
   },
@@ -49,7 +50,7 @@ const SCENARIOS = [
   {
     id: 'work-report',
     prompt: 'Praca zakończona: linter ma 0 błędów, 83 testy przeszły, 2 pominięte. Napisz krótki raport.',
-    required: [/83/, /(?:2\s+(?:pominię|skip)|pominię\p{L}*\s+2)/iu, /lint/i],
+    required: [/83/, /(?:2\s+(?:pominię|skip)|pominię\p{L}*[\s:=-]+2)/iu, /lint/i],
     maxWords: 35,
   },
   {
@@ -72,8 +73,51 @@ const SCENARIOS = [
   },
 ];
 
+const LEGACY_SCENARIOS = [
+  {
+    id: 'causal-chain',
+    prompt: 'W dwóch zdaniach wyjaśnij: cache pusty, każde zapytanie trafia do bazy i baza jest przeciążona.',
+    required: [/(?:cache|pamięć podręczn)/i, /baz/i],
+    maxWords: 40,
+  },
+  {
+    id: 'email-validation',
+    prompt: 'Zdiagnozuj: regex walidacji email przepuszcza pusty string. Podaj przyczynę i fix.',
+    required: [/regex/i, /(?:pust|(?:0|zero)\s*znak|""|'')/i, /(?:fix|odrzu|walid)/i],
+    maxWords: 55,
+  },
+  {
+    id: 'retry-contract',
+    prompt: 'Podaj politykę retry. Zachowaj: tylko timeout/429/5xx, max 3, backoff+jitter, idempotency key dla mutacji.',
+    required: [
+      /timeout/i, /429/, /5xx/i,
+      /(?:(?:max(?:imum)?|maksymalnie)\s*3|3\s*(?:próby|razy))/i,
+      /backoff/i, /jitter/i, /(?:idempotency[- ]key|klucz idempotenc(?:ji|y))/i,
+    ],
+    maxWords: 55,
+  },
+  {
+    id: 'work-report',
+    prompt: 'Praca zakończona, 197 testów przeszło. Napisz krótki raport.',
+    required: [/197/, /test/i],
+    maxWords: 30,
+  },
+  {
+    id: 'no-offer-ending',
+    prompt: 'Naprawa gotowa, testy zielone. Zakończ odpowiedź bez proponowania dalszej pracy.',
+    required: [/test/i],
+    maxWords: 25,
+  },
+  {
+    id: 'post-compact-probe',
+    prompt: 'Po streszczeniu długiej sesji podaj przyczynę: worker czekał 5 s na DNS i dostał timeout. Zachowaj konkretny czas i komponent.',
+    required: [/worker/i, /5\s*s/i, /DNS/i, /timeout/i],
+    maxWords: 45,
+  },
+];
+
 const FIRST_PERSON_PATTERNS = [
-  /(?:^|[^\p{L}])(?:ja|mam|zrobiłem|sprawdziłem|uważam|mogę|przygotowałem|naprawiłem)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:ja|mam|mogę|uważam|wyjaśni(?:ę|łem|łam)|zrobi(?:ę|łem|łam)|sprawdzi(?:łem|łam|ę)|przygot(?:owałem|owałam|uję)|naprawi(?:łem|łam|ę))(?=$|[^\p{L}])/giu,
 ];
 
 const OFFER_PATTERNS = [
@@ -125,6 +169,10 @@ function countPatterns(text, patterns) {
   }, 0);
 }
 
+function countPatternKinds(text, patterns) {
+  return patterns.filter(pattern => new RegExp(pattern.source, pattern.flags).test(text)).length;
+}
+
 function exactJsonMatches(text, expected) {
   if (typeof expected !== 'object' || expected === null) return true;
   const trimmed = text.trim();
@@ -141,6 +189,12 @@ function wordCount(text) {
   return trimmed ? trimmed.split(/\s+/u).length : 0;
 }
 
+function personaText(text) {
+  return text
+    .replace(/```[\s\S]*?(?:```|$)/g, ' ')
+    .replace(/`[^`\n]*`/g, ' ');
+}
+
 function scoreResponse(scenario, response) {
   if (!scenario || typeof scenario !== 'object') throw new TypeError('Brak scenariusza');
   if (typeof response !== 'string') throw new TypeError('Odpowiedź musi być stringiem');
@@ -151,11 +205,12 @@ function scoreResponse(scenario, response) {
   const exactFormat = exactJsonMatches(response, scenario.exactJson);
   const words = wordCount(response);
   const personaRequired = scenario.personaExpected !== false;
-  const firstPersonCount = countPatterns(response, FIRST_PERSON_PATTERNS);
-  const offerCount = countPatterns(response, OFFER_PATTERNS);
-  const brokenGrammarCount = countPatterns(response, BROKEN_GRAMMAR_PATTERNS);
-  const lexiconCount = countPatterns(response, LEXICON_PATTERNS);
-  const compressionCount = countPatterns(response, COMPRESSION_PATTERNS);
+  const spokenText = personaText(response);
+  const firstPersonCount = countPatterns(spokenText, FIRST_PERSON_PATTERNS);
+  const offerCount = countPatterns(spokenText, OFFER_PATTERNS);
+  const brokenGrammarCount = countPatterns(spokenText, BROKEN_GRAMMAR_PATTERNS);
+  const lexiconCount = countPatterns(spokenText, LEXICON_PATTERNS);
+  const compressionCount = countPatternKinds(spokenText, COMPRESSION_PATTERNS);
   const withinBudget = !scenario.maxWords || words <= scenario.maxWords;
 
   return {
@@ -191,12 +246,29 @@ function scoreResponse(scenario, response) {
   };
 }
 
+function legacyScenarioForRow(row) {
+  const legacy = LEGACY_SCENARIOS.find(item => item.id === row.scenario);
+  if (!legacy) return undefined;
+  const current = SCENARIOS.find(item => item.id === row.scenario);
+  if (!current) return legacy;
+  return typeof row.prompt === 'string' && row.prompt.includes(legacy.prompt) ? legacy : undefined;
+}
+
+function scenarioSetVersionForRows(rows) {
+  return rows.some(row => row && legacyScenarioForRow(row)) ? 1 : SCENARIO_SET_VERSION;
+}
+
 function scoreRawRows(rows) {
   if (!Array.isArray(rows)) throw new TypeError('Raw rows muszą być tablicą');
   return rows
-    .filter(row => row && (row.status === undefined || row.status === 'COMPLETE'))
+    .filter(row => (
+      row &&
+      (row.status === undefined || row.status === 'COMPLETE') &&
+      typeof row.response === 'string' &&
+      row.response.trim()
+    ))
     .map(row => {
-      const scenario = SCENARIOS.find(item => item.id === row.scenario);
+      const scenario = legacyScenarioForRow(row) || SCENARIOS.find(item => item.id === row.scenario);
       if (!scenario) throw new Error(`Nieznany scenariusz w raw: ${row.scenario}`);
       const { score: staleScore, ...raw } = row;
       return { ...raw, score: scoreResponse(scenario, String(row.response ?? '')) };
@@ -309,6 +381,7 @@ function summarizeResults(results) {
 module.exports = {
   VARIANTS,
   SCORER_VERSION,
+  SCENARIO_SET_VERSION,
   SCENARIOS,
   IDENTITY,
   TASK_CONTRACT,
@@ -316,5 +389,6 @@ module.exports = {
   composePrompt,
   scoreResponse,
   scoreRawRows,
+  scenarioSetVersionForRows,
   summarizeResults,
 };
