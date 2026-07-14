@@ -176,9 +176,15 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 ```bash
 export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
 export KRUX_DRIFT_INTERVAL=10           # co ile turnów przypomnienie stylu (drift-guard)
+export KRUX_TURN_REMINDER=0             # wyłącz krótki reminder co turę; pełny drift-guard zostaje
 export KRUX_HORDA_NUDGE=0               # wyłącz podpowiedzi delegacji do orków
 export KRUX_HORDA_NUDGE_INTERVAL=5      # minimalny odstęp turnów między podpowiedziami
 ```
+
+Gdy persona jest aktywna, każdy turn dostaje krótki invariant `KRUX TURN`.
+Co `KRUX_DRIFT_INTERVAL` turnów pełny, rotowany `KRUX DRIFT-GUARD` zastępuje
+krótkie przypomnienie. `KRUX_TURN_REMINDER=0` wyłącza tylko invariant co turn;
+pełny drift-guard nadal działa w ustawionym interwale.
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
 jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
