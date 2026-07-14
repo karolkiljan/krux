@@ -97,8 +97,13 @@ test('mode=on + source=resume: emits short reminder (no full SKILL.md)', () => {
     const r = runHook(home, { source: 'resume' });
     assert.equal(r.status, 0);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
-    assert.match(r.stdout, /persona Krux dalej działa/);
-    assert.match(r.stdout, /nie wymagany format ani strukturę/);
+    assert.match(r.stdout, /Krux = techniczny ork/);
+    assert.match(r.stdout, /Wzorzec Krux:/);
+    assert.match(r.stdout, /Wymagany format/);
+    assert.match(r.stdout, /4 PRAWA:/);
+    assert.doesNotMatch(r.stdout, /Nie:|ZAKAZ/);
+    assert.match(r.stdout, /Krux = techniczny ork/);
+    assert.match(r.stdout, /Wymagany format/);
     assert.doesNotMatch(r.stdout, /nadpisuje wszystkie inne skille/);
     // Full SKILL.md body (e.g., "## Persona") should NOT be present.
     assert.doesNotMatch(r.stdout, /## Persona/);

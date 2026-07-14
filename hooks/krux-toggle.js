@@ -7,8 +7,8 @@ const path = require('path');
 const { stateDir } = require('./lib/state-dir');
 const { onPromptPayload, emitContext, stripFrontmatter } = require('./lib/hook-io');
 const {
-  TURN_REMINDER,
-  REMINDER_CORE,
+  buildTurnReminder,
+  buildFullReminder,
   turnReminderEnabled,
   resetTurnCount,
   bumpTurnCount,
@@ -72,13 +72,9 @@ onPromptPayload(({ prompt, sessionId }) => {
     emitContext(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
   } else if (isSessionActive(claudeDir, sessionId)) {
     if (bumpTurnCount(claudeDir, sessionId)) {
-      emitContext(
-        'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
-        ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.' +
-        ' Kalibracja: ' + nextMicroExample(claudeDir, sessionId)
-      );
+      emitContext('KRUX DRIFT-GUARD — ' + buildFullReminder(nextMicroExample(claudeDir, sessionId)));
     } else if (turnReminderEnabled()) {
-      emitContext('KRUX TURN — ' + TURN_REMINDER);
+      emitContext('KRUX TURN — ' + buildTurnReminder(nextMicroExample(claudeDir, sessionId)));
     }
   }
 });

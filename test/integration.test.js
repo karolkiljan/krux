@@ -95,6 +95,10 @@ test('drift-guard: pełny cykl per-sesja — reminder per-turn, pełny guard na 
 
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1', session_id: SID }, home, env);
     assert.match(r.stdout, /KRUX TURN — /, 'turn 1/3: krótki reminder');
+    assert.match(r.stdout, /Krux = techniczny ork/);
+    assert.match(r.stdout, /Wzorzec Krux:/);
+    assert.match(r.stdout, /Wymagany format/);
+    assert.doesNotMatch(r.stdout, /Nie:|ZAKAZ/);
     assert.doesNotMatch(r.stdout, /KRUX DRIFT-GUARD/);
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2', session_id: SID }, home, env);
     assert.match(r.stdout, /KRUX TURN — /, 'turn 2/3: krótki reminder');
@@ -149,6 +153,10 @@ test('resume nie wstrzykuje pełnego SKILL.md', () => {
     assert.equal(r.status, 0);
     assert.ok(r.stdout.length < 1100, `resume output za długi: ${r.stdout.length} znaków`);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
+    assert.match(r.stdout, /Krux = techniczny ork/);
+    assert.match(r.stdout, /Wzorzec Krux:/);
+    assert.match(r.stdout, /Wymagany format/);
+    assert.doesNotMatch(r.stdout, /Nie:|ZAKAZ/);
     assert.doesNotMatch(r.stdout, /## Persona/, 'resume NIE wstrzykuje sekcji Persona');
   } finally {
     fs.rmSync(home, { recursive: true, force: true });

@@ -12,7 +12,11 @@ const {
   TURN_REMINDER,
   turnReminderEnabled,
   REMINDER_CORE,
+  IDENTITY_ANCHOR,
+  TASK_CONTRACT,
   MICRO_EXAMPLES,
+  buildTurnReminder,
+  buildFullReminder,
   EMIT_FILENAME,
   nextMicroExample,
   DEFAULT_INTERVAL,
@@ -46,24 +50,61 @@ function readMap(dir) {
   return JSON.parse(fs.readFileSync(countPath(dir), 'utf8'));
 }
 
-test('REMINDER_CORE zawiera frazy zgodne z resume reminderem', () => {
-  assert.match(REMINDER_CORE, /persona Krux dalej działa/);
-  assert.match(REMINDER_CORE, /nie wymagany format ani strukturę/);
-  assert.doesNotMatch(REMINDER_CORE, /PRAWO 1/);
+test('kotwica łączy tożsamość, dodatni wzorzec i kontrakt zadania', () => {
+  const turn = buildTurnReminder(MICRO_EXAMPLES[0]);
+  assert.match(turn, /Krux = techniczny ork/);
+  assert.match(turn, /Wzorzec Krux:/);
+  assert.match(turn, /Wymagany format/);
+  assert.match(turn, /warunek.*przyczyna.*ryzyko.*wynik weryfikacji/);
+  assert.doesNotMatch(turn, /Nie:|ZAKAZ|dryf do [AC]/);
+  assert.ok(turn.length <= 420, 'kotwica turn ma ' + turn.length + ' zn');
 });
 
-test('REMINDER_CORE pokrywa dryf do A: łamana gramatyka i kompresja przypomniane', () => {
+test('pełna kotwica zachowuje 4 PRAWA i dwie osie bez listy zakazów', () => {
+  const full = buildFullReminder(MICRO_EXAMPLES[1]);
+  assert.match(full, /Krux = techniczny ork/);
+  assert.match(full, /4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja/);
+  assert.match(full, /Wymagany format/);
+  assert.match(full, /Wzorzec Krux:/);
+  assert.doesNotMatch(full, /Nie:|ZAKAZ|dryf do [AC]/);
+});
+
+test('stałe kompatybilności budowane są z pierwszego dodatniego przykładu', () => {
+  assert.equal(TURN_REMINDER, buildTurnReminder(MICRO_EXAMPLES[0]));
+  assert.equal(REMINDER_CORE, buildFullReminder(MICRO_EXAMPLES[0]));
+  assert.match(IDENTITY_ANCHOR, /[łŁ]amana gramatyka/);
+  assert.match(TASK_CONTRACT, /Wymagany format/);
+});
+
+test('MICRO_EXAMPLES pokazują wyłącznie docelową odpowiedź', () => {
+  assert.ok(MICRO_EXAMPLES.length >= 4, 'pula musi dawać realną rotację');
+  for (const example of MICRO_EXAMPLES) {
+    assert.match(example, /^Wzorzec Krux:/, 'przykład pokazuje docelowy kształt');
+    assert.doesNotMatch(example, /Nie:|ZAKAZ|→ Krux:/, 'brak anty-wzorca');
+    assert.doesNotMatch(example, /\n/, 'przykład mieści się w jednej linii');
+  }
+});
+
+test('REMINDER_CORE zachowuje dodatni kontrakt resume', () => {
+  assert.match(REMINDER_CORE, /Krux = techniczny ork/);
+  assert.match(REMINDER_CORE, /Wymagany format/);
+  assert.match(REMINDER_CORE, /Wzorzec Krux:/);
+  assert.doesNotMatch(REMINDER_CORE, /Nie:|ZAKAZ/);
+});
+
+test('REMINDER_CORE podaje cel zamiast nazywać dryf', () => {
   assert.match(REMINDER_CORE, /[łŁ]amana gramatyka/);
-  assert.match(REMINDER_CORE, /dryf do A/);
+  assert.match(REMINDER_CORE, /kompresj/);
+  assert.doesNotMatch(REMINDER_CORE, /dryf do [AC]/);
 });
 
 // Własności zamiast dosłownej kopii stringa: brzmienie może się zmieniać bez
 // churnu testów, dopóki reminder trzyma obie osie i mieści się w budżecie.
 test('TURN_REMINDER utrzymuje techniczny konkret i głos jako dwie osie', () => {
-  assert.match(TURN_REMINDER, /Techniczny konkret/, 'oś 1: konkret nie znika');
+  assert.match(TURN_REMINDER, /techniczny ork/, 'oś 1: konkret nie znika');
   assert.match(TURN_REMINDER, /[łŁ]amana gramatyka/, 'oś 2: głos nie znika');
   assert.match(TURN_REMINDER, /kompresj/, 'kompresja przypomniana');
-  assert.ok(TURN_REMINDER.length <= 120, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
+  assert.ok(TURN_REMINDER.length <= 420, 'TURN_REMINDER ma ' + TURN_REMINDER.length + ' zn');
 });
 
 test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
@@ -75,16 +116,14 @@ test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
   }
 });
 
-test('REMINDER_CORE nie daje technicznej odpowiedzi furtki do porzucenia głosu', () => {
-  assert.match(REMINDER_CORE, /Techniczny konkret nie wyłącza głosu Krux/);
-  assert.doesNotMatch(REMINDER_CORE, /Poprawność i bezpieczeństwo zawsze nad stylem/);
+test('REMINDER_CORE wymaga równocześnie głosu i kompletnego zadania', () => {
+  assert.match(REMINDER_CORE, /Krux = techniczny ork/);
+  assert.match(REMINDER_CORE, /warunek.*przyczyna.*ryzyko.*wynik weryfikacji/);
 });
 
 test('REMINDER_CORE zachowuje wąskie neutralne granice', () => {
-  assert.match(
-    REMINDER_CORE,
-    /Kod[^.]*JSON[^.]*ścisły format[^.]*dokładny fragment ostrzeżenia wysokiej stawki[^.]*neutralne/
-  );
+  assert.match(REMINDER_CORE, /Wymagany format, struktura, kod/);
+  assert.doesNotMatch(REMINDER_CORE, /nadpisuje|porzuca/);
 });
 
 test('driftInterval(): domyślnie DEFAULT_INTERVAL bez env', () => {
@@ -232,15 +271,14 @@ test('writeCount: prune 24h działa też w magazynie generycznym', () => {
   });
 });
 
-test('REMINDER_CORE przypomina klimat, nie tylko gramatykę', () => {
-  assert.match(REMINDER_CORE, /akcent postaci[^\n]*moods\.md/);
-  assert.match(REMINDER_CORE, /metafora górnicza[^\n]*lore\.md/);
+test('REMINDER_CORE kalibruje głos dodatnim przykładem', () => {
+  assert.match(REMINDER_CORE, /Wzorzec Krux:/);
+  assert.doesNotMatch(REMINDER_CORE, /moods\.md|lore\.md/);
 });
 
-test('REMINDER_CORE pokrywa oba bieguny dryfu: A i C symetrycznie', () => {
-  assert.match(REMINDER_CORE, /dryf do A/);
-  assert.match(REMINDER_CORE, /dryf do C/);
-  assert.match(REMINDER_CORE, /dodać konkret, nie wygładzać/);
+test('REMINDER_CORE nie kształtuje wyjścia listą błędów A/C', () => {
+  assert.doesNotMatch(REMINDER_CORE, /dryf do A|dryf do C|dodać konkret, nie wygładzać/);
+  assert.match(REMINDER_CORE, /Wymagany format/);
 });
 
 // Budżet resume pilnowany JEDNYM realnym pomiarem stdout w integration.test.js
@@ -275,12 +313,12 @@ test('markSessionActive/isSessionActive/clearSessionActive: gate per session_id'
 
 // --- rotowany mikro-przykład kalibracyjny ---
 
-test('MICRO_EXAMPLES: każda para ma anty-wzorzec i wersję Krux w jednej linii', () => {
-  assert.ok(MICRO_EXAMPLES.length >= 3, 'pula musi dawać realną rotację');
+test('MICRO_EXAMPLES: każdy dodatni wzorzec mieści się w jednej linii', () => {
+  assert.ok(MICRO_EXAMPLES.length >= 4, 'pula musi dawać realną rotację');
   for (const example of MICRO_EXAMPLES) {
-    assert.match(example, /Nie: „/, 'para zaczyna od anty-wzorca');
-    assert.match(example, /→ Krux: „/, 'para pokazuje wersję Krux');
-    assert.doesNotMatch(example, /\n/, 'para mieści się w jednej linii');
+    assert.match(example, /^Wzorzec Krux:/);
+    assert.doesNotMatch(example, /Nie:|ZAKAZ|→ Krux:/);
+    assert.doesNotMatch(example, /\n/, 'wzorzec mieści się w jednej linii');
   }
 });
 

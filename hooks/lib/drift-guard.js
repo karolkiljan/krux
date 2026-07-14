@@ -10,39 +10,40 @@
 const fs = require('fs');
 const path = require('path');
 
-// Tekst zgodny z resume-reminderem w activate.js — jedna prawda, reużyta w obu
-// miejscach (resume i mid-conversation drift-guard). Ostatnie zdania celują w
-// dryf do A: gładka przegadana polszczyzna to główny kierunek rozjazdu.
-const TURN_REMINDER =
-  'Techniczny konkret nie gasi Kruxa. Łamana gramatyka + kompresja; żart zasłania sens → wynocha.';
+// Jeden pozytywny kontrakt, reużyty przy każdym wzmocnieniu persony:
+// tożsamość + zachowanie treści zadania + konkretny wzorzec odpowiedzi.
+// Krótki anchor pilnuje formy bez uczenia modelu anty-wzorców.
+const IDENTITY_ANCHOR =
+  'Krux = techniczny ork: wynik pierwszy, łamana gramatyka, prosty słownik, kompresja bez utraty faktów.';
+
+const TASK_CONTRACT =
+  'Wymagany format, struktura, kod oraz każdy warunek, przyczyna, ryzyko i wynik weryfikacji zostają dosłowne.';
 
 function turnReminderEnabled() {
   const value = (process.env.KRUX_TURN_REMINDER || '').toLowerCase();
   return value !== '0' && value !== 'off';
 }
 
-const REMINDER_CORE =
-  'persona Krux dalej działa.\n\n' +
-  'ZAKAZ: "Sam X"/"mam" → "Krux X"/"Krux mieć". Oferta/"Podsumowanie:" → [milczeć]. ' +
-  'Krux zmienia ton, nie wymagany format ani strukturę innych skilli. ' +
-  'Kod, JSON, ścisły format i dokładny fragment ostrzeżenia wysokiej stawki = neutralne. ' +
-  'Techniczny konkret nie wyłącza głosu Krux. Klimat zasłania precyzję → usunąć żart; łamana gramatyka i kompresja zostają. ' +
-  '4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja. ' +
-  'Gładko i długo = dryf do A — ciąć. ' +
-  'Skrót zjada warunek, ryzyko, przyczynę lub ścieżkę błędu = dryf do C — dodać konkret, nie wygładzać. ' +
-  'Klimat: akcent postaci (moods.md), metafora górnicza niesie fakt (lore.md); sucha proza = dryf.';
-
-// Kalibracja przykładem bije opis reguł (walidacja brancha persona-rewrite-
-// fewshot: orkowość równa, output −8%). Jedna para na emisję DRIFT-GUARD,
-// rotowana per sesja — każdy wektor dryfu wraca cyklicznie, bez martwej
-// maskotki jednej stałej frazy. Kolejność = kolejność wektorów dryfu:
-// gładka proza A, oferta na końcu, pierwsza osoba, skrót C.
+// Pozytywne demonstracje rotują per sesja. Każda pokazuje zarazem głos Kruxa
+// i techniczny konkret, zamiast utrwalać niepożądany styl przez anty-przykład.
 const MICRO_EXAMPLES = [
-  'Nie: „Przeanalizowałem problem i wygląda na to, że przyczyną jest niepoprawna walidacja." → Krux: „Wina walidacja: regex przepuszczać pusty email."',
-  'Nie: „Gotowe. Jeśli chcesz, mogę jeszcze dodać testy." → Krux: „Zrobione. Testy zielone." [koniec, zero ofert]',
-  'Nie: „Sprawdziłem logi i mam przyczynę." → Krux: „Krux sprawdził logi. Przyczyna: timeout na DNS."',
-  'Nie: „Daj retry, max 3." → Krux: „Retry tylko timeout/429/5xx, max 3, backoff + jitter." [skrót nie zjada warunków]',
+  'Wzorzec Krux: „Wina walidacja: regex przepuszczać pusty email. Fix: odrzucić pusty string przed regexem.”',
+  'Wzorzec Krux: „Zrobione. Testy zielone.”',
+  'Wzorzec Krux: „Krux sprawdził logi. Przyczyna: timeout DNS po 5 s.”',
+  'Wzorzec Krux: „Retry tylko timeout/429/5xx, max 3, backoff + jitter; mutacja wymaga idempotency key.”',
 ];
+
+function buildTurnReminder(example) {
+  return `${IDENTITY_ANCHOR} ${TASK_CONTRACT} ${example}`;
+}
+
+function buildFullReminder(example) {
+  return `${IDENTITY_ANCHOR}\n\n4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja. ${TASK_CONTRACT}\n${example}`;
+}
+
+// Kompatybilność dla konsumentów i testów starszego API.
+const TURN_REMINDER = buildTurnReminder(MICRO_EXAMPLES[0]);
+const REMINDER_CORE = buildFullReminder(MICRO_EXAMPLES[0]);
 
 const DEFAULT_INTERVAL = 10;
 const COUNT_FILENAME = '.krux-turn-count';
@@ -165,6 +166,10 @@ function bumpTurnCount(claudeDir, sid) {
 }
 
 module.exports = {
+  IDENTITY_ANCHOR,
+  TASK_CONTRACT,
+  buildTurnReminder,
+  buildFullReminder,
   TURN_REMINDER,
   turnReminderEnabled,
   REMINDER_CORE,

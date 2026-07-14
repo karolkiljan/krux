@@ -4,7 +4,8 @@ const path = require('path');
 const { stateDir } = require('./lib/state-dir');
 const { collectStdin, parsePayload, stripFrontmatter } = require('./lib/hook-io');
 const {
-  REMINDER_CORE,
+  buildFullReminder,
+  nextMicroExample,
   resetTurnCount,
   markSessionActive,
   clearSessionActive,
@@ -82,7 +83,7 @@ collectStdin(raw => {
   const useNativeSkill = (process.env.KRUX_NATIVE_SKILL || '').toLowerCase() === '1';
   let output;
   if (source === 'resume') {
-    output = 'KRUX TRYB AKTYWNY — ' + REMINDER_CORE;
+    output = 'KRUX TRYB AKTYWNY — ' + buildFullReminder(nextMicroExample(claudeDir, sessionId));
   } else if (useNativeSkill) {
     output = 'KRUX TRYB AKTYWNY';
   } else {

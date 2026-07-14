@@ -254,7 +254,36 @@ test('drift-guard: zwykły prompt poniżej progu emituje krótki reminder', () =
     const r = runHook(home, 'explain this code', env);
     assert.equal(r.status, 0);
     assert.match(additionalContext(r), /KRUX TURN — /);
+    assert.match(additionalContext(r), /Krux = techniczny ork/);
+    assert.match(additionalContext(r), /Wzorzec Krux:/);
+    assert.match(additionalContext(r), /Wymagany format/);
+    assert.doesNotMatch(additionalContext(r), /Nie:|ZAKAZ/);
     assert.doesNotMatch(additionalContext(r), /KRUX DRIFT-GUARD/);
+  });
+});
+
+test('drift-guard: każda aktywna tura niesie kolejny dodatni przykład', () => {
+  withTempHome(home => {
+    const { MICRO_EXAMPLES } = require('../hooks/lib/drift-guard');
+    const env = { KRUX_DRIFT_INTERVAL: '2' };
+    runHook(home, 'krux', env);
+
+    const outputs = [
+      additionalContext(runHook(home, 'turn 1', env)),
+      additionalContext(runHook(home, 'turn 2', env)),
+      additionalContext(runHook(home, 'turn 3', env)),
+      additionalContext(runHook(home, 'turn 4', env)),
+    ];
+
+    for (let index = 0; index < outputs.length; index += 1) {
+      assert.ok(outputs[index].includes(MICRO_EXAMPLES[index]));
+      assert.match(outputs[index], /Wzorzec Krux:/);
+      assert.doesNotMatch(outputs[index], /Nie:|ZAKAZ/);
+    }
+    assert.match(outputs[0], /KRUX TURN — /);
+    assert.match(outputs[1], /KRUX DRIFT-GUARD/);
+    assert.match(outputs[2], /KRUX TURN — /);
+    assert.match(outputs[3], /KRUX DRIFT-GUARD/);
   });
 });
 
@@ -275,7 +304,8 @@ test('drift-guard: po KRUX_DRIFT_INTERVAL turach emituje KRUX DRIFT-GUARD i rese
     assert.match(additionalContext(runHook(home, 'turn 2', env)), /KRUX TURN — /);
     const r = runHook(home, 'turn 3', env);
     assert.match(additionalContext(r), /KRUX DRIFT-GUARD/);
-    assert.match(additionalContext(r), /examples\.md/);
+    assert.match(additionalContext(r), /4 PRAWA:/);
+    assert.doesNotMatch(additionalContext(r), /examples\.md|Nie:|ZAKAZ/);
     assert.equal(turnCount(home), undefined, 'licznik zresetowany po przypomnieniu');
   });
 });
@@ -395,20 +425,22 @@ test('drift-guard: jawne włączenie ("krux") resetuje licznik własnej sesji', 
   });
 });
 
-test('drift-guard: emisja niesie rotowany mikro-przykład kalibracyjny', () => {
+test('drift-guard: pełne emisje kontynuują rotację z lekkich kotwic', () => {
   withTempHome(home => {
     const { MICRO_EXAMPLES } = require('../hooks/lib/drift-guard');
     const env = { KRUX_DRIFT_INTERVAL: '2' };
     runHook(home, 'krux', env);
 
-    runHook(home, 'turn 1', env);
+    const turn1 = additionalContext(runHook(home, 'turn 1', env));
     const first = additionalContext(runHook(home, 'turn 2', env));
-    assert.match(first, /Kalibracja: /, 'reminder ma sekcję kalibracji');
-    assert.ok(first.includes(MICRO_EXAMPLES[0]), 'pierwsza emisja = pierwsza para z puli');
+    assert.ok(turn1.includes(MICRO_EXAMPLES[0]), 'lekka kotwica zużywa przykład 0');
+    assert.match(first, /Wzorzec Krux:/, 'pełny reminder ma dodatnią kalibrację');
+    assert.ok(first.includes(MICRO_EXAMPLES[1]), 'pierwsza pełna emisja = przykład 1');
 
-    runHook(home, 'turn 3', env);
+    const turn3 = additionalContext(runHook(home, 'turn 3', env));
     const second = additionalContext(runHook(home, 'turn 4', env));
-    assert.ok(second.includes(MICRO_EXAMPLES[1]), 'druga emisja rotuje na kolejną parę');
+    assert.ok(turn3.includes(MICRO_EXAMPLES[2]), 'lekka kotwica kontynuuje przykład 2');
+    assert.ok(second.includes(MICRO_EXAMPLES[3]), 'druga pełna emisja = przykład 3');
   });
 });
 
