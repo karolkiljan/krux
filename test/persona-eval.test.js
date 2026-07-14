@@ -301,12 +301,42 @@ test('udany run zapisuje raw przed raportem i zwraca COMPLETE', () => {
     assert.equal(result.status, 'COMPLETE');
     assert.equal(spawnCalls, SCENARIOS.length);
     assert.equal(result.results.length, SCENARIOS.length);
-    const runDir = path.join(outputRoot, '2026-07-15T12-34-56-000Z-claude');
+    const runDir = result.runDir;
+    assert.match(
+      path.basename(runDir),
+      /^2026-07-15T12-34-56-000Z-claude-control-[A-Za-z0-9]+$/
+    );
     assert.equal(fs.existsSync(path.join(runDir, 'raw.jsonl')), true);
     assert.equal(fs.existsSync(path.join(runDir, 'report.json')), true);
     const rows = fs.readFileSync(path.join(runDir, 'raw.jsonl'), 'utf8').trim().split('\n');
     assert.equal(rows.length, SCENARIOS.length);
     assert.equal(JSON.parse(rows[0]).response, 'Odpowiedź kontrolna');
+  });
+});
+
+test('równoczesne warianty tego samego hosta dostają osobne katalogi runu', () => {
+  withTempDir(outputRoot => {
+    const shared = {
+      host: 'claude',
+      reps: 1,
+      outputRoot,
+      now: () => new Date('2026-07-15T12:34:56.000Z'),
+      spawn: () => ({ status: 0, stdout: 'Odpowiedź', stderr: '' }),
+    };
+    const identity = runEvaluation({ ...shared, variant: 'identity' });
+    const demo = runEvaluation({ ...shared, variant: 'demo' });
+
+    assert.notEqual(identity.runDir, demo.runDir);
+    assert.deepEqual(
+      fs.readFileSync(path.join(identity.runDir, 'raw.jsonl'), 'utf8')
+        .trim().split('\n').map(line => JSON.parse(line).variant),
+      Array(SCENARIOS.length).fill('identity')
+    );
+    assert.deepEqual(
+      fs.readFileSync(path.join(demo.runDir, 'raw.jsonl'), 'utf8')
+        .trim().split('\n').map(line => JSON.parse(line).variant),
+      Array(SCENARIOS.length).fill('demo')
+    );
   });
 });
 

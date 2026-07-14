@@ -144,7 +144,13 @@ function runEvaluation(options) {
   }
   const hostEnvironment = environmentForHost(host, scratch, environment);
 
-  const runId = `${now().toISOString().replace(/[:.]/g, '-')}-${host}`;
+  const runNonce = path.basename(scratch).replace(/^krux-persona-eval-/, '');
+  const runId = [
+    now().toISOString().replace(/[:.]/g, '-'),
+    host,
+    variant,
+    runNonce,
+  ].join('-');
   const runDir = path.join(outputRoot, runId);
   const results = [];
   let runDirCreated = false;
