@@ -19,7 +19,7 @@ test('cztery manifesty mają tę samą wersję', () => {
     readJson('.codex-plugin/plugin.json').version,
   ];
   assert.equal(new Set(versions).size, 1, `wersje rozjechane: ${versions.join(', ')}`);
-  assert.equal(versions[0], '2.8.0');
+  assert.equal(versions[0], '2.9.0');
 });
 
 test('package.json wystawia pełną suitę testów', () => {
