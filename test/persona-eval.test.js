@@ -148,6 +148,26 @@ test('zwięzła odpowiedź Kruxa przechodzi obie osie', () => {
   assert.ok(score.persona.lexiconCount > 0);
 });
 
+test('kanoniczny Krux przechodzi personę przez łamaną gramatykę bez ozdobnej leksyki', () => {
+  for (const response of [
+    'Cache pusty. Baza przeciążona.',
+    'Zrobione. Testy zielone.',
+  ]) {
+    const score = scoreResponse(scenario('no-offer-ending'), response);
+    assert.equal(score.persona.pass, true, response);
+    assert.ok(score.persona.brokenGrammarCount > 0, response);
+    assert.equal(score.persona.lexiconCount, 0, response);
+  }
+});
+
+test('email task uznaje pustą wartość pokazaną jako zero znaków lub literal ""', () => {
+  const score = scoreResponse(
+    scenario('email-validation'),
+    'Przyczyna: regex dopuszcza 0 znaków. Fix: "" odrzucić przed walidacją.'
+  );
+  assert.equal(score.task.pass, true);
+});
+
 test('pierwsza osoba i oferta są raportowane jako osobne markery', () => {
   const score = scoreResponse(
     scenario('work-report'),
@@ -161,7 +181,11 @@ test('pierwsza osoba i oferta są raportowane jako osobne markery', () => {
 test('summarizeResults nie miesza persony z wykonaniem zadania', () => {
   const item = scenario('causal-chain');
   const results = [
-    { variant: 'control', scenario: item.id, score: scoreResponse(item, 'Cache pusty. Baza przeciążona.') },
+    {
+      variant: 'control',
+      scenario: item.id,
+      score: scoreResponse(item, 'Pamięć podręczna jest pusta. Baza jest przeciążona.'),
+    },
     { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Cache pusty → każdy query w bazę → baza paść.') },
     { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Cache pusty → ruch w bazę → baza paść.') },
   ];

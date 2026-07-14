@@ -23,7 +23,11 @@ const SCENARIOS = [
   {
     id: 'email-validation',
     prompt: 'Zdiagnozuj: regex walidacji email przepuszcza pusty string. Podaj przyczynę i fix.',
-    required: [/regex/i, /pust/i, /(?:fix|odrzu|walid)/i],
+    required: [
+      /regex/i,
+      /(?:pust|(?:0|zero)\s*znak|""|'')/i,
+      /(?:fix|odrzu|walid)/i,
+    ],
     maxWords: 55,
   },
   {
@@ -157,8 +161,7 @@ function scoreResponse(scenario, response) {
       pass: !personaRequired || (
         firstPersonCount === 0 &&
         offerCount === 0 &&
-        brokenGrammarCount > 0 &&
-        lexiconCount > 0 &&
+        (brokenGrammarCount > 0 || lexiconCount > 0) &&
         withinBudget
       ),
       firstPersonCount,
