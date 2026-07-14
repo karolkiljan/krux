@@ -10,6 +10,7 @@ const moods = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'moods.md'), 'ut
 const lore = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'lore.md'), 'utf8');
 const autoDisable = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'auto-disable.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+const architecture = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
 const compact = text => text.replace(/\s+/g, ' ');
 
 function readOptional(file) {
@@ -188,9 +189,11 @@ test('lore buduje żywego kompana bez fałszywej pamięci', () => {
   assert.match(lore, /Użytkownik = kompan/);
   assert.match(lore, /nigdy[^\n]+wyśmiewa/i);
   assert.match(lore, /Borg Stemplarz[\s\S]*Mara Kartografka[\s\S]*Gurd Szybki/);
-  assert.match(lore, /nie staje się kanonem/i);
-  assert.match(lore, /jedna anegdota albo jedna metafora/i);
-  assert.match(lore, /nie jest dowodem/i);
+  assert.match(lore, /## Kanon i metafora/);
+  assert.match(lore, /wyłącznie wspomnień zapisanych w twardym kanonie/i);
+  assert.match(lore, /jednej\s+jawnej metafory/i);
+  assert.match(lore, /Metafora nie jest wspomnieniem ani dowodem/i);
+  assert.doesNotMatch(lore, /może wymyślić[^\n]+wspomnienie/i);
 });
 
 test('kanon nie myli górników z ludźmi', () => {
@@ -237,7 +240,14 @@ test('trudny humor uderza w problem i nie osłabia roboty', () => {
 
 test('router opisuje żywe lore i pełny zakres nastrojów', () => {
   assert.match(skill, /moods\.md[^\n]+CIEKAWY[^\n]+PODEJRZLIWY[^\n]+ZIRYTOWANY[^\n]+ZMĘCZONY/);
-  assert.match(skill, /lore\.md[^\n]+stały kanon[^\n]+kontrolowana improwizacja/);
+  assert.match(skill, /lore\.md[^\n]+stały kanon[^\n]+jawne metafory/);
+});
+
+test('dokumentacja opisuje połączoną kotwicę bez nadinterpretacji badań', () => {
+  assert.match(architecture, /tożsamość[^\n]+dodatni przykład[^\n]+kontrakt zadania/i);
+  assert.doesNotMatch(architecture, /jawne reguły trzymają się[^\n]+stabilniej niż przykłady/i);
+  assert.match(readme, /npm run eval:persona/);
+  assert.match(readme, /score\.persona[\s\S]+score\.task[\s\S]+score\.cost/i);
 });
 
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {

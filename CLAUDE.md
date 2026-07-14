@@ -19,7 +19,7 @@ Plugin działa na trzech niezależnych osiach:
 | Hook | Plik | Kiedy | Rola |
 |------|------|-------|------|
 | `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Resetuje licznik turnów drift-guard (`.krux-turn-count`) — każde wstrzyknięcie to świeże wzmocnienie. Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
-| `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony (reset licznika drift-guard). Inaczej, gdy persona aktywna: liczy tury tej sesji od ostatniego wzmocnienia (`hooks/lib/drift-guard.js`, klucz `session_id`). Tury poniżej progu dostają kompaktowy invariant `KRUX TURN`; po progu (`KRUX_DRIFT_INTERVAL`, domyślnie 10) zastępuje go pełny `KRUX DRIFT-GUARD` z rotowanym mikro-przykładem kalibracyjnym (`MICRO_EXAMPLES`, licznik emisji w `.krux-drift-emit`). `KRUX_TURN_REMINDER=0` wyłącza tylko kompaktowy invariant; pełny guard zostaje. |
+| `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony (reset licznika drift-guard). Inaczej, gdy persona aktywna: liczy tury tej sesji od ostatniego wzmocnienia (`hooks/lib/drift-guard.js`, klucz `session_id`). Tury poniżej progu dostają dodatnią kotwicę `KRUX TURN`: tożsamość + dodatni przykład + kontrakt zadania. Po progu (`KRUX_DRIFT_INTERVAL`, domyślnie 10) zastępuje ją pełny `KRUX DRIFT-GUARD` z 4 PRAWAMI i kolejnym przykładem (`MICRO_EXAMPLES`, licznik emisji w `.krux-drift-emit`). `KRUX_TURN_REMINDER=0` wyłącza tylko lekką kotwicę; pełna zostaje. |
 | `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
 | `UserPromptSubmit` | `hooks/krux-konkret-toggle.js` | każdy prompt | Regex match na frazy konkret (`konkret`, `strict`, `konkret off`, itp.) → zmienia `.krux-konkret-active`. Gdy flag aktywny, wstrzykuje per-turn reminder kontraktu zakresu (tylko A, najprostsze, obok = 1 linia raportu, delegacja dziedziczy kontrakt). |
 | `UserPromptSubmit` | `hooks/krux-horda-trigger.js` | każdy prompt | Match słów promptu na triggery z `agents/triggers.json` (word-boundary, fold diakrytyków; fleksja celowo nieobsługiwana) → wstrzykuje podpowiedź delegacji z bramką korzyści. Throttle per-sesja: 1 nudge / `KRUX_HORDA_NUDGE_INTERVAL` (domyślnie 5) turnów. `KRUX_HORDA_NUDGE=0` wyłącza. Niezależny od stanu persony. |
@@ -39,7 +39,7 @@ Plugin działa na trzech niezależnych osiach:
 | `<stateDir>/.krux-konkret-active` | `krux-konkret-toggle.js` | `krux-konkret-toggle.js` | Per-turn reminder trigger dla trybu konkret. Istnienie pliku = ON. |
 | `<stateDir>/.krux-turn-count` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Liczniki tur od ostatniego wzmocnienia persony — JSON map `{session_id: {n, t}}`, wpisy starsze niż 24h prunowane. Reset (tylko własny wpis sesji) przy SessionStart mode=on i przy jawnym `krux`/`stop krux`. |
 | `<stateDir>/.krux-horda-nudge` | `krux-horda-trigger.js` (`hooks/lib/drift-guard.js`) | `krux-horda-trigger.js` | Throttle podpowiedzi delegacji — ten sam format JSON map per `session_id`; wpis = tury od ostatniego nudge. |
-| `<stateDir>/.krux-drift-emit` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Licznik emisji DRIFT-GUARD per sesja (ten sam format JSON map) — rotuje mikro-przykład kalibracyjny. Celowo NIE resetowany przy wzmocnieniu persony: rotacja idzie dalej przez całą sesję. |
+| `<stateDir>/.krux-drift-emit` | `krux-toggle.js`, `activate.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js`, `activate.js` | Licznik wyemitowanych kotwic per sesja (ten sam format JSON map) — rotuje dodatni mikro-przykład. Celowo NIE resetowany przy wzmocnieniu persony: rotacja idzie dalej przez całą sesję. |
 | `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag. `/krux:krux` i `$krux:krux` zapisują tylko `.krux-active`, bez zmiany `.krux-mode`. `$krux:krux on|off` jawnie zmienia stan trwały.
@@ -79,9 +79,9 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 
 **Resume → krótki reminder, compact → pełny reinject SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Compact przepisuje kontekst, więc `activate.js` ponownie wstrzykuje pełne SKILL.md, tak samo jak przy `startup`.
 
-**Miks praw i par — trzy warstwy persony, nie jedna.** Sekcje stylu SKILL.md to celowo REGUŁY (4 PRAWA) + PRZYKŁADY (pary „Ludzie vs Krux") + mechaniczny reprompting (drift-guard), a nie któraś warstwa solo. Uzasadnienie dwustronne: (a) własna walidacja brancha `persona-rewrite-fewshot` — gramatyka niesie się z par, ale czysty few-shot psuł raporty (+98% gadatliwości) i granice (gołe odmowy), a leksyka wymaga gorącej ścieżki w SKILL.md; (b) literatura persona-drift (ContextEcho, arXiv:2605.24279): jawne reguły trzymają się w długiej sesji stabilniej niż przykłady, przykłady lepiej uczą tonu, periodyczny reprompting jest najskuteczniejszą mitygacją — zbieżnie z wytycznymi Anthropic (portret + reguły interakcji + scenariusze z oczekiwanymi odpowiedziami). Nazwa „4 PRAWA" jest uchwytem repromptingu: `REMINDER_CORE` woła strukturę po nazwie. Nie redukować miksu do samych par ani samych reguł.
+**Miks praw, przykładów i kotwicy — trzy warstwy persony.** SKILL.md daje 4 PRAWA oraz przykłady brzmienia, a hook mechanicznie wzmacnia aktywną personę. Runtime składa jeden dodatni kontrakt: tożsamość + dodatni przykład + kontrakt zadania. Własna walidacja brancha `persona-rewrite-fewshot` pokazała, że czysty few-shot może zwiększać gadatliwość i psuć granice. ContextEcho (arXiv:2605.24279) wykazał dryf zależny od modelu i w swoim układzie odzyskiwał personę oraz format przez świeżą, łączoną kotwicę tożsamości i demonstracji; nie dowodzi uniwersalnej przewagi reguł nad przykładami. Wytyczne Anthropic wspierają szczegółową rolę i przykłady. Dlatego Krux zachowuje miks, ale jego skuteczność musi mierzyć lokalnie benchmark, nie sama obecność tekstu w hooku.
 
-**Drift-guard: mechaniczne, nie samoobserwacyjne, przypomnienie.** Wzmocnienie czysto zdarzeniowe (SessionStart, jawna fraza toggle) zostawiało między zdarzeniami ciszę, a jedyna siatka bezpieczeństwa (`context-watch.md`) zależała od tego, czy model sam zauważy własny dryf w długiej rozmowie (zawodne z definicji: dryf jest stopniowy i lokalnie niewidoczny). Teraz aktywna persona dostaje na każdej turze kompaktowy `KRUX TURN` z invariantem głosu. `hooks/lib/drift-guard.js` równolegle liczy tury od ostatniego pełnego wzmocnienia; co `KRUX_DRIFT_INTERVAL` tur `krux-toggle.js` zastępuje krótki invariant pełnym `KRUX DRIFT-GUARD` z rotowanym mikro-przykładem. `KRUX_TURN_REMINDER=0` przywraca ciszę tylko poniżej progu, bez wyłączania pełnego guardu. Liczniki są per-sesja (`session_id` z payload hooka, JSON map w jednym pliku), bo licznik globalny per user psuł kadencję przy równoległych sesjach. Pełny `REMINDER_CORE` przypomina esencję 4 PRAW — sam zakaz anty-wzorców nie leczył dryfu do gładkiej polszczyzny (Regresja A).
+**Drift-guard: mechaniczna dodatnia kotwica.** Wzmocnienie czysto zdarzeniowe (SessionStart, jawna fraza toggle) zostawiało między zdarzeniami ciszę, a `context-watch.md` zależał od samoobserwacji modelu. Teraz każda aktywna tura dostaje `KRUX TURN` z tożsamością, kontraktem zachowania treści i rotowanym dodatnim przykładem. `hooks/lib/drift-guard.js` równolegle liczy tury od ostatniego pełnego wzmocnienia; co `KRUX_DRIFT_INTERVAL` tur `krux-toggle.js` zastępuje lekką kotwicę pełnym `KRUX DRIFT-GUARD`, który dodaje esencję 4 PRAW. Runtime nie wywołuje dodatkowego modelu. `KRUX_TURN_REMINDER=0` przywraca ciszę tylko poniżej progu. Liczniki i rotacja są per-sesja, bo globalny licznik psuł kadencję przy równoległych sesjach.
 
 **Nudge Hordy: delegacja nie zależy od pamięci modelu.** Ta sama filozofia co drift-guard — samoobserwacja zawodna, więc `krux-horda-trigger.js` mechanicznie łapie triggery ról w promptcie i podpowiada sprawdzenie bramki korzyści. Podpowiedź nie wymusza spawnu: decyzja zostaje przy modelu (bramka korzyści w `orchestration.md`). Osobny plik hooka zgodnie z konwencją „nie mieszać logiki"; generyczny magazyn liczników per-sesja współdzielony z drift-guardem przez `hooks/lib/drift-guard.js`.
 
@@ -91,13 +91,27 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 
 Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-install). Uruchomienie: `npm test`.
 
+Testy deterministyczne potwierdzają skład promptu, transport hooka, stan i scorer;
+nie potwierdzają, że konkretny model wykona personę. Opt-in benchmark uruchamia
+świeże procesy hosta dla wariantów `control|identity|demo|combined`:
+
+```bash
+npm run eval:persona -- --host codex --reps 5 --variant all
+npm run eval:persona -- --host claude --reps 5 --variant all
+```
+
+Raport rozdziela personę, zadanie i koszt. Surowe odpowiedzi trzeba czytać przy
+każdym trafionym markerze. Brak CLI = `SKIP`, nie zaliczony test; `npm test` nie
+wykonuje wywołań modelu.
+
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, kompaktowy invariant na każdej aktywnej turze, pełny drift-guard zastępujący go co próg, `KRUX_TURN_REMINDER=0` wyłączający tylko invariant + reset na on/off (`test/krux-toggle.test.js`)
 - `krux-flow-toggle.js` — toggle flag, emit JSON, per-turn reminder, aliasy (katalog `test`, plik `krux-flow-toggle.test.js`)
 - `krux-konkret-toggle.js` — toggle flag, aliasy (`strict`), full-match only, per-turn reminder, malformed stdin, PLUGIN_DATA (`test/krux-konkret-toggle.test.js`)
 - `krux-horda-trigger.js` — match triggerów (word-boundary, diacritics fold), throttle per-sesja, env off, niezależność od persony (`test/krux-horda-trigger.test.js`)
 - `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts, reset licznika drift-guard własnej sesji na każdym mode=on źródle (`test/activate.test.js`)
-- `hooks/lib/drift-guard.js` — treść kompaktowego invariant, opt-out `KRUX_TURN_REMINDER=0|off`, próg domyślny i przez `KRUX_DRIFT_INTERVAL`, liczniki per-sesja (JSON map, prune 24h, migracja ze starego formatu), generyczny magazyn read/write/clear (`test/drift-guard.test.js`)
+- `hooks/lib/drift-guard.js` — skład lekkiej i pełnej dodatniej kotwicy, rotacja przykładów, opt-out `KRUX_TURN_REMINDER=0|off`, próg oraz liczniki per-sesja (`test/drift-guard.test.js`)
+- `persona-eval` — judge-free scorer persony/zadania/kosztu i runner świeżych procesów Codex/Claude; modelowe wywołania tylko przez `npm run eval:persona` (`test/persona-eval.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, pełny cykl per-turn/full-guard włącznie z resetem przez compact i `KRUX_TURN_REMINDER=0`) (`test/integration.test.js`)

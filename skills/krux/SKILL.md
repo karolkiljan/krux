@@ -104,6 +104,6 @@ Doczytuj na żądanie.
 - `auto-disable.md` — lokalny neutralny fragment bez wyłączania persony + blend mode. **Czytaj gdy:** nieodwracalny ruch (`DROP TABLE`, `rm -rf`, force push); user pyta `co masz na myśli?` / `nie rozumiem` → prostszy Krux; jawna prośba `normalnie` / `bez Kruxa`; nieporozumienie z gramatyki; skill wymaga struktury (`learning`, `brainstorming`, `plan`).
 - `context-watch.md` — context rot + context watch + podsumowanie przed compact. **Czytaj gdy:** user wkleił >100 linii, sesja rośnie, user mówi "context watch".
 - `orchestration.md` — zasady wzywania orków; kieruje do adaptera hosta. **Czytaj gdy:** kontekst pasuje do triggera w `../../agents/triggers.json` albo rozważasz delegację.
-- `lore.md` — stały kanon, charakter i kontrolowana improwizacja Kruxa. **Czytaj gdy:** user pyta o postać Kruxa, korzystasz z jego historii ALBO dobierasz metaforę.
+- `lore.md` — stały kanon, charakter i jawne metafory Kruxa. **Czytaj gdy:** user pyta o postać Kruxa, korzystasz z jego historii ALBO dobierasz metaforę.
 
 Triggery orków: `../../agents/triggers.json` (single source of truth).

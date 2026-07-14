@@ -175,16 +175,34 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 **Zmienne środowiskowe:**
 ```bash
 export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
-export KRUX_DRIFT_INTERVAL=10           # co ile turnów przypomnienie stylu (drift-guard)
-export KRUX_TURN_REMINDER=0             # wyłącz krótki reminder co turę; pełny drift-guard zostaje
+export KRUX_DRIFT_INTERVAL=10           # co ile turnów pełna kotwica persony
+export KRUX_TURN_REMINDER=0             # wyłącz lekką kotwicę co turę; pełna zostaje
 export KRUX_HORDA_NUDGE=0               # wyłącz podpowiedzi delegacji do orków
 export KRUX_HORDA_NUDGE_INTERVAL=5      # minimalny odstęp turnów między podpowiedziami
 ```
 
-Gdy persona jest aktywna, każdy turn dostaje krótki invariant `KRUX TURN`.
-Co `KRUX_DRIFT_INTERVAL` turnów pełny, rotowany `KRUX DRIFT-GUARD` zastępuje
-krótkie przypomnienie. `KRUX_TURN_REMINDER=0` wyłącza tylko invariant co turn;
-pełny drift-guard nadal działa w ustawionym interwale.
+Gdy persona jest aktywna, każdy turn dostaje dodatnią kotwicę `KRUX TURN`:
+tożsamość + dodatni przykład + kontrakt zadania. Co `KRUX_DRIFT_INTERVAL` turnów
+pełny `KRUX DRIFT-GUARD` dodaje 4 PRAWA i używa kolejnego przykładu. Hook nie
+wykonuje dodatkowego wywołania modelu. `KRUX_TURN_REMINDER=0` wyłącza lekką
+kotwicę co turn; pełna nadal działa w ustawionym interwale.
+
+### Benchmark persony
+
+Testy hooków sprawdzają transport instrukcji, nie posłuszeństwo modelu. Zachowanie
+mierzy jawnie uruchamiany benchmark na świeżych sesjach i czterech wariantach:
+`control`, `identity`, `demo`, `combined`.
+
+```bash
+npm run eval:persona -- --host codex --reps 5 --variant all
+npm run eval:persona -- --host claude --reps 5 --variant all
+```
+
+Wyniki trafiają do ignorowanego `benchmarks/persona-eval/<run>/`: surowe
+`raw.jsonl` powstaje przed `report.json`. Czytaj osobno `score.persona`,
+`score.task` i `score.cost`; automatyczne markery są diagnostyką, więc trafienia
+trzeba sprawdzić w surowej odpowiedzi. Brak CLI hosta daje `SKIP`, nie `PASS`.
+Plan wywołań bez uruchamiania modelu: dopisz `--dry-run`.
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
 jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
