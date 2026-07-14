@@ -1,5 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   VARIANTS,
@@ -11,11 +14,21 @@ const {
   scoreResponse,
   summarizeResults,
 } = require('../scripts/lib/persona-eval');
+const {
+  parseArgs,
+  commandForHost,
+  runEvaluation,
+} = require('../scripts/persona-eval');
 
 function scenario(id) {
   const found = SCENARIOS.find(item => item.id === id);
   assert.ok(found, `brak scenariusza ${id}`);
   return found;
+}
+
+function withTempDir(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-persona-eval-test-'));
+  try { return fn(dir); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
 test('benchmark ma kontrolę i trzy warianty kotwicy', () => {
@@ -149,4 +162,117 @@ test('summarizeResults nie miesza persony z wykonaniem zadania', () => {
   assert.equal(summary.combined.personaPassRate, 1);
   assert.equal(typeof summary.combined.averageWords, 'number');
   assert.equal(typeof summary.combined.wordCountRange, 'number');
+});
+
+test('parseArgs domyślnie wybiera pięć prób i wszystkie warianty', () => {
+  assert.deepEqual(parseArgs(['--host', 'codex']), {
+    host: 'codex',
+    reps: 5,
+    variant: 'all',
+    dryRun: false,
+  });
+});
+
+test('parseArgs waliduje host, wariant i dodatnią liczbę prób', () => {
+  assert.throws(() => parseArgs([]), /Wymagane --host/);
+  assert.throws(() => parseArgs(['--host', 'ollama']), /Nieznany host/);
+  assert.throws(
+    () => parseArgs(['--host', 'codex', '--variant', 'unknown']),
+    /Nieznany wariant/
+  );
+  assert.throws(
+    () => parseArgs(['--host', 'codex', '--reps', '0']),
+    /dodatnią liczbą całkowitą/
+  );
+});
+
+test('commandForHost buduje argv bez shell=true', () => {
+  assert.deepEqual(commandForHost('codex', 'prompt', '/tmp/last.txt'), {
+    command: 'codex',
+    args: [
+      'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
+      '-s', 'read-only', '-o', '/tmp/last.txt', 'prompt',
+    ],
+    readsOutputFile: true,
+  });
+  assert.deepEqual(commandForHost('claude', 'prompt', '/tmp/last.txt'), {
+    command: 'claude',
+    args: [
+      '--safe-mode', '-p', '--tools', '', '--no-session-persistence', 'prompt',
+    ],
+    readsOutputFile: false,
+  });
+});
+
+test('brak binarki hosta daje SKIP, nigdy PASS', () => {
+  const result = runEvaluation({
+    host: 'codex',
+    reps: 1,
+    variant: 'control',
+    spawn: () => ({
+      status: null,
+      error: { code: 'ENOENT', message: 'not found' },
+      stdout: '',
+      stderr: '',
+    }),
+  });
+  assert.equal(result.status, 'SKIP');
+  assert.notEqual(result.status, 'PASS');
+  assert.match(result.reason, /codex/);
+});
+
+test('dry-run planuje świeży proces dla każdej próby i nic nie zapisuje', () => {
+  withTempDir(outputRoot => {
+    let spawnCalls = 0;
+    const result = runEvaluation({
+      host: 'codex',
+      reps: 2,
+      variant: 'all',
+      dryRun: true,
+      outputRoot,
+      spawn: () => { spawnCalls += 1; throw new Error('spawn nie powinien ruszyć'); },
+    });
+    assert.equal(result.status, 'DRY_RUN');
+    assert.equal(result.calls.length, 4 * 2 * SCENARIOS.length);
+    assert.equal(spawnCalls, 0);
+    assert.deepEqual(fs.readdirSync(outputRoot), []);
+  });
+});
+
+test('udany run zapisuje raw przed raportem i zwraca COMPLETE', () => {
+  withTempDir(outputRoot => {
+    let spawnCalls = 0;
+    const result = runEvaluation({
+      host: 'claude',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      now: () => new Date('2026-07-15T12:34:56.000Z'),
+      spawn: () => {
+        spawnCalls += 1;
+        return { status: 0, stdout: 'Odpowiedź kontrolna', stderr: '' };
+      },
+    });
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(spawnCalls, SCENARIOS.length);
+    assert.equal(result.results.length, SCENARIOS.length);
+    const runDir = path.join(outputRoot, '2026-07-15T12-34-56-000Z-claude');
+    assert.equal(fs.existsSync(path.join(runDir, 'raw.jsonl')), true);
+    assert.equal(fs.existsSync(path.join(runDir, 'report.json')), true);
+    const rows = fs.readFileSync(path.join(runDir, 'raw.jsonl'), 'utf8').trim().split('\n');
+    assert.equal(rows.length, SCENARIOS.length);
+    assert.equal(JSON.parse(rows[0]).response, 'Odpowiedź kontrolna');
+  });
+});
+
+test('niezerowy exit hosta daje ERROR z zachowanym stderr', () => {
+  const result = runEvaluation({
+    host: 'claude',
+    reps: 1,
+    variant: 'control',
+    spawn: () => ({ status: 2, stdout: '', stderr: 'auth failed' }),
+  });
+  assert.equal(result.status, 'ERROR');
+  assert.equal(result.exitCode, 2);
+  assert.match(result.reason, /auth failed/);
 });

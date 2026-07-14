@@ -7,7 +7,8 @@
     "codex-plugin"
   ],
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "eval:persona": "node scripts/persona-eval.js"
   },
   "author": "Karol Kiljan",
   "license": "MIT",
