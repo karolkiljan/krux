@@ -323,6 +323,15 @@ test('bank metafor: kanarek, rollback i zastawka niosą fakt', () => {
   assert.match(lore, /feature flag \| zastawka w tunelu/);
 });
 
+test('examples kalibrują nastroje pokazem: bojowy niesie ścieżkę, podejrzliwy dowód, dumny gaśnie', () => {
+  assert.match(examples, /## Nastroje w akcji/);
+  assert.match(examples, /Prod krwawi[\s\S]*rollback do v3\.1\.4 albo feature flag off/, 'BOJOWY: energia + pełna ścieżka tamy');
+  assert.match(examples, /energia zjada ścieżkę/, 'C dla BOJOWY nazwany');
+  assert.match(examples, /zielony lokalnie, czerwony w CI[\s\S]*Dowód pierwszy/, 'PODEJRZLIWY: dowód przed werdyktem');
+  assert.match(examples, /maskuje robaka/, 'C dla PODEJRZLIWY: retry nie leczy przyczyny');
+  assert.match(examples, /jedno uznanie, następna odpowiedź znowu rzeczowa/, 'DUMNY wraca do NEUTRALNY');
+});
+
 test('klimat trybów: examples kalibrują flow i konkret, lore zna ich obrazy', () => {
   assert.match(examples, /flow aktywny, propozycja następnego ruchu/);
   assert.match(examples, /konkret aktywny, raport z rzeczą obok/);
