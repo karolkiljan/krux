@@ -10,6 +10,9 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   REMINDER_CORE,
+  MICRO_EXAMPLES,
+  EMIT_FILENAME,
+  nextMicroExample,
   DEFAULT_INTERVAL,
   driftInterval,
   countPath,
@@ -200,4 +203,68 @@ test('writeCount: prune 24h działa też w magazynie generycznym', () => {
 test('REMINDER_CORE przypomina klimat, nie tylko gramatykę', () => {
   assert.match(REMINDER_CORE, /akcent postaci[^\n]*moods\.md/);
   assert.match(REMINDER_CORE, /metafora górnicza[^\n]*lore\.md/);
+});
+
+test('REMINDER_CORE pokrywa oba bieguny dryfu: A i C symetrycznie', () => {
+  assert.match(REMINDER_CORE, /dryf do A/);
+  assert.match(REMINDER_CORE, /dryf do C/);
+  assert.match(REMINDER_CORE, /dodać konkret, nie wygładzać/);
+});
+
+test('REMINDER_CORE mieści się w budżecie resume razem z blokiem statusline', () => {
+  // integration.test.js wymaga resume stdout < 1100 znaków ŁĄCZNIE, a stdout
+  // to prefiks 'KRUX TRYB AKTYWNY — ' (20 zn) + REMINDER_CORE + blok
+  // STATUSLINE SETUP (~390 zn, rośnie z długością HOME). 685 = 1100 − 20 −
+  // 390 − zapas; ten test pęka z jawnym komunikatem, zanim pęknie integracja.
+  assert.ok(
+    REMINDER_CORE.length <= 685,
+    `REMINDER_CORE ma ${REMINDER_CORE.length} zn (limit 685) — dopisek wymaga cięcia gdzie indziej w CORE`
+  );
+});
+
+// --- rotowany mikro-przykład kalibracyjny ---
+
+test('MICRO_EXAMPLES: każda para ma anty-wzorzec i wersję Krux w jednej linii', () => {
+  assert.ok(MICRO_EXAMPLES.length >= 3, 'pula musi dawać realną rotację');
+  for (const example of MICRO_EXAMPLES) {
+    assert.match(example, /Nie: „/, 'para zaczyna od anty-wzorca');
+    assert.match(example, /→ Krux: „/, 'para pokazuje wersję Krux');
+    assert.doesNotMatch(example, /\n/, 'para mieści się w jednej linii');
+  }
+});
+
+test('nextMicroExample: rotuje deterministycznie i wraca na początek puli', () => {
+  withTempDir(dir => {
+    const seen = [];
+    for (let i = 0; i < MICRO_EXAMPLES.length + 1; i++) {
+      seen.push(nextMicroExample(dir, 'sid-a'));
+    }
+    assert.deepEqual(seen.slice(0, MICRO_EXAMPLES.length), MICRO_EXAMPLES, 'pełny cykl w kolejności puli');
+    assert.equal(seen[MICRO_EXAMPLES.length], MICRO_EXAMPLES[0], 'po cyklu rotacja wraca na start');
+  });
+});
+
+test('nextMicroExample: sesje rotują niezależnie', () => {
+  withTempDir(dir => {
+    nextMicroExample(dir, 'sid-a');
+    nextMicroExample(dir, 'sid-a');
+    assert.equal(nextMicroExample(dir, 'sid-b'), MICRO_EXAMPLES[0], 'świeża sesja startuje od pierwszej pary');
+    assert.equal(nextMicroExample(dir, 'sid-a'), MICRO_EXAMPLES[2], 'sesja A kontynuuje własny cykl');
+  });
+});
+
+test('nextMicroExample: własny plik stanu, licznik okna drift nietknięty', () => {
+  withTempDir(dir => {
+    nextMicroExample(dir, 'sid-a');
+    assert.equal(fs.existsSync(path.join(dir, EMIT_FILENAME)), true);
+    assert.equal(fs.existsSync(countPath(dir)), false, 'rotacja nie pisze do .krux-turn-count');
+  });
+});
+
+test('resetTurnCount nie kasuje rotacji — wzmocnienie persony nie cofa cyklu', () => {
+  withTempDir(dir => {
+    nextMicroExample(dir, 'sid-a');
+    resetTurnCount(dir, 'sid-a');
+    assert.equal(nextMicroExample(dir, 'sid-a'), MICRO_EXAMPLES[1], 'cykl idzie dalej po resecie okna');
+  });
 });

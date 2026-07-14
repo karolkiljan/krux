@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
-const { REMINDER_CORE, resetTurnCount, bumpTurnCount } = require('./lib/drift-guard');
+const { REMINDER_CORE, resetTurnCount, bumpTurnCount, nextMicroExample } = require('./lib/drift-guard');
 
 let raw = '';
 process.stdin.setEncoding('utf8');
@@ -81,7 +81,8 @@ process.stdin.on('end', () => {
     if (bumpTurnCount(claudeDir, sessionId)) {
       emit(
         'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
-        ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.'
+        ' Jak styl przez długi wątek się rozjechał → doczytaj `examples.md` i wróć do formy B.' +
+        ' Kalibracja: ' + nextMicroExample(claudeDir, sessionId)
       );
     }
   }

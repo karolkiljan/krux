@@ -306,6 +306,23 @@ test('drift-guard: jawne włączenie ("krux") resetuje licznik własnej sesji', 
   });
 });
 
+test('drift-guard: emisja niesie rotowany mikro-przykład kalibracyjny', () => {
+  withTempHome(home => {
+    const { MICRO_EXAMPLES } = require('../hooks/lib/drift-guard');
+    const env = { KRUX_DRIFT_INTERVAL: '2' };
+    runHook(home, 'krux', env);
+
+    runHook(home, 'turn 1', env);
+    const first = additionalContext(runHook(home, 'turn 2', env));
+    assert.match(first, /Kalibracja: /, 'reminder ma sekcję kalibracji');
+    assert.ok(first.includes(MICRO_EXAMPLES[0]), 'pierwsza emisja = pierwsza para z puli');
+
+    runHook(home, 'turn 3', env);
+    const second = additionalContext(runHook(home, 'turn 4', env));
+    assert.ok(second.includes(MICRO_EXAMPLES[1]), 'druga emisja rotuje na kolejną parę');
+  });
+});
+
 test('drift-guard: jawne wyłączenie ("stop krux") czyści licznik własnej sesji', () => {
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '5' };
