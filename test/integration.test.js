@@ -134,3 +134,46 @@ test('resume nie wstrzykuje pełnego SKILL.md', () => {
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('konkret, flow i persona są ortogonalne', () => {
+  const home = makeIsolatedHome();
+  try {
+    const personaActive = path.join(home, '.claude', '.krux-active');
+    const flowActive = path.join(home, '.claude', '.krux-flow-active');
+    const konkretActive = path.join(home, '.claude', '.krux-konkret-active');
+
+    runHook('hooks/activate.js', { source: 'startup' }, home);
+    runHook('hooks/krux-flow-toggle.js', { prompt: 'flow' }, home);
+    runHook('hooks/krux-konkret-toggle.js', { prompt: 'konkret' }, home);
+    assert.equal(fs.existsSync(personaActive), true);
+    assert.equal(fs.existsSync(flowActive), true);
+    assert.equal(fs.existsSync(konkretActive), true, 'trzy tryby działają równolegle');
+
+    runHook('hooks/krux-toggle.js', { prompt: 'stop krux' }, home);
+    assert.equal(fs.existsSync(personaActive), false);
+    assert.equal(fs.existsSync(konkretActive), true, 'persona off nie wpływa na konkret');
+
+    runHook('hooks/krux-flow-toggle.js', { prompt: 'flow off' }, home);
+    assert.equal(fs.existsSync(flowActive), false);
+    assert.equal(fs.existsSync(konkretActive), true, 'flow off nie wpływa na konkret');
+
+    runHook('hooks/krux-konkret-toggle.js', { prompt: 'konkret off' }, home);
+    assert.equal(fs.existsSync(konkretActive), false);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('konkret przy persona off: reminder per-turn dalej leci', () => {
+  const home = makeIsolatedHome();
+  try {
+    fs.writeFileSync(path.join(home, '.claude', '.krux-mode'), 'off');
+    runHook('hooks/krux-konkret-toggle.js', { prompt: 'konkret' }, home);
+
+    const r = runHook('hooks/krux-konkret-toggle.js', { prompt: 'napraw walidację' }, home);
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /KRUX-KONKRET aktywny/, 'konkret działa niezależnie od persony');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
