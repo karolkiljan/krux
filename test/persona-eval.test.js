@@ -391,6 +391,7 @@ test('run Codexa izoluje globalne AGENTS.md, ale zachowuje uwierzytelnienie', ()
       environment: { CODEX_HOME: sourceHome },
       spawn: (command, args, options) => {
         isolatedHome = options.env.CODEX_HOME;
+        assert.ok(options.maxBuffer >= 16 * 1024 * 1024, 'host może emitować duży stderr');
         assert.match(isolatedHome, /krux-persona-eval-/);
         assert.notEqual(isolatedHome, sourceHome);
         assert.equal(fs.existsSync(path.join(isolatedHome, 'AGENTS.md')), false);

@@ -17,6 +17,7 @@ const {
 const DEFAULT_OUTPUT_ROOT = path.join(__dirname, '..', 'benchmarks', 'persona-eval');
 const HOSTS = ['codex', 'claude'];
 const EVALUATOR_VERSION = 2;
+const MAX_HOST_OUTPUT_BYTES = 64 * 1024 * 1024;
 
 function currentGitSha() {
   try {
@@ -243,6 +244,7 @@ function runEvaluation(options) {
         completed = spawn(invocation.command, invocation.args, {
           encoding: 'utf8',
           shell: false,
+          maxBuffer: MAX_HOST_OUTPUT_BYTES,
           cwd: scratch,
           env: hostEnvironment,
         });
