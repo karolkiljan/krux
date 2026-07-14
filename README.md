@@ -192,17 +192,27 @@ kotwicę co turn; pełna nadal działa w ustawionym interwale.
 Testy hooków sprawdzają transport instrukcji, nie posłuszeństwo modelu. Zachowanie
 mierzy jawnie uruchamiany benchmark na świeżych sesjach i czterech wariantach:
 `control`, `identity`, `demo`, `combined`.
+Uruchom go z katalogu checkoutu repozytorium:
 
 ```bash
 npm run eval:persona -- --host codex --reps 5 --variant all
 npm run eval:persona -- --host claude --reps 5 --variant all
+# opcjonalnie przypnij model: --model <model-id>
 ```
 
-Wyniki trafiają do ignorowanego `benchmarks/persona-eval/<run>/`: surowe
-`raw.jsonl` powstaje przed `report.json`. Czytaj osobno `score.persona`,
-`score.task` i `score.cost`; automatyczne markery są diagnostyką, więc trafienia
-trzeba sprawdzić w surowej odpowiedzi. Brak CLI hosta daje `SKIP`, nie `PASS`.
-Plan wywołań bez uruchamiania modelu: dopisz `--dry-run`.
+Wyniki trafiają do ignorowanego `benchmarks/persona-eval/<run>/`. Surowe
+`raw.jsonl` powstaje przed scoringiem i nie zawiera wyliczonego `score`;
+pochodny `scores.jsonl` rozdziela `score.persona`, `score.task` i `score.cost`, a
+`report.json` agreguje stabilność per scenariusz, inflację względem kontroli oraz
+wersję scorera, git SHA, model i wersję CLI. Automatyczne markery są diagnostyką — trafienia sprawdź w surowej
+odpowiedzi. Scenariusz syntetyczny `context-summary-probe` bada odpowiedź po
+podanym streszczeniu, ale nie udaje natywnego compactu ani rozmowy wieloturowej.
+Brak CLI hosta daje `SKIP`, nie `PASS`. Plan bez modelu: `--dry-run`. Ponowne
+przeliczenie istniejącego raw bez wywołania modelu:
+
+```bash
+npm run eval:persona -- --rescore benchmarks/persona-eval/<run>
+```
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
 jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
@@ -218,6 +228,7 @@ off
 
 ```bash
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
+      ~/.claude/.krux-active-sessions ~/.claude/.krux-drift-emit \
       ~/.claude/.krux-flow-active \
       ~/.claude/.krux-konkret-active \
       ~/.claude/.krux-turn-count ~/.claude/.krux-horda-nudge \

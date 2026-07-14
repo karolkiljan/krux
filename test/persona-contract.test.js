@@ -11,6 +11,10 @@ const lore = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'lore.md'), 'utf8
 const autoDisable = fs.readFileSync(path.join(ROOT, 'skills', 'krux', 'auto-disable.md'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 const architecture = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf8');
+const personaDesign = fs.readFileSync(
+  path.join(ROOT, 'docs', 'superpowers', 'specs', '2026-07-15-persona-drift-optimization-design.md'),
+  'utf8'
+);
 const compact = text => text.replace(/\s+/g, ' ');
 
 function readOptional(file) {
@@ -248,6 +252,16 @@ test('dokumentacja opisuje połączoną kotwicę bez nadinterpretacji badań', (
   assert.doesNotMatch(architecture, /jawne reguły trzymają się[^\n]+stabilniej niż przykłady/i);
   assert.match(readme, /npm run eval:persona/);
   assert.match(readme, /score\.persona[\s\S]+score\.task[\s\S]+score\.cost/i);
+});
+
+test('dokumentacja uczciwie ogranicza benchmark i opisuje odtwarzalny raport', () => {
+  assert.match(readme, /checkoutu repozytorium/i);
+  assert.match(readme, /--rescore/);
+  assert.match(readme, /syntetyczn[^\n]+context-summary/i);
+  assert.match(readme, /\.krux-active-sessions/);
+  assert.match(readme, /\.krux-drift-emit/);
+  assert.doesNotMatch(personaDesign, /rozmowa wieloturowa z próbkami przed i po compact/i);
+  assert.match(personaDesign, /nie wykonuje natywnego compact/i);
 });
 
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {

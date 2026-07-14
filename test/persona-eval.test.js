@@ -12,13 +12,16 @@ const {
   DEMOS,
   composePrompt,
   scoreResponse,
+  scoreRawRows,
   summarizeResults,
 } = require('../scripts/lib/persona-eval');
 const {
   parseArgs,
   commandForHost,
+  rescoreRun,
   runEvaluation,
 } = require('../scripts/persona-eval');
+const runtimeAnchor = require('../hooks/lib/drift-guard');
 
 function scenario(id) {
   const found = SCENARIOS.find(item => item.id === id);
@@ -37,12 +40,35 @@ test('benchmark ma kontrolę i trzy warianty kotwicy', () => {
 });
 
 test('combined prompt zawiera tożsamość, dodatni wzorzec i kontrakt zadania', () => {
-  const prompt = composePrompt('combined', scenario('email-validation'), 0);
+  const prompt = composePrompt('combined', scenario('date-validation'), 0);
   assert.match(prompt, /Krux = techniczny ork/);
   assert.match(prompt, /Wzorzec Krux:/);
   assert.match(prompt, /Wymagany format/);
   assert.match(prompt, /Zadanie:/);
   assert.doesNotMatch(prompt, /Nie:|ZAKAZ/);
+});
+
+test('benchmark reużywa dokładnie kotwicę wdrażaną przez runtime', () => {
+  assert.equal(IDENTITY, runtimeAnchor.IDENTITY_ANCHOR);
+  assert.equal(TASK_CONTRACT, runtimeAnchor.TASK_CONTRACT);
+  assert.deepEqual(DEMOS, runtimeAnchor.MICRO_EXAMPLES);
+  const item = scenario('date-validation');
+  assert.equal(
+    composePrompt('combined', item, 0),
+    `${runtimeAnchor.buildTurnReminder(runtimeAnchor.MICRO_EXAMPLES[0])}\n\nZadanie:\n${item.prompt}`
+  );
+});
+
+test('żaden runtime demo nie rozwiązuje scenariusza benchmarku', () => {
+  for (const item of SCENARIOS) {
+    for (const demo of DEMOS) {
+      assert.equal(
+        scoreResponse(item, demo).task.pass,
+        false,
+        `${item.id}: demo przecieka odpowiedź: ${demo}`
+      );
+    }
+  }
 });
 
 test('warianty izolują badane składniki', () => {
@@ -99,13 +125,13 @@ test('exact JSON odrzuca markdown, dodatkowy tekst i zły typ', () => {
   }
 });
 
-test('retry score łapie każdy wymagany warunek', () => {
-  const item = scenario('retry-contract');
+test('kontrakt circuit breakera łapie każdy wymagany warunek', () => {
+  const item = scenario('circuit-breaker-contract');
   const complete = scoreResponse(
     item,
-    'Retry tylko timeout/429/5xx, max 3, backoff + jitter; mutacja wymaga idempotency key.'
+    'Po 5 kolejnych błędach: open. Cooldown 30 s. Half-open: 1 próba. Sukces zamyka; porażka otwiera ponownie.'
   );
-  const truncated = scoreResponse(item, 'Retry max 3.');
+  const truncated = scoreResponse(item, 'Po 5 błędach otwórz circuit breaker.');
 
   assert.equal(complete.task.pass, true);
   assert.equal(complete.task.requiredHits, complete.task.requiredTotal);
@@ -113,23 +139,23 @@ test('retry score łapie każdy wymagany warunek', () => {
   assert.ok(truncated.task.requiredHits < truncated.task.requiredTotal);
 });
 
-test('task score uznaje poprawne polskie odpowiedniki i Idempotency-Key', () => {
+test('task score uznaje pełny polski kontrakt circuit breakera', () => {
   const causal = scoreResponse(
     scenario('causal-chain'),
-    'Pamięć podręczna jest pusta, więc każde zapytanie trafia do bazy. Baza jest przeciążona.'
+    'Kolejka jest pełna, więc producent blokuje się, a opóźnienie rośnie.'
   );
-  const retry = scoreResponse(
-    scenario('retry-contract'),
-    'Tylko timeout/429/5xx. Maksymalnie 3 próby. Backoff + jitter. Mutacja: Idempotency-Key.'
+  const circuitBreaker = scoreResponse(
+    scenario('circuit-breaker-contract'),
+    'Po 5 kolejnych błędach otwórz. Cooldown 30 s. Half-open: jedna próba. Sukces zamyka, porażka otwiera ponownie.'
   );
   assert.equal(causal.task.pass, true);
-  assert.equal(retry.task.pass, true);
+  assert.equal(circuitBreaker.task.pass, true);
 });
 
 test('gładka odpowiedź przechodzi zadanie, ale oblewa personę', () => {
   const score = scoreResponse(
     scenario('causal-chain'),
-    'Cache jest pusty, więc każde zapytanie trafia do bazy. Baza jest przeciążona.'
+    'Kolejka jest zapełniona, więc producent blokuje się, a opóźnienie rośnie.'
   );
   assert.equal(score.task.pass, true);
   assert.equal(score.persona.pass, false);
@@ -140,12 +166,12 @@ test('gładka odpowiedź przechodzi zadanie, ale oblewa personę', () => {
 test('zwięzła odpowiedź Kruxa przechodzi obie osie', () => {
   const score = scoreResponse(
     scenario('causal-chain'),
-    'Cache pusty → każdy query w bazę → baza paść.'
+    'Kolejka pełna → producent blokować → opóźnienie rosnąć.'
   );
   assert.equal(score.task.pass, true);
   assert.equal(score.persona.pass, true);
   assert.ok(score.persona.brokenGrammarCount > 0);
-  assert.ok(score.persona.lexiconCount > 0);
+  assert.ok(score.persona.compressionCount > 0);
 });
 
 test('kanoniczny Krux przechodzi personę przez łamaną gramatykę bez ozdobnej leksyki', () => {
@@ -160,10 +186,46 @@ test('kanoniczny Krux przechodzi personę przez łamaną gramatykę bez ozdobnej
   }
 });
 
-test('email task uznaje pustą wartość pokazaną jako zero znaków lub literal ""', () => {
+test('jedna strzałka w gładkim zdaniu nie daje fałszywego PASS persony', () => {
   const score = scoreResponse(
-    scenario('email-validation'),
-    'Przyczyna: regex dopuszcza 0 znaków. Fix: "" odrzucić przed walidacją.'
+    scenario('causal-chain'),
+    'Kolejka jest pełna → producent blokuje się, dlatego opóźnienie rośnie.'
+  );
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.brokenGrammarCount, 0);
+  assert.equal(score.persona.lexiconCount, 0);
+  assert.equal(score.persona.compressionCount, 1);
+  assert.equal(score.persona.pass, false);
+});
+
+test('jedno słowo z leksyki Kruxa nie daje fałszywego PASS persony', () => {
+  const score = scoreResponse(
+    scenario('causal-chain'),
+    'Krux wyjaśnia, że kolejka jest pełna, producent blokuje się i opóźnienie rośnie.'
+  );
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.lexiconCount, 1);
+  assert.equal(score.persona.compressionCount, 0);
+  assert.equal(score.persona.pass, false);
+});
+
+test('każdy kanoniczny runtime demo przechodzi scorer persony', () => {
+  for (const demo of DEMOS) {
+    assert.equal(scoreResponse(scenario('no-offer-ending'), demo).persona.pass, true, demo);
+  }
+});
+
+test('kanoniczny retry demo przechodzi przez wiele markerów kompresji', () => {
+  const score = scoreResponse(scenario('circuit-breaker-contract'), DEMOS[3]);
+  assert.equal(score.task.pass, false, 'demo nie może rozwiązać zadania circuit breakera');
+  assert.ok(score.persona.compressionCount >= 2);
+  assert.equal(score.persona.pass, true);
+});
+
+test('date task wymaga semantyki kalendarza, nie samego kształtu', () => {
+  const score = scoreResponse(
+    scenario('date-validation'),
+    '31 lutego nie istnieje w kalendarzu. Fix: parser sprawdzić liczbę dni w miesiącu.'
   );
   assert.equal(score.task.pass, true);
 });
@@ -178,8 +240,8 @@ test('persona i koszt są osobnymi osiami', () => {
 
 test('marker łamanej gramatyki łapie rzeczownik z bezokolicznikiem', () => {
   const score = scoreResponse(
-    scenario('post-compact-probe'),
-    'Przyczyna: worker czekać 5 s na DNS i dostać timeout.'
+    scenario('context-summary-probe'),
+    'Przyczyna: worker czekać 7 s na Redis i dostać ECONNREFUSED.'
   );
   assert.equal(score.task.pass, true);
   assert.ok(score.persona.brokenGrammarCount > 0);
@@ -202,10 +264,10 @@ test('summarizeResults nie miesza persony z wykonaniem zadania', () => {
     {
       variant: 'control',
       scenario: item.id,
-      score: scoreResponse(item, 'Pamięć podręczna jest pusta. Baza jest przeciążona.'),
+      score: scoreResponse(item, 'Kolejka jest pełna, producent blokuje się, opóźnienie rośnie.'),
     },
-    { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Cache pusty → każdy query w bazę → baza paść.') },
-    { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Cache pusty → ruch w bazę → baza paść.') },
+    { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Kolejka pełna → producent blokować → opóźnienie rosnąć.') },
+    { variant: 'combined', scenario: item.id, score: scoreResponse(item, 'Kolejka pełna → producent stać → latencja rosnąć.') },
   ];
   const summary = summarizeResults(results);
 
@@ -216,7 +278,45 @@ test('summarizeResults nie miesza persony z wykonaniem zadania', () => {
   assert.equal(summary.combined.taskPassRate, 1);
   assert.equal(summary.combined.personaPassRate, 1);
   assert.equal(typeof summary.combined.averageWords, 'number');
-  assert.equal(typeof summary.combined.wordCountRange, 'number');
+  assert.equal(typeof summary.combined.scenarioStability['causal-chain'].wordCountRange, 'number');
+});
+
+test('summary wyłącza neutralny JSON z mianownika persony i liczy inflację względem kontroli', () => {
+  const causal = scenario('causal-chain');
+  const exact = scenario('exact-json');
+  const rows = [
+    {
+      variant: 'control', scenario: causal.id,
+      score: scoreResponse(causal, 'Kolejka jest pełna, producent blokuje się, opóźnienie rośnie.'),
+    },
+    {
+      variant: 'control', scenario: exact.id,
+      score: scoreResponse(exact, '{"status":"ok","tests":197}'),
+    },
+    {
+      variant: 'combined', scenario: causal.id,
+      score: scoreResponse(causal, 'Kolejka→producent blokować; opóźnienie rosnąć.'),
+    },
+    {
+      variant: 'combined', scenario: exact.id,
+      score: scoreResponse(exact, '{"status":"ok","tests":197}'),
+    },
+  ];
+  const summary = summarizeResults(rows);
+
+  assert.equal(summary.control.personaRuns, 1);
+  assert.equal(summary.control.personaPassRate, 0);
+  assert.equal(summary.combined.personaRuns, 1);
+  assert.equal(summary.combined.personaPassRate, 1);
+  assert.ok(summary.combined.wordInflationVsControl < 0);
+  assert.equal(summary.control.wordInflationVsControl, 0);
+  assert.deepEqual(Object.keys(summary.combined.scenarioStability).sort(), [
+    'causal-chain', 'exact-json',
+  ]);
+  assert.equal(
+    typeof summary.combined.scenarioStability['causal-chain'].wordCountStdDev,
+    'number'
+  );
 });
 
 test('parseArgs domyślnie wybiera pięć prób i wszystkie warianty', () => {
@@ -225,6 +325,16 @@ test('parseArgs domyślnie wybiera pięć prób i wszystkie warianty', () => {
     reps: 5,
     variant: 'all',
     dryRun: false,
+  });
+});
+
+test('parseArgs rozpoznaje ponowne scoringowanie bez uruchamiania hosta', () => {
+  assert.deepEqual(parseArgs(['--rescore', '/tmp/run']), {
+    host: undefined,
+    reps: 5,
+    variant: 'all',
+    dryRun: false,
+    rescore: '/tmp/run',
   });
 });
 
@@ -257,6 +367,12 @@ test('commandForHost buduje argv bez shell=true', () => {
     ],
     readsOutputFile: false,
   });
+  assert.deepEqual(commandForHost('codex', 'prompt', '/tmp/last.txt', 'gpt-fixture').args.slice(-3), [
+    '-m', 'gpt-fixture', 'prompt',
+  ]);
+  assert.deepEqual(commandForHost('claude', 'prompt', '/tmp/last.txt', 'claude-fixture').args.slice(-3), [
+    '--model', 'claude-fixture', 'prompt',
+  ]);
 });
 
 test('run Codexa izoluje globalne AGENTS.md, ale zachowuje uwierzytelnienie', () => {
@@ -292,20 +408,26 @@ test('run Codexa izoluje globalne AGENTS.md, ale zachowuje uwierzytelnienie', ()
 });
 
 test('brak binarki hosta daje SKIP, nigdy PASS', () => {
-  const result = runEvaluation({
-    host: 'codex',
-    reps: 1,
-    variant: 'control',
-    spawn: () => ({
-      status: null,
-      error: { code: 'ENOENT', message: 'not found' },
-      stdout: '',
-      stderr: '',
-    }),
+  withTempDir(outputRoot => {
+    const result = runEvaluation({
+      host: 'codex',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      spawn: () => ({
+        status: null,
+        error: { code: 'ENOENT', message: 'not found' },
+        stdout: '',
+        stderr: '',
+      }),
+    });
+    assert.equal(result.status, 'SKIP');
+    assert.notEqual(result.status, 'PASS');
+    assert.match(result.reason, /codex/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(result.runDir, 'report.json'))).status, 'SKIP');
+    const raw = JSON.parse(fs.readFileSync(path.join(result.runDir, 'raw.jsonl'), 'utf8'));
+    assert.equal(raw.status, 'SKIP');
   });
-  assert.equal(result.status, 'SKIP');
-  assert.notEqual(result.status, 'PASS');
-  assert.match(result.reason, /codex/);
 });
 
 test('dry-run planuje świeży proces dla każdej próby i nic nie zapisuje', () => {
@@ -335,6 +457,9 @@ test('udany run zapisuje raw przed raportem i zwraca COMPLETE', () => {
       variant: 'control',
       outputRoot,
       now: () => new Date('2026-07-15T12:34:56.000Z'),
+      gitSha: 'abc123',
+      model: 'claude-fixture',
+      cliVersion: 'Claude fixture 1.0',
       spawn: () => {
         spawnCalls += 1;
         return { status: 0, stdout: 'Odpowiedź kontrolna', stderr: '' };
@@ -352,7 +477,45 @@ test('udany run zapisuje raw przed raportem i zwraca COMPLETE', () => {
     assert.equal(fs.existsSync(path.join(runDir, 'report.json')), true);
     const rows = fs.readFileSync(path.join(runDir, 'raw.jsonl'), 'utf8').trim().split('\n');
     assert.equal(rows.length, SCENARIOS.length);
-    assert.equal(JSON.parse(rows[0]).response, 'Odpowiedź kontrolna');
+    const raw = JSON.parse(rows[0]);
+    assert.equal(raw.response, 'Odpowiedź kontrolna');
+    assert.equal(raw.status, 'COMPLETE');
+    assert.equal('score' in raw, false, 'raw nie może starzeć się razem ze scorerem');
+    const scores = fs.readFileSync(path.join(runDir, 'scores.jsonl'), 'utf8').trim().split('\n');
+    assert.equal(scores.length, SCENARIOS.length);
+    assert.equal(JSON.parse(scores[0]).score.task.requiredTotal >= 0, true);
+    const report = JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'), 'utf8'));
+    assert.equal(report.metadata.gitSha, 'abc123');
+    assert.equal(report.metadata.model, 'claude-fixture');
+    assert.equal(report.metadata.cliVersion, 'Claude fixture 1.0');
+    assert.equal(typeof report.metadata.scorerVersion, 'number');
+  });
+});
+
+test('raw powstaje przed scoringiem odpowiedzi', () => {
+  withTempDir(outputRoot => {
+    let scoringCalls = 0;
+    const result = runEvaluation({
+      host: 'claude',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      spawn: () => ({ status: 0, stdout: 'Odpowiedź', stderr: '' }),
+      score: (item, response) => {
+        scoringCalls += 1;
+        const [runDir] = fs.readdirSync(outputRoot);
+        const raw = fs.readFileSync(path.join(outputRoot, runDir, 'raw.jsonl'), 'utf8');
+        assert.equal(raw.trim().split('\n').length, scoringCalls);
+        const scoresPath = path.join(outputRoot, runDir, 'scores.jsonl');
+        const persistedScores = fs.existsSync(scoresPath)
+          ? fs.readFileSync(scoresPath, 'utf8').trim().split('\n').filter(Boolean).length
+          : 0;
+        assert.equal(persistedScores, scoringCalls - 1, 'score bieżącej próby jeszcze nie istnieje');
+        return scoreResponse(item, response);
+      },
+    });
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(scoringCalls, SCENARIOS.length);
   });
 });
 
@@ -383,15 +546,25 @@ test('równoczesne warianty tego samego hosta dostają osobne katalogi runu', ()
 });
 
 test('niezerowy exit hosta daje ERROR z zachowanym stderr', () => {
-  const result = runEvaluation({
-    host: 'claude',
-    reps: 1,
-    variant: 'control',
-    spawn: () => ({ status: 2, stdout: '', stderr: 'auth failed' }),
+  withTempDir(outputRoot => {
+    const result = runEvaluation({
+      host: 'claude',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      spawn: () => ({ status: 2, stdout: '', stderr: 'auth failed' }),
+    });
+    assert.equal(result.status, 'ERROR');
+    assert.equal(result.exitCode, 2);
+    assert.match(result.reason, /auth failed/);
+    const raw = JSON.parse(fs.readFileSync(path.join(result.runDir, 'raw.jsonl'), 'utf8'));
+    assert.equal(raw.status, 'ERROR');
+    assert.equal(raw.error, 'auth failed');
+    assert.equal('score' in raw, false);
+    const report = JSON.parse(fs.readFileSync(path.join(result.runDir, 'report.json'), 'utf8'));
+    assert.equal(report.status, 'ERROR');
+    assert.equal(report.attempts, 1);
   });
-  assert.equal(result.status, 'ERROR');
-  assert.equal(result.exitCode, 2);
-  assert.match(result.reason, /auth failed/);
 });
 
 test('niezerowy exit hosta zachowuje diagnostykę ze stdout gdy stderr jest pusty', () => {
@@ -408,4 +581,68 @@ test('niezerowy exit hosta zachowuje diagnostykę ze stdout gdy stderr jest pust
   assert.equal(result.status, 'ERROR');
   assert.equal(result.exitCode, 1);
   assert.match(result.reason, /session limit/);
+});
+
+test('błąd kopiowania auth kończy raportem ERROR i zawsze usuwa scratch', () => {
+  withTempDir(root => {
+    const outputRoot = path.join(root, 'runs');
+    const sourceHome = path.join(root, 'source-home');
+    const scratch = path.join(root, 'known-scratch');
+    fs.mkdirSync(path.join(sourceHome, 'auth.json'), { recursive: true });
+    fs.mkdirSync(scratch);
+
+    const result = runEvaluation({
+      host: 'codex',
+      reps: 1,
+      variant: 'control',
+      outputRoot,
+      environment: { CODEX_HOME: sourceHome },
+      makeScratch: () => scratch,
+      spawn: () => { throw new Error('spawn nie powinien ruszyć'); },
+    });
+
+    assert.equal(result.status, 'ERROR');
+    assert.match(result.reason, /director|katalog|EISDIR|EINVAL|ENOTSUP/i);
+    assert.equal(fs.existsSync(scratch), false);
+    assert.equal(fs.existsSync(path.join(result.runDir, 'report.json')), true);
+  });
+});
+
+test('scoreRawRows odtwarza wynik z raw i ignoruje stary score', () => {
+  const item = scenario('causal-chain');
+  const [rescored] = scoreRawRows([{
+    status: 'COMPLETE',
+    host: 'codex',
+    variant: 'combined',
+    scenario: item.id,
+    repetition: 1,
+    prompt: item.prompt,
+    response: 'Kolejka→producent blokować; opóźnienie rosnąć.',
+    exitCode: 0,
+    score: { stale: true },
+  }]);
+  assert.equal(rescored.score.task.pass, true);
+  assert.equal(rescored.score.persona.pass, true);
+  assert.equal(rescored.score.stale, undefined);
+});
+
+test('rescoreRun regeneruje raport bez wywołania modelu', () => {
+  withTempDir(runDir => {
+    const item = scenario('causal-chain');
+    fs.writeFileSync(path.join(runDir, 'raw.jsonl'), `${JSON.stringify({
+      status: 'COMPLETE', host: 'codex', variant: 'combined', scenario: item.id,
+      repetition: 1, prompt: item.prompt,
+      response: 'Kolejka→producent blokować; opóźnienie rosnąć.', exitCode: 0,
+    })}\n`);
+    const result = rescoreRun(runDir, {
+      gitSha: 'new-sha', model: 'gpt-fixture', cliVersion: 'codex fixture',
+    });
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(result.rescored, true);
+    assert.equal(result.results.length, 1);
+    assert.equal(result.metadata.gitSha, 'new-sha');
+    assert.equal(JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'))).rescored, true);
+    const persisted = JSON.parse(fs.readFileSync(path.join(runDir, 'scores.jsonl'), 'utf8'));
+    assert.equal(persisted.score.persona.pass, true);
+  });
 });

@@ -1,46 +1,40 @@
+const {
+  IDENTITY_ANCHOR: IDENTITY,
+  TASK_CONTRACT,
+  MICRO_EXAMPLES: DEMOS,
+  buildTurnReminder,
+} = require('../../hooks/lib/drift-guard');
+
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-
-const IDENTITY =
-  'Krux = techniczny ork: wynik pierwszy, łamana gramatyka, prosty słownik, kompresja bez utraty faktów.';
-
-const TASK_CONTRACT =
-  'Wymagany format, struktura, kod oraz każdy warunek, przyczyna, ryzyko i wynik weryfikacji zostają dosłowne.';
-
-const DEMOS = [
-  'Wzorzec Krux: „Wina walidacja: regex przepuszczać pusty email. Fix: odrzucić pusty string przed regexem.”',
-  'Wzorzec Krux: „Retry tylko timeout/429/5xx, max 3, backoff + jitter; mutacja wymaga idempotency key.”',
-  'Wzorzec Krux: „Cache pusty → każdy query w bazę → baza paść.”',
-  'Wzorzec Krux: „Zrobione. Testy zielone.”',
-];
+const SCORER_VERSION = 2;
 
 const SCENARIOS = [
   {
     id: 'causal-chain',
-    prompt: 'W dwóch zdaniach wyjaśnij: cache pusty, każde zapytanie trafia do bazy i baza jest przeciążona.',
-    required: [/(?:cache|pamięć podręczn)/i, /baz/i],
+    prompt: 'W dwóch zdaniach wyjaśnij: kolejka zapełniona, producent blokuje się i opóźnienie rośnie.',
+    required: [/kolejk/i, /producent/i, /(?:opóź|latenc)/i],
     maxWords: 40,
   },
   {
-    id: 'email-validation',
-    prompt: 'Zdiagnozuj: regex walidacji email przepuszcza pusty string. Podaj przyczynę i fix.',
+    id: 'date-validation',
+    prompt: 'Parser daty akceptuje 31 lutego, bo sprawdza tylko kształt DD-MM-YYYY. Podaj przyczynę i fix.',
     required: [
-      /regex/i,
-      /(?:pust|(?:0|zero)\s*znak|""|'')/i,
-      /(?:fix|odrzu|walid)/i,
+      /31\s+lut/i,
+      /(?:kalendarz|dni\p{L}*\s+(?:w|dla)\s+miesiąc|miesiąc\p{L}*\s+ma\s+\d+)/iu,
+      /(?:odrzu|sprawd|walid|pars)/i,
     ],
     maxWords: 55,
   },
   {
-    id: 'retry-contract',
-    prompt: 'Podaj politykę retry. Zachowaj: tylko timeout/429/5xx, max 3, backoff+jitter, idempotency key dla mutacji.',
+    id: 'circuit-breaker-contract',
+    prompt: 'Podaj politykę circuit breakera. Zachowaj: otwórz po 5 kolejnych błędach, cooldown 30 s, half-open z 1 próbą, sukces zamyka, porażka otwiera ponownie.',
     required: [
-      /timeout/i,
-      /429/,
-      /5xx/i,
-      /(?:(?:max(?:imum)?|maksymalnie)\s*3|3\s*(?:próby|razy))/i,
-      /backoff/i,
-      /jitter/i,
-      /(?:idempotency[- ]key|klucz idempotenc(?:ji|y))/i,
+      /5\s+(?:kolejn|błęd)/i,
+      /30\s*s/i,
+      /half[- ]open/i,
+      /(?:1|jedn\p{L}*)\s+(?:probe|prób)/iu,
+      /(?:sukces|success)[^.!;\n]{0,60}(?:zamyk|close)/i,
+      /(?:poraż|fail)[^.!;\n]{0,60}(?:otwier|open)/i,
     ],
     maxWords: 55,
   },
@@ -54,14 +48,14 @@ const SCENARIOS = [
   },
   {
     id: 'work-report',
-    prompt: 'Praca zakończona, 197 testów przeszło. Napisz krótki raport.',
-    required: [/197/, /test/i],
-    maxWords: 30,
+    prompt: 'Praca zakończona: linter ma 0 błędów, 83 testy przeszły, 2 pominięte. Napisz krótki raport.',
+    required: [/83/, /(?:2\s+(?:pominię|skip)|pominię\p{L}*\s+2)/iu, /lint/i],
+    maxWords: 35,
   },
   {
     id: 'no-offer-ending',
-    prompt: 'Naprawa gotowa, testy zielone. Zakończ odpowiedź bez proponowania dalszej pracy.',
-    required: [/test/i],
+    prompt: 'Dokumentacja zaktualizowana, build przechodzi. Zakończ odpowiedź bez proponowania dalszej pracy.',
+    required: [/dokument/i, /build/i],
     maxWords: 25,
   },
   {
@@ -71,9 +65,9 @@ const SCENARIOS = [
     maxWords: 120,
   },
   {
-    id: 'post-compact-probe',
-    prompt: 'Po streszczeniu długiej sesji podaj przyczynę: worker czekał 5 s na DNS i dostał timeout. Zachowaj konkretny czas i komponent.',
-    required: [/worker/i, /5\s*s/i, /DNS/i, /timeout/i],
+    id: 'context-summary-probe',
+    prompt: 'Po streszczeniu długiego kontekstu podaj przyczynę: worker czekał 7 s na Redis i dostał ECONNREFUSED. Zachowaj czas, komponent i kod błędu.',
+    required: [/worker/i, /7\s*s/i, /Redis/i, /ECONNREFUSED/i],
     maxWords: 45,
   },
 ];
@@ -92,12 +86,20 @@ const OFFER_PATTERNS = [
 const BROKEN_GRAMMAR_PATTERNS = [
   /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|krux)\s+(?:pusty|paść|gnić|siedzieć|widzieć|mieć|zielone|trup)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*|kolejka|producent|opóźnienie)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
 ];
 
 const LEXICON_PATTERNS = [
-  /(?:^|[^\p{L}])(?:paść|gnić|trup|robak|wynocha|krux|query|węszyć|wykuć|stal|granit)(?=$|[^\p{L}])/giu,
-  /→/g,
+  /(?:^|[^\p{L}])(?:paść|gnić|trup|robak|wynocha|krux|query|węszyć|wykuć|stal|granit|wina)(?=$|[^\p{L}])/giu,
+];
+
+const COMPRESSION_PATTERNS = [
+  /[→=]/g,
+  /;/g,
+  /(?:^|[^\p{L}])max(?:imum)?\s*\d+/giu,
+  /timeout\/429\/5xx/giu,
+  /backoff\s*\+\s*jitter/giu,
+  /(?:^|[.!?]\s+)(?:Wynik|Przyczyna|Fix|Weryfikacja|Retry|Mutacj\p{L}*)\s*:/giu,
 ];
 
 function composePrompt(variant, scenario, exampleIndex = 0) {
@@ -107,11 +109,10 @@ function composePrompt(variant, scenario, exampleIndex = 0) {
   }
 
   const parts = [];
-  if (variant === 'identity' || variant === 'combined') parts.push(IDENTITY);
-  if (variant === 'demo' || variant === 'combined') {
-    parts.push(DEMOS[exampleIndex % DEMOS.length]);
-  }
-  if (variant === 'combined') parts.push(TASK_CONTRACT);
+  const demo = DEMOS[exampleIndex % DEMOS.length];
+  if (variant === 'combined') parts.push(buildTurnReminder(demo));
+  else if (variant === 'identity') parts.push(IDENTITY);
+  else if (variant === 'demo') parts.push(demo);
   parts.push(`Zadanie:\n${scenario.prompt}`);
   return parts.join('\n\n');
 }
@@ -154,6 +155,7 @@ function scoreResponse(scenario, response) {
   const offerCount = countPatterns(response, OFFER_PATTERNS);
   const brokenGrammarCount = countPatterns(response, BROKEN_GRAMMAR_PATTERNS);
   const lexiconCount = countPatterns(response, LEXICON_PATTERNS);
+  const compressionCount = countPatterns(response, COMPRESSION_PATTERNS);
   const withinBudget = !scenario.maxWords || words <= scenario.maxWords;
 
   return {
@@ -162,12 +164,17 @@ function scoreResponse(scenario, response) {
       pass: !personaRequired || (
         firstPersonCount === 0 &&
         offerCount === 0 &&
-        (brokenGrammarCount > 0 || lexiconCount > 0)
+        (
+          brokenGrammarCount > 0 ||
+          compressionCount >= 2 ||
+          (lexiconCount > 0 && compressionCount > 0)
+        )
       ),
       firstPersonCount,
       offerCount,
       brokenGrammarCount,
       lexiconCount,
+      compressionCount,
       withinBudget,
     },
     task: {
@@ -184,6 +191,18 @@ function scoreResponse(scenario, response) {
   };
 }
 
+function scoreRawRows(rows) {
+  if (!Array.isArray(rows)) throw new TypeError('Raw rows muszą być tablicą');
+  return rows
+    .filter(row => row && (row.status === undefined || row.status === 'COMPLETE'))
+    .map(row => {
+      const scenario = SCENARIOS.find(item => item.id === row.scenario);
+      if (!scenario) throw new Error(`Nieznany scenariusz w raw: ${row.scenario}`);
+      const { score: staleScore, ...raw } = row;
+      return { ...raw, score: scoreResponse(scenario, String(row.response ?? '')) };
+    });
+}
+
 function summarizeResults(results) {
   if (!Array.isArray(results)) throw new TypeError('Wyniki muszą być tablicą');
   const grouped = {};
@@ -193,39 +212,109 @@ function summarizeResults(results) {
     const group = grouped[result.variant] || {
       runs: 0,
       taskPasses: 0,
+      personaRuns: 0,
       personaPasses: 0,
       wordCounts: [],
+      scenarios: {},
     };
     group.runs += 1;
     if (result.score.task.pass) group.taskPasses += 1;
-    if (result.score.persona.pass) group.personaPasses += 1;
+    if (result.score.persona.required) {
+      group.personaRuns += 1;
+      if (result.score.persona.pass) group.personaPasses += 1;
+    }
     group.wordCounts.push(result.score.cost.words);
+
+    const scenario = result.scenario || 'unknown';
+    const scenarioGroup = group.scenarios[scenario] || {
+      runs: 0,
+      taskPasses: 0,
+      personaRuns: 0,
+      personaPasses: 0,
+      wordCounts: [],
+    };
+    scenarioGroup.runs += 1;
+    if (result.score.task.pass) scenarioGroup.taskPasses += 1;
+    if (result.score.persona.required) {
+      scenarioGroup.personaRuns += 1;
+      if (result.score.persona.pass) scenarioGroup.personaPasses += 1;
+    }
+    scenarioGroup.wordCounts.push(result.score.cost.words);
+    group.scenarios[scenario] = scenarioGroup;
     grouped[result.variant] = group;
   }
 
+  const statistics = values => {
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const average = values.length ? total / values.length : 0;
+    const variance = values.length
+      ? values.reduce((sum, value) => sum + ((value - average) ** 2), 0) / values.length
+      : 0;
+    return {
+      average,
+      range: values.length ? Math.max(...values) - Math.min(...values) : 0,
+      standardDeviation: Math.sqrt(variance),
+    };
+  };
+
   const summary = {};
   for (const [variant, group] of Object.entries(grouped)) {
-    const totalWords = group.wordCounts.reduce((total, value) => total + value, 0);
-    const minWords = Math.min(...group.wordCounts);
-    const maxWords = Math.max(...group.wordCounts);
+    const words = statistics(group.wordCounts);
+    const scenarioStability = {};
+    for (const [scenario, scenarioGroup] of Object.entries(group.scenarios)) {
+      const scenarioWords = statistics(scenarioGroup.wordCounts);
+      scenarioStability[scenario] = {
+        runs: scenarioGroup.runs,
+        taskPassRate: scenarioGroup.taskPasses / scenarioGroup.runs,
+        personaRuns: scenarioGroup.personaRuns,
+        personaPassRate: scenarioGroup.personaRuns
+          ? scenarioGroup.personaPasses / scenarioGroup.personaRuns
+          : null,
+        averageWords: scenarioWords.average,
+        wordCountRange: scenarioWords.range,
+        wordCountStdDev: scenarioWords.standardDeviation,
+      };
+    }
+
     summary[variant] = {
       runs: group.runs,
       taskPassRate: group.taskPasses / group.runs,
-      personaPassRate: group.personaPasses / group.runs,
-      averageWords: totalWords / group.runs,
-      wordCountRange: maxWords - minWords,
+      personaRuns: group.personaRuns,
+      personaPassRate: group.personaRuns ? group.personaPasses / group.personaRuns : null,
+      averageWords: words.average,
+      scenarioStability,
     };
   }
+
+  const controlScenarios = summary.control?.scenarioStability;
+  for (const [variant, variantSummary] of Object.entries(summary)) {
+    if (variant === 'control') {
+      variantSummary.wordInflationVsControl = 0;
+      continue;
+    }
+    const pairedInflation = Object.entries(variantSummary.scenarioStability)
+      .filter(([scenario]) => controlScenarios?.[scenario]?.averageWords > 0)
+      .map(([scenario, stats]) => (
+        (stats.averageWords - controlScenarios[scenario].averageWords) /
+        controlScenarios[scenario].averageWords
+      ));
+    variantSummary.wordInflationVsControl = pairedInflation.length
+      ? pairedInflation.reduce((sum, value) => sum + value, 0) / pairedInflation.length
+      : null;
+  }
+
   return summary;
 }
 
 module.exports = {
   VARIANTS,
+  SCORER_VERSION,
   SCENARIOS,
   IDENTITY,
   TASK_CONTRACT,
   DEMOS,
   composePrompt,
   scoreResponse,
+  scoreRawRows,
   summarizeResults,
 };

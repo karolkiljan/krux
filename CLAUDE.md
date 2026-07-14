@@ -100,9 +100,14 @@ npm run eval:persona -- --host codex --reps 5 --variant all
 npm run eval:persona -- --host claude --reps 5 --variant all
 ```
 
-Raport rozdziela personę, zadanie i koszt. Surowe odpowiedzi trzeba czytać przy
-każdym trafionym markerze. Brak CLI = `SKIP`, nie zaliczony test; `npm test` nie
-wykonuje wywołań modelu.
+Komendy uruchamiaj z checkoutu repozytorium; `--model <id>` przypina model.
+Raw jest zapisywany przed scoringiem, pochodny `scores.jsonl` rozdziela personę,
+zadanie i koszt, a raport agreguje stabilność per scenariusz i sparowaną inflację
+oraz zapisuje git SHA, model, CLI i wersję scorera. `--rescore <run-dir>` regeneruje
+scores i raport bez model call. Syntetyczny
+`context-summary-probe` nie jest natywnym compactem ani rozmową wieloturową.
+Surowe odpowiedzi trzeba czytać przy każdym trafionym markerze. Brak CLI =
+`SKIP`, nie zaliczony test; `npm test` nie wykonuje wywołań modelu.
 
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, kompaktowy invariant na każdej aktywnej turze, pełny drift-guard zastępujący go co próg, `KRUX_TURN_REMINDER=0` wyłączający tylko invariant + reset na on/off (`test/krux-toggle.test.js`)
