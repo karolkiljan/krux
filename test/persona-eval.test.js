@@ -168,6 +168,24 @@ test('email task uznaje pustą wartość pokazaną jako zero znaków lub literal
   assert.equal(score.task.pass, true);
 });
 
+test('persona i koszt są osobnymi osiami', () => {
+  const response = Array(12).fill('Cache pusty → baza paść.').join(' ');
+  const score = scoreResponse(scenario('causal-chain'), response);
+  assert.equal(score.persona.withinBudget, false);
+  assert.equal(score.persona.pass, true);
+  assert.ok(score.cost.words > 40);
+});
+
+test('marker łamanej gramatyki łapie rzeczownik z bezokolicznikiem', () => {
+  const score = scoreResponse(
+    scenario('post-compact-probe'),
+    'Przyczyna: worker czekać 5 s na DNS i dostać timeout.'
+  );
+  assert.equal(score.task.pass, true);
+  assert.ok(score.persona.brokenGrammarCount > 0);
+  assert.equal(score.persona.pass, true);
+});
+
 test('pierwsza osoba i oferta są raportowane jako osobne markery', () => {
   const score = scoreResponse(
     scenario('work-report'),

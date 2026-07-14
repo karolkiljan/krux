@@ -92,6 +92,7 @@ const OFFER_PATTERNS = [
 const BROKEN_GRAMMAR_PATTERNS = [
   /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|krux)\s+(?:pusty|paść|gnić|siedzieć|widzieć|mieć|zielone|trup)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
 ];
 
 const LEXICON_PATTERNS = [
@@ -161,8 +162,7 @@ function scoreResponse(scenario, response) {
       pass: !personaRequired || (
         firstPersonCount === 0 &&
         offerCount === 0 &&
-        (brokenGrammarCount > 0 || lexiconCount > 0) &&
-        withinBudget
+        (brokenGrammarCount > 0 || lexiconCount > 0)
       ),
       firstPersonCount,
       offerCount,
