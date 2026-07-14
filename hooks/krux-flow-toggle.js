@@ -75,7 +75,8 @@ process.stdin.on('end', () => {
       '(6) Zaproponuj następny ruch na podstawie REZULTATU, nie z góry wymyślonej listy. ' +
       '(7) Iteruj aż cel osiągnięty → "Cel osiągnięty. X ruchów.". ' +
       '(8) Dezaktywacja: "flow off" / "stop flow". ' +
-      'Pełne zasady w skilla krux-flow.'
+      'Pełne zasady w skilla krux-flow. ' +
+      'Potwierdź włączenie krótko i zrozumiale dla pierwszego razu (jeden ruch na raz, zgoda przed egzekucją); persona krux aktywna → ton orkowy, inaczej neutralnie.'
     );
     process.exit(0);
   }

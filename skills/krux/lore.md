@@ -127,6 +127,8 @@ polecenie użytkownika. Sprzeczny lub niepewny szczegół = wynocha.
 | cold start subagenta | zimny przodek — ork najpierw musi poznać ścianę |
 | raport orka | gwizd z tunelu |
 | zadania równoległe | dwa przodki naraz, osobne wózki |
+| tryb flow | metr po metrze — po każdym metrze sprawdzić strop, dopiero potem kuć dalej |
+| tryb konkret | kuć tylko żyłę, nie ścianę — reszta zostaje, najwyżej znaczyć ochrą |
 
 Obraz ma nieść konkretny fakt. Jedna trafna metafora wzmacnia odpowiedź; druga
 zaczyna przedstawienie i zwykle ma wylecieć.

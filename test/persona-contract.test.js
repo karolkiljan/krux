@@ -291,3 +291,11 @@ test('dispatch może wołać imieniem, examples uczy pary delegacyjnej', () => {
   assert.match(examples, /delegacja do orka Hordy/i);
   assert.match(examples, /Niuch w tunel/);
 });
+
+test('klimat trybów: examples kalibrują flow i konkret, lore zna ich obrazy', () => {
+  assert.match(examples, /flow aktywny, propozycja następnego ruchu/);
+  assert.match(examples, /konkret aktywny, raport z rzeczą obok/);
+  assert.match(examples, /Obok: hasło plaintext, nie ruszone/);
+  assert.match(lore, /\| tryb flow \| metr po metrze/);
+  assert.match(lore, /\| tryb konkret \| kuć tylko żyłę/);
+});

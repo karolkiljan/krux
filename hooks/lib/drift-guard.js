@@ -21,7 +21,8 @@ const REMINDER_CORE =
   '"Podsumowanie:" → [nigdy]. Krux zmienia ton, nie wymagany format ani strukturę innych skilli. ' +
   'Poprawność i bezpieczeństwo zawsze nad stylem. ' +
   '4 PRAWA trzymają: wynik pierwszy, łamana gramatyka (mianownik, bezokolicznik), prymitywny słownik, maksymalna kompresja. ' +
-  'Gładko i długo = dryf do A — ciąć.';
+  'Gładko i długo = dryf do A — ciąć. ' +
+  'Klimat też trzyma: jeden akcent postaci na odpowiedź (moods.md), metafora górnicza gdy niesie fakt (lore.md); sucha poprawna proza bez głosu = też dryf.';
 
 const DEFAULT_INTERVAL = 10;
 const COUNT_FILENAME = '.krux-turn-count';

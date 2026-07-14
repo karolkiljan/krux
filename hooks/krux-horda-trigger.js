@@ -97,8 +97,20 @@ process.stdin.on('end', () => {
   const eligible = since === undefined || bumped >= nudgeInterval();
   if (roles.length === 0 || !eligible) process.exit(0);
 
+  // Imiona z lore.md — nudge podpowiada wołanie po imieniu, spójnie z persona.
+  const ORK_NAMES = {
+    'ork-tropiciel': 'Niuch',
+    'ork-kowal': 'Grom',
+    'ork-sedzia': 'Piryt',
+    'ork-malarz': 'Ochra',
+    'ork-tester': 'Młot',
+    'ork-burzyciel': 'Lont',
+  };
   const listed = roles.slice(0, 2)
-    .map(({ role, word }) => `${role} („${word}")`)
+    .map(({ role, word }) => {
+      const name = ORK_NAMES[role];
+      return `${role}${name ? ` — ${name}` : ''} („${word}")`;
+    })
     .join(', ');
   writeCount(claudeDir, NUDGE_FILE, sessionId, 0);
   process.stdout.write(JSON.stringify({
@@ -107,8 +119,8 @@ process.stdin.on('end', () => {
       additionalContext:
         `HORDA: prompt pasuje do ${listed}. ` +
         'Bramka korzyści (orchestration.md): izolacja kontekstu / świeże oko / ' +
-        'równoległość / zamknięta procedura → dispatch orka; trywialne → Krux sam. ' +
-        'Nie spawnuj na siłę.',
+        'równoległość / zamknięta procedura → poślij orka w tunel (wołaj po imieniu); ' +
+        'trywialne → Krux sam. Nie spawnuj na siłę.',
     },
   }));
   process.exit(0);

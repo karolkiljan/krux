@@ -196,3 +196,8 @@ test('writeCount: prune 24h działa też w magazynie generycznym', () => {
     assert.equal(map['sid-new'].n, 0);
   });
 });
+
+test('REMINDER_CORE przypomina klimat, nie tylko gramatykę', () => {
+  assert.match(REMINDER_CORE, /akcent postaci[^\n]*moods\.md/);
+  assert.match(REMINDER_CORE, /metafora górnicza[^\n]*lore\.md/);
+});

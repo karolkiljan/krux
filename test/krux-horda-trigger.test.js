@@ -153,3 +153,11 @@ test('PLUGIN_DATA ustawione: stan throttle pod PLUGIN_DATA, nie pod ~/.claude', 
     }
   });
 });
+
+test('nudge woła orka po imieniu z lore', () => {
+  withTempHome(home => {
+    const r = runHook(home, 'debug tego crasha');
+    assert.match(nudgeText(r), /ork-tropiciel — Niuch/);
+    assert.match(nudgeText(r), /poślij orka w tunel \(wołaj po imieniu\)/);
+  });
+});

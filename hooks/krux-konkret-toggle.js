@@ -56,7 +56,7 @@ process.stdin.on('end', () => {
         process.exit(0);
       }
     }
-    emit('KRUX-KONKRET OFF: tryb chirurgicznej precyzji wyłączony. Potwierdź wyłączenie zwięźle, dalej pracuj normalnie.');
+    emit('KRUX-KONKRET OFF: tryb chirurgicznej precyzji wyłączony. Potwierdź wyłączenie zwięźle (persona krux aktywna → ton orkowy, inaczej neutralnie), dalej pracuj normalnie.');
     process.exit(0);
   }
 
@@ -76,7 +76,8 @@ process.stdin.on('end', () => {
       '(5) Delegujesz subagenta/orka → przekaż ten kontrakt w jego prompt. ' +
       '(6) Dwuznaczne zadanie → jedno konkretne pytanie zamiast szerokiej interpretacji. ' +
       '(7) Poprawność bije zakres: zmiana wymagająca poprawki calling site = poprawka w zakresie, do raportu. ' +
-      'Dezaktywacja: "konkret off" / "stop konkret". Pełne zasady w skillu krux-konkret.'
+      'Dezaktywacja: "konkret off" / "stop konkret". Pełne zasady w skillu krux-konkret. ' +
+      'Potwierdź włączenie krótko i zrozumiale dla pierwszego razu (tylko proszone, najprostsze działające, rzeczy obok tylko raportowane); persona krux aktywna → ton orkowy (obraz: kuć tylko żyłę, nie ścianę), inaczej neutralnie.'
     );
     process.exit(0);
   }
