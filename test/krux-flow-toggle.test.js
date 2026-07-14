@@ -16,9 +16,13 @@ function withTempHome(fn) {
 }
 
 function buildEnv(home, extraEnv = {}) {
-  const env = { ...process.env, HOME: home, ...extraEnv };
-  if (!('PLUGIN_DATA' in extraEnv)) delete env.PLUGIN_DATA;
-  return env;
+  // Konwencja testowa (CLAUDE.md): strip ambient KRUX_* i PLUGIN_DATA, chyba że
+  // test przekazuje zmienną jawnie — shell developera nie może zanieczyścić testów.
+  const cleanEnv = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (!k.startsWith('KRUX_') && k !== 'PLUGIN_DATA') cleanEnv[k] = v;
+  }
+  return { ...cleanEnv, HOME: home, ...extraEnv };
 }
 
 function runHook(home, prompt, extraEnv = {}) {

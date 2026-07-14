@@ -100,8 +100,8 @@ test('mode=on + source=resume: emits short reminder (no full SKILL.md)', () => {
     assert.match(r.stdout, /persona Krux dalej działa/);
     assert.match(r.stdout, /nie wymagany format ani strukturę/);
     assert.doesNotMatch(r.stdout, /nadpisuje wszystkie inne skille/);
-    // Full SKILL.md body (e.g., "PRAWO 1") should NOT be present.
-    assert.doesNotMatch(r.stdout, /PRAWO 1/);
+    // Full SKILL.md body (e.g., "## Persona") should NOT be present.
+    assert.doesNotMatch(r.stdout, /## Persona/);
   });
 });
 
@@ -112,7 +112,7 @@ test('mode=on + source=compact: re-injects full SKILL.md body (context was rewri
     assert.equal(r.status, 0);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
     // Compact rewrites context → full persona body must return, not just a reminder.
-    assert.match(r.stdout, /PRAWO 1/);
+    assert.match(r.stdout, /## Persona/);
     assert.doesNotMatch(r.stdout, /persona Krux dalej działa/);
   });
 });
@@ -269,7 +269,7 @@ test('KRUX_NATIVE_SKILL=1: startup emits krótki nagłówek bez body SKILL.md', 
     const r = runHook(home, { source: 'startup' }, { KRUX_NATIVE_SKILL: '1' });
     assert.equal(r.status, 0);
     assert.match(r.stdout, /KRUX TRYB AKTYWNY/);
-    assert.doesNotMatch(r.stdout, /PRAWO 1/, 'native flag → bez body SKILL.md');
+    assert.doesNotMatch(r.stdout, /## Persona/, 'native flag → bez body SKILL.md');
     assert.doesNotMatch(r.stdout, /## Persona/);
   });
 });
@@ -278,7 +278,7 @@ test('KRUX_NATIVE_SKILL=0 (default): startup nadal wstrzykuje body SKILL.md', ()
   withTempHome(home => {
     writeMode(home, 'on');
     const r = runHook(home, { source: 'startup' }, { KRUX_NATIVE_SKILL: '0' });
-    assert.match(r.stdout, /PRAWO 1/);
+    assert.match(r.stdout, /## Persona/);
   });
 });
 

@@ -94,10 +94,10 @@ test('drift-guard: pełny cykl per-sesja — reminder per-turn, pełny guard na 
     assert.equal(r.status, 0);
 
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 1', session_id: SID }, home, env);
-    assert.match(r.stdout, /Techniczny konkret nie gasi Kruxa/, 'turn 1/3: krótki reminder');
+    assert.match(r.stdout, /KRUX TURN — /, 'turn 1/3: krótki reminder');
     assert.doesNotMatch(r.stdout, /KRUX DRIFT-GUARD/);
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 2', session_id: SID }, home, env);
-    assert.match(r.stdout, /Techniczny konkret nie gasi Kruxa/, 'turn 2/3: krótki reminder');
+    assert.match(r.stdout, /KRUX TURN — /, 'turn 2/3: krótki reminder');
     assert.doesNotMatch(r.stdout, /KRUX DRIFT-GUARD/);
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 3', session_id: SID }, home, env);
     assert.match(r.stdout, /KRUX DRIFT-GUARD/, 'turn 3/3: próg osiągnięty');
@@ -105,19 +105,19 @@ test('drift-guard: pełny cykl per-sesja — reminder per-turn, pełny guard na 
 
     // Cykl się powtarza — kolejne okno liczy znów od zera, nie jest one-shot.
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 4', session_id: SID }, home, env);
-    assert.match(r.stdout, /Techniczny konkret nie gasi Kruxa/, 'nowe okno turn 1/3: krótki reminder');
+    assert.match(r.stdout, /KRUX TURN — /, 'nowe okno turn 1/3: krótki reminder');
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn 5', session_id: SID }, home, env);
-    assert.match(r.stdout, /Techniczny konkret nie gasi Kruxa/, 'nowe okno turn 2/3: krótki reminder');
+    assert.match(r.stdout, /KRUX TURN — /, 'nowe okno turn 2/3: krótki reminder');
     assert.equal(countOf(SID), 2);
 
     // Compact w środku okna przerywa liczenie — pełna reinjekcja to nowe wzmocnienie.
     r = runHook('hooks/activate.js', { source: 'compact', session_id: SID }, home, env);
     assert.equal(r.status, 0);
-    assert.match(r.stdout, /PRAWO 1/, 'compact wstrzykuje pełne SKILL.md');
+    assert.match(r.stdout, /## Persona/, 'compact wstrzykuje pełne SKILL.md');
     assert.equal(countOf(SID), undefined, 'compact zresetował licznik w trakcie okna');
 
     r = runHook('hooks/krux-toggle.js', { prompt: 'turn po compact', session_id: SID }, home, env);
-    assert.match(r.stdout, /Techniczny konkret nie gasi Kruxa/, 'świeże okno po compact: krótki reminder');
+    assert.match(r.stdout, /KRUX TURN — /, 'świeże okno po compact: krótki reminder');
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }

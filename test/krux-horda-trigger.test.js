@@ -162,6 +162,42 @@ test('nudge woła orka po imieniu z lore', () => {
   });
 });
 
+// --- lib/horda-match.js: logika dopasowania testowana wprost ---
+
+test('matchedRoles: trigger ze znakiem specjalnym regexa jest dopasowany dosłownie', () => {
+  const { matchedRoles } = require('../hooks/lib/horda-match');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-horda-triggers-'));
+  const triggersPath = path.join(dir, 'triggers.json');
+  try {
+    fs.writeFileSync(triggersPath, JSON.stringify({
+      'ork-tester': ['npm test.only'],
+      'ork-kowal': ['c++'],
+    }));
+    assert.deepEqual(
+      matchedRoles('puść npm test.only teraz', triggersPath),
+      [{ role: 'ork-tester', word: 'npm test.only' }],
+      'kropka dopasowana dosłownie'
+    );
+    assert.deepEqual(
+      matchedRoles('npm testXonly pada', triggersPath),
+      [],
+      'kropka NIE działa jak regexowy wildcard'
+    );
+    assert.equal(
+      matchedRoles('kod w c++ pada', triggersPath)[0].role,
+      'ork-kowal',
+      'plusy nie wysypują kompilacji wzorca'
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('matchedRoles: brak pliku triggerów = brak dopasowań, bez wybuchu', () => {
+  const { matchedRoles } = require('../hooks/lib/horda-match');
+  assert.deepEqual(matchedRoles('debug crasha', '/nonexistent/triggers.json'), []);
+});
+
 test('imiona w ORK_NAMES hooka zsynchronizowane z lore.md dla każdej roli', () => {
   const source = fs.readFileSync(HOOK, 'utf8');
   const lore = fs.readFileSync(

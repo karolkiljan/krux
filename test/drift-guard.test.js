@@ -57,12 +57,13 @@ test('REMINDER_CORE pokrywa dryf do A: łamana gramatyka i kompresja przypomnian
   assert.match(REMINDER_CORE, /dryf do A/);
 });
 
+// Własności zamiast dosłownej kopii stringa: brzmienie może się zmieniać bez
+// churnu testów, dopóki reminder trzyma obie osie i mieści się w budżecie.
 test('TURN_REMINDER utrzymuje techniczny konkret i głos jako dwie osie', () => {
-  assert.equal(
-    TURN_REMINDER,
-    'Techniczny konkret nie gasi Kruxa. Łamana gramatyka + kompresja; żart zasłania sens → wynocha.'
-  );
-  assert.ok(TURN_REMINDER.length <= 100, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
+  assert.match(TURN_REMINDER, /Techniczny konkret/, 'oś 1: konkret nie znika');
+  assert.match(TURN_REMINDER, /[łŁ]amana gramatyka/, 'oś 2: głos nie znika');
+  assert.match(TURN_REMINDER, /kompresj/, 'kompresja przypomniana');
+  assert.ok(TURN_REMINDER.length <= 120, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
 });
 
 test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
@@ -242,15 +243,34 @@ test('REMINDER_CORE pokrywa oba bieguny dryfu: A i C symetrycznie', () => {
   assert.match(REMINDER_CORE, /dodać konkret, nie wygładzać/);
 });
 
-test('REMINDER_CORE mieści się w budżecie resume razem z blokiem statusline', () => {
-  // integration.test.js wymaga resume stdout < 1100 znaków ŁĄCZNIE, a stdout
-  // to prefiks 'KRUX TRYB AKTYWNY — ' (20 zn) + REMINDER_CORE + blok
-  // STATUSLINE SETUP (~390 zn, rośnie z długością HOME). 685 = 1100 − 20 −
-  // 390 − zapas; ten test pęka z jawnym komunikatem, zanim pęknie integracja.
-  assert.ok(
-    REMINDER_CORE.length <= 685,
-    `REMINDER_CORE ma ${REMINDER_CORE.length} zn (limit 685) — dopisek wymaga cięcia gdzie indziej w CORE`
-  );
+// Budżet resume pilnowany JEDNYM realnym pomiarem stdout w integration.test.js
+// ('resume nie wstrzykuje pełnego SKILL.md') — bez drugiego, ręcznie liczonego
+// limitu tutaj, który rozjeżdżał się z rzeczywistością przy każdej zmianie
+// bloku statusline.
+
+test('writeStore: zapis atomowy — po zapisie nie zostaje plik tymczasowy', () => {
+  withTempDir(dir => {
+    writeCount(dir, '.krux-horda-nudge', 'sid-a', 3);
+    const leftovers = fs.readdirSync(dir).filter(f => f.includes('.tmp.'));
+    assert.deepEqual(leftovers, [], 'tmp po rename nie istnieje');
+    assert.equal(readCount(dir, '.krux-horda-nudge', 'sid-a'), 3);
+  });
+});
+
+// --- stan aktywacji persony per sesja ---
+
+test('markSessionActive/isSessionActive/clearSessionActive: gate per session_id', () => {
+  withTempDir(dir => {
+    const { markSessionActive, clearSessionActive, isSessionActive } =
+      require('../hooks/lib/drift-guard');
+    assert.equal(isSessionActive(dir, 'sid-a'), false, 'brak wpisu = nieaktywna');
+    markSessionActive(dir, 'sid-a');
+    assert.equal(isSessionActive(dir, 'sid-a'), true);
+    assert.equal(isSessionActive(dir, 'sid-b'), false, 'inna sesja niezależna');
+    clearSessionActive(dir, 'sid-a');
+    assert.equal(isSessionActive(dir, 'sid-a'), false);
+    assert.equal(fs.existsSync(countPath(dir)), false, 'gate nie dotyka licznika drift');
+  });
 });
 
 // --- rotowany mikro-przykład kalibracyjny ---

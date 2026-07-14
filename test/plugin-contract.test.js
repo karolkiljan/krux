@@ -168,11 +168,13 @@ test('dystrybucja nie zawiera obsługi Windows ani PowerShell', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   assert.match(readme, /macOS (?:albo|lub) Linux/);
 
+  // Docs mogą wspominać Windows (np. „Windows nieobsługiwany") — zakaz dotyczy
+  // KODU obsługi Windows i instrukcji PowerShell/cmd, nie samego słowa.
   const forbiddenByFile = {
     'hooks/activate.js': /win32|powershell|krux-statusline\.ps1/i,
     'hooks/krux-toggle.js': /cross-platform/i,
-    'README.md': /windows|powershell|cmd\.exe|krux-statusline\.ps1/i,
-    'CLAUDE.md': /windows|powershell|cmd\.exe|krux-statusline\.ps1/i,
+    'README.md': /powershell|cmd\.exe|krux-statusline\.ps1/i,
+    'CLAUDE.md': /powershell|cmd\.exe|krux-statusline\.ps1/i,
     '.gitattributes': /windows|autocrlf/i,
     'test/activate.test.js': /USERPROFILE|win32|powershell|krux-statusline\.ps1/i,
     'test/integration.test.js': /USERPROFILE/i,
