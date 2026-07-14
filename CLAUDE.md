@@ -2,14 +2,17 @@
 
 Ten plik to mapa dla maintainerów oraz agentów pracujących nad pluginem dla Claude Code i Codex. README.md jest dla użytkowników pluginu — ten plik jest dla osób które modyfikują plugin.
 
-## Koncepcja — dwie ortogonalne osi
+## Koncepcja — trzy ortogonalne osie
 
-Plugin działa na dwóch niezależnych osiach:
+Plugin działa na trzech niezależnych osiach:
 
 1. **Persona krux** (skill `krux`) — kompresja tokenów przez ork persona + ultra-zwięzły styl. Stan: `<stateDir>/.krux-mode` + `<stateDir>/.krux-active`.
 2. **Flow iteracyjny** (skill `krux-flow`) — tryb „jeden ruch na raz, bez upfront planu". Stan: `<stateDir>/.krux-flow-active`.
+3. **Konkret** (skill `krux-konkret`) — tryb chirurgicznej precyzji zakresu:
+   dokładnie to o co user prosił, najprostszym działającym sposobem, rzeczy
+   obok tylko raportowane. Stan: `<stateDir>/.krux-konkret-active`.
 
-**Te tryby są niezależne.** Flow może działać bez persony. Persona może działać bez flow. Obydwa mogą być aktywne jednocześnie. Nie mieszaj logiki toggle — każdy ma osobny hook (`krux-toggle.js`, `krux-flow-toggle.js`).
+**Te tryby są niezależne.** Każda kombinacja osi może być aktywna jednocześnie. Nie mieszaj logiki toggle — każdy ma osobny hook (`krux-toggle.js`, `krux-flow-toggle.js`, `krux-konkret-toggle.js`).
 
 ## Hooki — co odpala co
 
@@ -18,9 +21,10 @@ Plugin działa na dwóch niezależnych osiach:
 | `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Resetuje licznik turnów drift-guard (`.krux-turn-count`) — każde wstrzyknięcie to świeże wzmocnienie. Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
 | `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony (reset licznika drift-guard). Inaczej, gdy persona aktywna: liczy tury tej sesji od ostatniego wzmocnienia (`hooks/lib/drift-guard.js`, klucz `session_id`) i po progu (`KRUX_DRIFT_INTERVAL`, domyślnie 10) wstrzykuje mechaniczny `KRUX DRIFT-GUARD` reminder. |
 | `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
+| `UserPromptSubmit` | `hooks/krux-konkret-toggle.js` | każdy prompt | Regex match na frazy konkret (`konkret`, `strict`, `konkret off`, itp.) → zmienia `.krux-konkret-active`. Gdy flag aktywny, wstrzykuje per-turn reminder kontraktu zakresu (tylko A, najprostsze, obok = 1 linia raportu, delegacja dziedziczy kontrakt). |
 | `UserPromptSubmit` | `hooks/krux-horda-trigger.js` | każdy prompt | Match słów promptu na triggery z `agents/triggers.json` (word-boundary, fold diakrytyków; fleksja celowo nieobsługiwana) → wstrzykuje podpowiedź delegacji z bramką korzyści. Throttle per-sesja: 1 nudge / `KRUX_HORDA_NUDGE_INTERVAL` (domyślnie 5) turnów. `KRUX_HORDA_NUDGE=0` wyłącza. Niezależny od stanu persony. |
 
-**Kolejność UserPromptSubmit:** oba hooki (`krux-toggle`, `krux-flow-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
+**Kolejność UserPromptSubmit:** hooki toggle (`krux-toggle`, `krux-flow-toggle`, `krux-konkret-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
 
 **Rejestracja:** Wszystkie aktywne hooki runtime zdefiniowane w `hooks/hooks.json` (format zgodny z Claude Code plugin spec — ten sam kształt JSON co `settings.json` hooks). Ścieżka do plików JS przez `${CLAUDE_PLUGIN_ROOT}/hooks/...`. Nie duplikować rejestracji w `plugin.json` — jedno źródło prawdy.
 
@@ -31,6 +35,7 @@ Plugin działa na dwóch niezależnych osiach:
 | `<stateDir>/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
 | `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Runtime flag aktywnej persony. |
 | `<stateDir>/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
+| `<stateDir>/.krux-konkret-active` | `krux-konkret-toggle.js` | `krux-konkret-toggle.js` | Per-turn reminder trigger dla trybu konkret. Istnienie pliku = ON. |
 | `<stateDir>/.krux-turn-count` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Liczniki tur od ostatniego wzmocnienia persony — JSON map `{session_id: {n, t}}`, wpisy starsze niż 24h prunowane. Reset (tylko własny wpis sesji) przy SessionStart mode=on i przy jawnym `krux`/`stop krux`. |
 | `<stateDir>/.krux-horda-nudge` | `krux-horda-trigger.js` (`hooks/lib/drift-guard.js`) | `krux-horda-trigger.js` | Throttle podpowiedzi delegacji — ten sam format JSON map per `session_id`; wpis = tury od ostatniego nudge. |
 | `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
@@ -49,6 +54,9 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 
 - `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA głosu + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** mówią jak Krux mówi; **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`. `orchestration.md` wybiera `orchestration-claude.md` albo `orchestration-codex.md`. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
+- `krux-konkret` — orthogonal. Ma własny hook toggle. Tryb chirurgicznej
+  precyzji zakresu: tylko A, najprostsze działające, obok = 1 linia raportu,
+  delegacja dziedziczy kontrakt. Nie zmienia stanu persony ani flow.
 
 ## Konwencje — co robić, czego nie
 
@@ -82,6 +90,7 @@ Framework: `node:test` (wbudowany, zero zależności zgodnie z konwencją zero-i
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, drift-guard periodic reminder per-sesja + reset na on/off (`test/krux-toggle.test.js`)
 - `krux-flow-toggle.js` — toggle flag, emit JSON, per-turn reminder, aliasy (katalog `test`, plik `krux-flow-toggle.test.js`)
+- `krux-konkret-toggle.js` — toggle flag, aliasy (`strict`), full-match only, per-turn reminder, malformed stdin, PLUGIN_DATA (`test/krux-konkret-toggle.test.js`)
 - `krux-horda-trigger.js` — match triggerów (word-boundary, diacritics fold), throttle per-sesja, env off, niezależność od persony (`test/krux-horda-trigger.test.js`)
 - `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts, reset licznika drift-guard własnej sesji na każdym mode=on źródle (`test/activate.test.js`)
 - `hooks/lib/drift-guard.js` — próg domyślny i przez `KRUX_DRIFT_INTERVAL`, liczniki per-sesja (JSON map, prune 24h, migracja ze starego formatu), generyczny magazyn read/write/clear (`test/drift-guard.test.js`)

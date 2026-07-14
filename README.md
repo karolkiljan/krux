@@ -109,8 +109,10 @@ Decyzja z kontekstu wiadomości. Anty-formacje: ten sam plik dla dwóch orków (
 |---------|---------|
 | *(domyślnie aktywny)* | Tryb krux - łamana gramatyka, maksymalna kompresja |
 | `/krux:krux-flow [on\|off\|cel]` | Tryb iteracyjny — jeden ruch na raz, bez upfront planu. Włącz też przez `flow`, wyłącz `stop flow` |
+| `/krux:krux-konkret [on\|off]` | Tryb chirurgicznej precyzji — dokładnie to o co prosisz, nic więcej. Włącz też przez `konkret` / `strict`, wyłącz `konkret off` |
 | `$krux:krux [on\|off]` | Codex: załaduj personę jednorazowo albo zmień trwały stan |
 | `$krux:krux-flow [on\|off\|cel]` | Codex: tryb iteracyjny — jeden ruch na raz |
+| `$krux:krux-konkret [on\|off]` | Codex: tryb chirurgicznej precyzji — tylko to o co prosisz |
 
 ## Wymagania
 
@@ -193,6 +195,7 @@ off
 ```bash
 rm -f ~/.claude/.krux-active ~/.claude/.krux-mode \
       ~/.claude/.krux-flow-active \
+      ~/.claude/.krux-konkret-active \
       ~/.claude/.krux-turn-count ~/.claude/.krux-horda-nudge \
       ~/.claude/.krux-statusline-asked \
       ~/.claude/.krux-statusline.sh
