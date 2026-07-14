@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // krux — wspólny moduł ochrony przed dryfem persony w długiej rozmowie.
-// Wzmocnienie persony jest zdarzeniowe (SessionStart, jawna fraza toggle);
-// między zdarzeniami nic nie przypomina modelowi stylu. Ten moduł liczy tury
-// od ostatniego wzmocnienia i po progu daje sygnał do przypomnienia — patrz
-// docs/superpowers/specs/2026-07-14-drift-guard-design.md.
+// Aktywna persona poniżej progu dostaje krótki reminder. Licznik wybiera
+// okresowy pełny guard z przykładem — patrz design drift-guard.
 //
 // Liczniki są per-sesja (session_id z payload hooka) w jednym pliku JSON,
 // żeby równoległe sesje nie kasowały sobie nawzajem okien. Generyczny magazyn
@@ -16,8 +14,7 @@ const path = require('path');
 // miejscach (resume i mid-conversation drift-guard). Ostatnie zdania celują w
 // dryf do A: gładka przegadana polszczyzna to główny kierunek rozjazdu.
 const TURN_REMINDER =
-  'Techniczny konkret nie wyłącza głosu Krux. Zachowaj łamaną gramatykę i kompresję. ' +
-  'Usuń tylko żart lub metaforę, gdy zasłania precyzję.';
+  'Techniczny konkret nie gasi Kruxa. Łamana gramatyka + kompresja; żart zasłania sens → wynocha.';
 
 function turnReminderEnabled() {
   const value = (process.env.KRUX_TURN_REMINDER || '').toLowerCase();
@@ -26,13 +23,14 @@ function turnReminderEnabled() {
 
 const REMINDER_CORE =
   'persona Krux dalej działa.\n\n' +
-  'ZAKAZ: "Sam X"/"mam" → "Krux X"/"Krux mieć". Oferta końcowa i "Podsumowanie:" → [milczeć]. ' +
+  'ZAKAZ: "Sam X"/"mam" → "Krux X"/"Krux mieć". Oferta/"Podsumowanie:" → [milczeć]. ' +
   'Krux zmienia ton, nie wymagany format ani strukturę innych skilli. ' +
-  'Techniczny konkret nie wyłącza głosu Krux. Jak klimat zasłania precyzję, usuń żart lub metaforę; łamana gramatyka i kompresja zostają. ' +
-  '4 PRAWA: wynik pierwszy, łamana gramatyka (mianownik, bezokolicznik), prosty słownik, kompresja. ' +
+  'Kod, JSON, ścisły format i dokładny fragment ostrzeżenia wysokiej stawki = neutralne. ' +
+  'Techniczny konkret nie wyłącza głosu Krux. Klimat zasłania precyzję → usunąć żart; łamana gramatyka i kompresja zostają. ' +
+  '4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja. ' +
   'Gładko i długo = dryf do A — ciąć. ' +
   'Skrót zjada warunek, ryzyko, przyczynę lub ścieżkę błędu = dryf do C — dodać konkret, nie wygładzać. ' +
-  'Klimat: akcent postaci (moods.md), metafora górnicza gdy niesie fakt (lore.md); sucha proza bez głosu = dryf.';
+  'Klimat: akcent postaci (moods.md), metafora górnicza niesie fakt (lore.md); sucha proza = dryf.';
 
 // Kalibracja przykładem bije opis reguł (walidacja brancha persona-rewrite-
 // fewshot: orkowość równa, output −8%). Jedna para na emisję DRIFT-GUARD,

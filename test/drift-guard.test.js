@@ -58,10 +58,11 @@ test('REMINDER_CORE pokrywa dryf do A: łamana gramatyka i kompresja przypomnian
 });
 
 test('TURN_REMINDER utrzymuje techniczny konkret i głos jako dwie osie', () => {
-  assert.match(TURN_REMINDER, /Techniczny konkret nie wyłącza głosu Krux/);
-  assert.match(TURN_REMINDER, /łamaną gramatykę i kompresję/);
-  assert.match(TURN_REMINDER, /Usuń tylko żart lub metaforę/);
-  assert.ok(TURN_REMINDER.length <= 220, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
+  assert.equal(
+    TURN_REMINDER,
+    'Techniczny konkret nie gasi Kruxa. Łamana gramatyka + kompresja; żart zasłania sens → wynocha.'
+  );
+  assert.ok(TURN_REMINDER.length <= 100, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
 });
 
 test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
@@ -76,6 +77,13 @@ test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
 test('REMINDER_CORE nie daje technicznej odpowiedzi furtki do porzucenia głosu', () => {
   assert.match(REMINDER_CORE, /Techniczny konkret nie wyłącza głosu Krux/);
   assert.doesNotMatch(REMINDER_CORE, /Poprawność i bezpieczeństwo zawsze nad stylem/);
+});
+
+test('REMINDER_CORE zachowuje wąskie neutralne granice', () => {
+  assert.match(
+    REMINDER_CORE,
+    /Kod[^.]*JSON[^.]*ścisły format[^.]*dokładny fragment ostrzeżenia wysokiej stawki[^.]*neutralne/
+  );
 });
 
 test('driftInterval(): domyślnie DEFAULT_INTERVAL bez env', () => {

@@ -253,7 +253,7 @@ test('drift-guard: zwykły prompt poniżej progu emituje krótki reminder', () =
     runHook(home, 'krux', env);
     const r = runHook(home, 'explain this code', env);
     assert.equal(r.status, 0);
-    assert.match(additionalContext(r), /Techniczny konkret nie wyłącza głosu Krux/);
+    assert.match(additionalContext(r), /Techniczny konkret nie gasi Kruxa/);
     assert.doesNotMatch(additionalContext(r), /KRUX DRIFT-GUARD/);
   });
 });
@@ -271,8 +271,8 @@ test('drift-guard: po KRUX_DRIFT_INTERVAL turach emituje KRUX DRIFT-GUARD i rese
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '3' };
     runHook(home, 'krux', env);
-    assert.match(additionalContext(runHook(home, 'turn 1', env)), /Techniczny konkret/);
-    assert.match(additionalContext(runHook(home, 'turn 2', env)), /Techniczny konkret/);
+    assert.match(additionalContext(runHook(home, 'turn 1', env)), /Techniczny konkret nie gasi Kruxa/);
+    assert.match(additionalContext(runHook(home, 'turn 2', env)), /Techniczny konkret nie gasi Kruxa/);
     const r = runHook(home, 'turn 3', env);
     assert.match(additionalContext(r), /KRUX DRIFT-GUARD/);
     assert.match(additionalContext(r), /examples\.md/);
@@ -287,7 +287,7 @@ test('drift-guard: sesje liczą niezależnie — prompt sesji B nie dolicza do o
     runHook(home, 'turn a1', env, 'sid-a');
     runHook(home, 'turn a2', env, 'sid-a');
     const rB = runHook(home, 'turn b1', env, 'sid-b');
-    assert.match(additionalContext(rB), /Techniczny konkret/, 'sesja B dostaje reminder na pierwszym turnie');
+    assert.match(additionalContext(rB), /Techniczny konkret nie gasi Kruxa/, 'sesja B dostaje reminder na pierwszym turnie');
     assert.equal(turnCount(home, 'sid-a'), 2, 'okno A nietknięte przez B');
     const rA = runHook(home, 'turn a3', env, 'sid-a');
     assert.match(additionalContext(rA), /KRUX DRIFT-GUARD/, 'A osiąga próg po własnych 3 turach');
@@ -299,10 +299,10 @@ test('drift-guard: próg emituje pełny guard zamiast krótkiego reminderu', () 
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '2' };
     runHook(home, 'krux', env);
-    assert.match(additionalContext(runHook(home, 'turn 1', env)), /Techniczny konkret/);
+    assert.match(additionalContext(runHook(home, 'turn 1', env)), /Techniczny konkret nie gasi Kruxa/);
     const threshold = additionalContext(runHook(home, 'turn 2', env));
     assert.match(threshold, /KRUX DRIFT-GUARD/);
-    assert.equal((threshold.match(/Techniczny konkret nie wyłącza głosu Krux/g) || []).length, 1);
+    assert.doesNotMatch(threshold, /Techniczny konkret nie gasi Kruxa/);
   });
 });
 
@@ -322,7 +322,7 @@ test('Codex PLUGIN_DATA: aktywna persona emituje ten sam per-turn reminder', () 
       const env = { PLUGIN_DATA: pluginData, KRUX_DRIFT_INTERVAL: '5' };
       runHook(home, 'krux', env);
       const r = runHook(home, 'technical prompt', env);
-      assert.match(additionalContext(r), /Techniczny konkret nie wyłącza głosu Krux/);
+      assert.match(additionalContext(r), /Techniczny konkret nie gasi Kruxa/);
       assert.equal(fs.existsSync(path.join(home, '.claude', '.krux-turn-count')), false);
       assert.equal(fs.existsSync(path.join(pluginData, '.krux-turn-count')), true);
     } finally {
