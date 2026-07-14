@@ -70,13 +70,24 @@ function readStore(file) {
   return {};
 }
 
+// Zapis tmp+rename: czytelnik nigdy nie widzi częściowego pliku (częściowy
+// JSON parsowałby się jako {} i następny zapis wymiótłby liczniki wszystkich
+// sesji). Resztkowy lost-update dwóch RÓWNOCZESNYCH zapisów (read-modify-write
+// bez locka) zostaje zaakceptowany: skutkiem jest najwyżej przesunięta kadencja
+// reminderów jednej sesji, a lock kosztowałby więcej niż chroni.
 function writeStore(file, store) {
   const cutoff = Date.now() - ENTRY_TTL_MS;
   for (const key of Object.keys(store)) {
     const entry = store[key];
     if (!entry || typeof entry.t !== 'number' || entry.t < cutoff) delete store[key];
   }
-  try { fs.writeFileSync(file, JSON.stringify(store)); } catch (e) {}
+  const tmp = file + '.tmp.' + process.pid;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(store));
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch (e2) {}
+  }
 }
 
 // --- generyczny magazyn per-sesyjnych liczników ---
@@ -99,6 +110,28 @@ function clearCount(claudeDir, filename, sid) {
   if (!(normalizeSid(sid) in store)) return;
   delete store[normalizeSid(sid)];
   writeStore(file, store);
+}
+
+// --- stan aktywacji persony per sesja ---
+//
+// Wstrzyknięcie SKILL.md jest per-sesja, więc gate per-turn reminderów też musi
+// być per-sesja. Globalny plik .krux-active zostaje wyłącznie dla statusline
+// (bash bez session_id) — one-shot w sesji A nie może szumieć reminderami w
+// równoległej sesji B, która persony nigdy nie widziała. Wpis dzieli TTL 24h
+// magazynu; odświeża go każdy SessionStart (startup/resume/compact), więc gaśnie
+// tylko w sesji żyjącej >24h bez żadnego z tych zdarzeń — akceptowane.
+const ACTIVE_FILENAME = '.krux-active-sessions';
+
+function markSessionActive(claudeDir, sid) {
+  writeCount(claudeDir, ACTIVE_FILENAME, sid, 1);
+}
+
+function clearSessionActive(claudeDir, sid) {
+  clearCount(claudeDir, ACTIVE_FILENAME, sid);
+}
+
+function isSessionActive(claudeDir, sid) {
+  return readCount(claudeDir, ACTIVE_FILENAME, sid) === 1;
 }
 
 // --- licznik drift-guard ---
@@ -137,6 +170,7 @@ module.exports = {
   REMINDER_CORE,
   MICRO_EXAMPLES,
   EMIT_FILENAME,
+  ACTIVE_FILENAME,
   nextMicroExample,
   DEFAULT_INTERVAL,
   driftInterval,
@@ -144,6 +178,9 @@ module.exports = {
   readCount,
   writeCount,
   clearCount,
+  markSessionActive,
+  clearSessionActive,
+  isSessionActive,
   resetTurnCount,
   bumpTurnCount,
 };

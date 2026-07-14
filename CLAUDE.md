@@ -33,7 +33,8 @@ Plugin działa na trzech niezależnych osiach:
 | Plik | Kto pisze | Kto czyta | Cel |
 |------|-----------|-----------|-----|
 | `<stateDir>/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
-| `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Runtime flag aktywnej persony. |
+| `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Globalny runtime flag — od v2.10.0 czyta go WYŁĄCZNIE statusline (bash bez session_id, ostatnia akcja wygrywa). Gate reminderów siedzi w `.krux-active-sessions`. |
+| `<stateDir>/.krux-active-sessions` | `krux-toggle.js`, `activate.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Per-sesyjny gate per-turn reminderów (JSON map per `session_id`, TTL 24h odświeżany na SessionStart). Wstrzyknięcie SKILL.md jest per-sesja, więc one-shot w sesji A nie szumi reminderami w sesji B; `stop krux` w A nie wycisza żywej sesji B. |
 | `<stateDir>/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
 | `<stateDir>/.krux-konkret-active` | `krux-konkret-toggle.js` | `krux-konkret-toggle.js` | Per-turn reminder trigger dla trybu konkret. Istnienie pliku = ON. |
 | `<stateDir>/.krux-turn-count` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Liczniki tur od ostatniego wzmocnienia persony — JSON map `{session_id: {n, t}}`, wpisy starsze niż 24h prunowane. Reset (tylko własny wpis sesji) przy SessionStart mode=on i przy jawnym `krux`/`stop krux`. |

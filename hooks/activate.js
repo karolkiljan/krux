@@ -2,7 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
-const { REMINDER_CORE, resetTurnCount } = require('./lib/drift-guard');
+const {
+  REMINDER_CORE,
+  resetTurnCount,
+  markSessionActive,
+  clearSessionActive,
+} = require('./lib/drift-guard');
 
 const VALID_MODES = ['on', 'off'];
 
@@ -53,6 +58,7 @@ process.stdin.on('end', () => {
 
   if (mode === 'off') {
     try { fs.unlinkSync(flagPath); } catch (e) {}
+    clearSessionActive(claudeDir, sessionId);
     process.stdout.write('OK');
     process.exit(0);
   }
@@ -68,6 +74,9 @@ process.stdin.on('end', () => {
   // the mid-conversation drift-guard window (hooks/krux-toggle.js) should
   // count turns since THIS event, not since the session originally started.
   // Reset touches only this session's entry; parallel sessions keep theirs.
+  // The per-session activation entry gates per-turn reminders and refreshes
+  // its 24h TTL here on every startup/resume/compact.
+  markSessionActive(claudeDir, sessionId);
   resetTurnCount(claudeDir, sessionId);
 
   // On resume the skill body is still in memory from the prior context, so a short

@@ -284,6 +284,7 @@ test('drift-guard: sesje liczą niezależnie — prompt sesji B nie dolicza do o
   withTempHome(home => {
     const env = { KRUX_DRIFT_INTERVAL: '3' };
     runHook(home, 'krux', env, 'sid-a');
+    runHook(home, 'krux', env, 'sid-b');
     runHook(home, 'turn a1', env, 'sid-a');
     runHook(home, 'turn a2', env, 'sid-a');
     const rB = runHook(home, 'turn b1', env, 'sid-b');
@@ -292,6 +293,57 @@ test('drift-guard: sesje liczą niezależnie — prompt sesji B nie dolicza do o
     const rA = runHook(home, 'turn a3', env, 'sid-a');
     assert.match(additionalContext(rA), /KRUX DRIFT-GUARD/, 'A osiąga próg po własnych 3 turach');
     assert.equal(turnCount(home, 'sid-b'), 1, 'okno B dalej rośnie osobno');
+  });
+});
+
+test('per-session gate: sesja bez własnej aktywacji nie dostaje reminderów mimo globalnego flaga', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '3' };
+    runHook(home, 'krux', env, 'sid-a');
+    assert.equal(hasActive(home), true, 'globalny flag statusline istnieje');
+    const rB = runHook(home, 'zwykły prompt', env, 'sid-b');
+    assert.equal(rB.status, 0);
+    assert.equal(rB.stdout, '', 'sesja B nigdy nie widziała persony — zero szumu');
+    const rA = runHook(home, 'zwykły prompt', env, 'sid-a');
+    assert.match(additionalContext(rA), /KRUX TURN/, 'sesja A dalej dostaje swój reminder');
+  });
+});
+
+test('per-session gate: "stop krux" w sesji A nie wycisza reminderów żywej sesji B', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '5' };
+    runHook(home, 'krux', env, 'sid-a');
+    runHook(home, 'krux', env, 'sid-b');
+    runHook(home, 'stop krux', env, 'sid-a');
+    assert.equal(hasActive(home), false, 'globalny flag statusline zdjęty');
+    const rB = runHook(home, 'zwykły prompt', env, 'sid-b');
+    assert.match(additionalContext(rB), /KRUX TURN/, 'B ma personę w kontekście — reminder zostaje');
+  });
+});
+
+test('slash /krux:krux on|off przełącza trwały mode tak samo jak wariant $', () => {
+  withTempHome(home => {
+    const on = runHook(home, '/krux:krux on');
+    assert.equal(on.status, 0);
+    assert.equal(readMode(home), 'on');
+    assert.equal(hasActive(home), true);
+
+    const off = runHook(home, '/krux:krux off');
+    assert.equal(off.status, 0);
+    assert.equal(readMode(home), 'off');
+    assert.equal(hasActive(home), false);
+  });
+});
+
+test('one-shot /krux:krux resetuje licznik drift-guard (świeże wzmocnienie)', () => {
+  withTempHome(home => {
+    const env = { KRUX_DRIFT_INTERVAL: '5' };
+    runHook(home, 'krux', env);
+    runHook(home, 'turn 1', env);
+    runHook(home, 'turn 2', env);
+    assert.equal(turnCount(home), 2);
+    runHook(home, '/krux:krux', env);
+    assert.equal(turnCount(home), undefined, 'one-shot czyści okno jak każde wzmocnienie');
   });
 });
 

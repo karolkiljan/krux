@@ -12,6 +12,9 @@ const {
   resetTurnCount,
   bumpTurnCount,
   nextMicroExample,
+  markSessionActive,
+  clearSessionActive,
+  isSessionActive,
 } = require('./lib/drift-guard');
 
 let raw = '';
@@ -59,18 +62,24 @@ process.stdin.on('end', () => {
   };
 
   // Polish diacritics optional — `wylacz krux`, `wlacz krux` also work.
+  // Both hosts spell explicit toggles: /krux:krux on|off (Claude), $krux:krux on|off (Codex).
   const oneShotRe = /^(\/|\$)krux:krux$/iu;
-  const offRe = /^(stop krux|normalny tryb|wy(ł|l)(ą|a)cz krux|\$krux:krux off)$/iu;
-  const onRe = /^(krux|w(ł|l)(ą|a)cz krux|start krux|aktywuj krux|\$krux:krux on)$/iu;
+  const offRe = /^(stop krux|normalny tryb|wy(ł|l)(ą|a)cz krux|(\/|\$)krux:krux off)$/iu;
+  const onRe = /^(krux|w(ł|l)(ą|a)cz krux|start krux|aktywuj krux|(\/|\$)krux:krux on)$/iu;
 
   if (oneShotRe.test(prompt)) {
+    // One-shot loads the skill body through the slash-command channel — this is
+    // a fresh reinforcement, so the drift-guard window restarts like any other.
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
+    markSessionActive(claudeDir, sessionId);
+    resetTurnCount(claudeDir, sessionId);
   } else if (offRe.test(prompt)) {
     try { fs.writeFileSync(modeFile, 'off'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
       return;
     }
     try { fs.unlinkSync(flag); } catch (e) {}
+    clearSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
     emit('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
   } else if (onRe.test(prompt)) {
@@ -79,10 +88,11 @@ process.stdin.on('end', () => {
       return;
     }
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
+    markSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
     const body = personaBody();
     emit(body ? `KRUX PERSONA ON.\n\n${body}` : 'KRUX PERSONA ON. Stosuj odkrytą definicję skilla krux.');
-  } else if (fs.existsSync(flag)) {
+  } else if (isSessionActive(claudeDir, sessionId)) {
     if (bumpTurnCount(claudeDir, sessionId)) {
       emit(
         'KRUX DRIFT-GUARD — ' + REMINDER_CORE +
