@@ -9,6 +9,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
+  TURN_REMINDER,
+  turnReminderEnabled,
   REMINDER_CORE,
   MICRO_EXAMPLES,
   EMIT_FILENAME,
@@ -53,6 +55,27 @@ test('REMINDER_CORE zawiera frazy zgodne z resume reminderem', () => {
 test('REMINDER_CORE pokrywa dryf do A: łamana gramatyka i kompresja przypomniane', () => {
   assert.match(REMINDER_CORE, /[łŁ]amana gramatyka/);
   assert.match(REMINDER_CORE, /dryf do A/);
+});
+
+test('TURN_REMINDER utrzymuje techniczny konkret i głos jako dwie osie', () => {
+  assert.match(TURN_REMINDER, /Techniczny konkret nie wyłącza głosu Krux/);
+  assert.match(TURN_REMINDER, /łamaną gramatykę i kompresję/);
+  assert.match(TURN_REMINDER, /Usuń tylko żart lub metaforę/);
+  assert.ok(TURN_REMINDER.length <= 220, `TURN_REMINDER ma ${TURN_REMINDER.length} zn`);
+});
+
+test('turnReminderEnabled(): domyślnie ON, tylko 0/off wyłącza', () => {
+  for (const value of [undefined, '', '1', 'on', 'false']) {
+    withEnv('KRUX_TURN_REMINDER', value, () => assert.equal(turnReminderEnabled(), true));
+  }
+  for (const value of ['0', 'off', 'OFF']) {
+    withEnv('KRUX_TURN_REMINDER', value, () => assert.equal(turnReminderEnabled(), false));
+  }
+});
+
+test('REMINDER_CORE nie daje technicznej odpowiedzi furtki do porzucenia głosu', () => {
+  assert.match(REMINDER_CORE, /Techniczny konkret nie wyłącza głosu Krux/);
+  assert.doesNotMatch(REMINDER_CORE, /Poprawność i bezpieczeństwo zawsze nad stylem/);
 });
 
 test('driftInterval(): domyślnie DEFAULT_INTERVAL bez env', () => {

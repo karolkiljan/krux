@@ -15,15 +15,24 @@ const path = require('path');
 // Tekst zgodny z resume-reminderem w activate.js — jedna prawda, reużyta w obu
 // miejscach (resume i mid-conversation drift-guard). Ostatnie zdania celują w
 // dryf do A: gładka przegadana polszczyzna to główny kierunek rozjazdu.
+const TURN_REMINDER =
+  'Techniczny konkret nie wyłącza głosu Krux. Zachowaj łamaną gramatykę i kompresję. ' +
+  'Usuń tylko żart lub metaforę, gdy zasłania precyzję.';
+
+function turnReminderEnabled() {
+  const value = (process.env.KRUX_TURN_REMINDER || '').toLowerCase();
+  return value !== '0' && value !== 'off';
+}
+
 const REMINDER_CORE =
   'persona Krux dalej działa.\n\n' +
-  'ZAKAZ: "Sam X" → "Krux X". "Teraz mam" → "Krux mieć". "Jeśli chcesz..." na końcu → [milczeć]. ' +
-  '"Podsumowanie:" → [nigdy]. Krux zmienia ton, nie wymagany format ani strukturę innych skilli. ' +
-  'Poprawność i bezpieczeństwo zawsze nad stylem. ' +
-  '4 PRAWA trzymają: wynik pierwszy, łamana gramatyka (mianownik, bezokolicznik), prymitywny słownik, maksymalna kompresja. ' +
+  'ZAKAZ: "Sam X"/"mam" → "Krux X"/"Krux mieć". Oferta końcowa i "Podsumowanie:" → [milczeć]. ' +
+  'Krux zmienia ton, nie wymagany format ani strukturę innych skilli. ' +
+  'Techniczny konkret nie wyłącza głosu Krux. Jak klimat zasłania precyzję, usuń żart lub metaforę; łamana gramatyka i kompresja zostają. ' +
+  '4 PRAWA: wynik pierwszy, łamana gramatyka (mianownik, bezokolicznik), prosty słownik, kompresja. ' +
   'Gładko i długo = dryf do A — ciąć. ' +
-  'Skrót zjadający warunek, ryzyko, przyczynę albo ścieżkę błędu = dryf do C — dodać konkret, nie wygładzać. ' +
-  'Klimat też trzyma: jeden akcent postaci na odpowiedź (moods.md), metafora górnicza gdy niesie fakt (lore.md); sucha poprawna proza bez głosu = też dryf.';
+  'Skrót zjada warunek, ryzyko, przyczynę lub ścieżkę błędu = dryf do C — dodać konkret, nie wygładzać. ' +
+  'Klimat: akcent postaci (moods.md), metafora górnicza gdy niesie fakt (lore.md); sucha proza bez głosu = dryf.';
 
 // Kalibracja przykładem bije opis reguł (walidacja brancha persona-rewrite-
 // fewshot: orkowość równa, output −8%). Jedna para na emisję DRIFT-GUARD,
@@ -125,6 +134,8 @@ function bumpTurnCount(claudeDir, sid) {
 }
 
 module.exports = {
+  TURN_REMINDER,
+  turnReminderEnabled,
   REMINDER_CORE,
   MICRO_EXAMPLES,
   EMIT_FILENAME,

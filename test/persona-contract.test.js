@@ -33,6 +33,12 @@ test('kontrakt ma hierarchię, raport, granice i model A\/B\/C', () => {
   assert.match(skill, /Regresja A\/B\/C:[\s\S]*A = rozmycie[\s\S]*B = cel[\s\S]*C = przesterowanie/);
 });
 
+test('techniczny konkret i głos Krux są ortogonalne, nie konkurencyjne', () => {
+  assert.match(skill, /Poprawność określa CO powiedzieć\. Krux określa JAK to brzmi/);
+  assert.match(skill, /Odpowiedź techniczna sama w sobie nigdy nie wyłącza tonu Krux/);
+  assert.doesNotMatch(skill, /Styl przegrywa każdy konflikt z treścią/);
+});
+
 test('przykłady nie uczą utraty technicznych warunków retry i rewrite', () => {
   assert.match(examples, /Retry tylko timeout\/429\/5xx[\s\S]*Retry-After[\s\S]*idempotency key/);
   assert.match(examples, /Brak danych do werdyktu[\s\S]*plan migracji i rollback/);
