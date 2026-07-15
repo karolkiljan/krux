@@ -66,6 +66,7 @@ wyłącznie natywne `decision` i `reason`.
 | `<stateDir>/.krux-horda-nudge` | `krux-horda-trigger.js` (`hooks/lib/drift-guard.js`) | `krux-horda-trigger.js` | Throttle podpowiedzi delegacji — ten sam format JSON map per `session_id`; wpis = tury od ostatniego nudge. |
 | `<stateDir>/.krux-drift-emit` | `krux-toggle.js`, `activate.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js`, `activate.js` | Licznik wyemitowanych kotwic per sesja (ten sam format JSON map) — rotuje dodatni mikro-przykład. Celowo NIE resetowany przy wzmocnieniu persony: rotacja idzie dalej przez całą sesję. |
 | `<stateDir>/.krux-codex-turn-context` | `persona-context.js` | `persona-context.js`, `persona-stop.js` | Codex-only: `turn_id`, format ścisły, liczba tooli i informacja, czy tura dostała kotwicę. |
+| `<stateDir>/.krux-final-guard-count` | `persona-stop.js` | `codex-native-eval` | Codex-only: licznik faktycznych decyzji `Stop decision=block` per sesja. Benchmark używa różnicy licznika zamiast zgadywać aktywację po liczbie wiadomości modelu. |
 | `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag. `/krux:krux` i `$krux:krux` zapisują tylko `.krux-active`, bez zmiany `.krux-mode`. `$krux:krux on|off` jawnie zmienia stan trwały.
@@ -150,7 +151,7 @@ Pokrycie:
 - `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts, reset licznika drift-guard własnej sesji na każdym mode=on źródle (`test/activate.test.js`)
 - `hooks/lib/drift-guard.js` — skład lekkiej i pełnej dodatniej kotwicy, rotacja przykładów, opt-out `KRUX_TURN_REMINDER=0|off`, próg oraz liczniki per-sesja (`test/drift-guard.test.js`)
 - `persona-eval` — judge-free scorer persony/zadania/kosztu i runner świeżych procesów Codex/Claude; modelowe wywołania tylko przez `npm run eval:persona` (`test/persona-eval.test.js`)
-- `codex-native-eval` — izolowane `CODEX_HOME`, realne `exec/resume`, wariant control/native, dowody transcriptu, `PostToolUse` i final guard (`test/codex-native-eval.test.js`)
+- `codex-native-eval` — izolowane `CODEX_HOME`, realne `exec/resume`, wariant control/native, dowody transcriptu, `PostToolUse`, licznik faktycznych aktywacji final guarda i odtwarzalny `--rescore` (`test/codex-native-eval.test.js`)
 - `codex-persona-context` / `codex-persona-stop` — natywny lifecycle, event-specific envelope, tool cadence, format ścisły i jednorazowa korekta (`test/codex-persona-context.test.js`, `test/codex-persona-stop.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)

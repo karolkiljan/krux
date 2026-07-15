@@ -240,7 +240,8 @@ npm run eval:codex-native -- --rescore benchmarks/codex-native-eval/<run>
 izolowane `CODEX_HOME` dla kontroli i Kruxa, kopiuje tylko `auth.json`, instaluje
 plugin wyłącznie w wariancie `native`, a potem wykonuje po 12 tur przez realne
 `codex exec` + `codex exec resume`. Zapisuje odpowiedzi przed scoringiem, dowody
-z transcriptu, aktywacje final guarda i porównanie kosztu w
+z transcriptu, rzeczywiste aktywacje final guarda zapisane przez hook i
+porównanie kosztu w
 `benchmarks/codex-native-eval/<run>/`.
 
 `report.json` ustawia `accepted=true` dopiero po przejściu całej bramki:
