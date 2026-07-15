@@ -4,7 +4,11 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { markSessionActive, markPromptTurn } = require('../hooks/lib/drift-guard');
+const {
+  markSessionActive,
+  markPromptTurn,
+  finalGuardActivationCount,
+} = require('../hooks/lib/drift-guard');
 const { FINAL_GUARD_REASON, decisionForPayload } = require('../hooks/codex/persona-stop');
 
 const STOP_HOOK = path.join(__dirname, '..', 'hooks', 'codex', 'persona-stop.js');
@@ -58,6 +62,8 @@ test('aktywny neutralny finał blokuje Stop dokładnie raz', () => {
       decision: 'block',
       reason: FINAL_GUARD_REASON,
     });
+    assert.match(FINAL_GUARD_REASON, /Kod działać → testy zielone; robak wynocha/);
+    assert.equal(finalGuardActivationCount(dir, 'sid-a'), 1);
 
     const second = runStop(dir, {
       ...neutralPayload(),
@@ -66,6 +72,7 @@ test('aktywny neutralny finał blokuje Stop dokładnie raz', () => {
     });
     assert.equal(second.status, 0, second.stderr);
     assert.equal(second.stdout, '');
+    assert.equal(finalGuardActivationCount(dir, 'sid-a'), 1);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

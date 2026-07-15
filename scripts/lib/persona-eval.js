@@ -6,7 +6,7 @@ const {
 } = require('../../hooks/lib/drift-guard');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 7;
+const SCORER_VERSION = 8;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -34,7 +34,7 @@ const SCENARIOS = [
       /half[- ]open/i,
       /(?:1|jedn\p{L}*)\s+(?:probe|prób)/iu,
       /(?:sukces|success)[^.!;\n]{0,60}(?:zam(?:yk|kn)|close)/i,
-      /(?:poraż|fail)[^.!;\n]{0,60}(?:otw(?:ier|órz)|open)/i,
+      /(?:poraż|fail)[^.!;\n]{0,60}(?:otw(?:ier|órz|orz)|open)/i,
     ],
     maxWords: 55,
   },
@@ -131,7 +131,7 @@ const OFFER_PATTERNS = [
 const BROKEN_GRAMMAR_PATTERNS = [
   /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|krux)\s+(?:pusty|paść|gnić|siedzieć|widzieć|mieć|zielone|trup)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*|kolejka|producent|opóźnienie)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:worker|system|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*|kolejka|producent|opóźnienie)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
   /\bRetry\s+tylko\b/giu,
 ];
 

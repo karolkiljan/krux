@@ -11,12 +11,13 @@ const {
   scoreResponse,
   summarizeResults,
 } = require('./lib/persona-eval');
+const { totalFinalGuardActivations } = require('../hooks/lib/drift-guard');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_ROOT = path.join(ROOT, 'benchmarks', 'codex-native-eval');
 const PERSONALITIES = ['none', 'pragmatic', 'friendly'];
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
-const EVALUATOR_VERSION = 1;
+const EVALUATOR_VERSION = 2;
 
 function scenario(id) {
   const found = SCENARIOS.find(item => item.id === id);
@@ -189,6 +190,10 @@ function createIsolatedHome(sourceCodexHome, targetCodexHome) {
   const targetAuth = path.join(targetCodexHome, 'auth.json');
   fs.copyFileSync(sourceAuth, targetAuth);
   fs.chmodSync(targetAuth, 0o600);
+}
+
+function pluginDataDir(codexHome) {
+  return path.join(codexHome, 'plugins', 'data', 'krux-krux-marketplace');
 }
 
 function cleanEnvironment(environment, home, codexHome) {
@@ -413,6 +418,9 @@ function runEvaluation(options) {
           const outputFile = path.join(outputDir, `turn-${String(index + 1).padStart(2, '0')}.txt`);
           try { fs.unlinkSync(outputFile); } catch {}
           const before = transcriptSnapshot(homes[variant].codexHome);
+          const guardCountBefore = totalFinalGuardActivations(
+            pluginDataDir(homes[variant].codexHome),
+          );
           const invocation = invocationForTurn(
             turn,
             index,
@@ -429,6 +437,11 @@ function runEvaluation(options) {
           if (index === 0 && parsed.threadId) threadId = parsed.threadId;
           const transcript = appendedTranscript(homes[variant].codexHome, before);
           const hookEvidence = extractTranscriptEvidence(transcript);
+          const guardActivations = Math.max(
+            0,
+            totalFinalGuardActivations(pluginDataDir(homes[variant].codexHome))
+              - guardCountBefore,
+          );
           appendJson(transcriptPath, {
             variant,
             repetition,
@@ -449,11 +462,11 @@ function runEvaluation(options) {
             kind: turn.kind,
             prompt: turn.prompt,
             response,
-            preGuardResponse: parsed.agentMessages.length > 1
-              ? parsed.agentMessages[0]
+            preGuardResponse: guardActivations > 0 && parsed.agentMessages.length > 1
+              ? parsed.agentMessages.at(-2)
               : null,
             agentMessages: parsed.agentMessages,
-            guardActivations: parsed.agentMessages.length > 1 ? 1 : 0,
+            guardActivations,
             hookEvidence,
             exitCode: completed.status ?? null,
             status: completed.error || completed.status !== 0 ? 'ERROR' : 'COMPLETE',
