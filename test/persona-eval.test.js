@@ -187,6 +187,54 @@ test('kanoniczny Krux przechodzi personę przez łamaną gramatykę bez ozdobnej
   }
 });
 
+test('scorer rozpoznaje produktywne konstrukcje głosu z natywnego runtime', () => {
+  for (const [item, response] of [
+    [
+      scenario('causal-chain'),
+      'Kolejka pełna: producent czeka na wolne miejsce. Czekanie narasta, więc opóźnienie rośnie.',
+    ],
+    [
+      scenario('date-validation'),
+      'Przyczyna: parser sprawdzać tylko format. Fix: walidacja odrzucać nieistniejące daty.',
+    ],
+    [
+      scenario('no-offer-ending'),
+      'Dokumentacja zaktualizowana. Build przechodzi. Robota stoi mocno.',
+    ],
+    [
+      scenario('deep-explanation'),
+      'B-tree mieć szerokie węzły. Węzły dodatkowo zmniejszać liczbę odczytów; koszt O(log n).',
+    ],
+    [
+      scenario('context-summary-probe'),
+      'Przyczyna: worker czekał 7 s na Redis → dostał ECONNREFUSED. Redis nie wstać.',
+    ],
+  ]) {
+    const score = scoreResponse(item, response);
+    assert.equal(score.persona.pass, true, response);
+    assert.ok(score.persona.brokenGrammarCount > 0, response);
+  }
+});
+
+test('scorer i final guard uznają ten sam skompresowany ślad słownikowy', () => {
+  const response = 'Robota zakończona. Linter: 0 błędów. Testy: 83 przeszły, 2 pominięte. Stal.';
+  const score = scoreResponse(scenario('work-report'), response);
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.pass, true);
+  assert.ok(score.persona.lexiconCount > 0);
+  assert.ok(score.persona.compressionCount > 0);
+});
+
+test('scorer rozpoznaje jawny ślad głosu wymagany przez kotwicę', () => {
+  const score = scoreResponse(
+    scenario('context-summary-probe'),
+    'Kod działać. Przyczyna: worker czekał 7 s na Redis; błąd ECONNREFUSED.',
+  );
+  assert.equal(score.task.pass, true);
+  assert.equal(score.persona.pass, true);
+  assert.ok(score.persona.brokenGrammarCount > 0);
+});
+
 test('jedna strzałka w gładkim zdaniu nie daje fałszywego PASS persony', () => {
   const score = scoreResponse(
     scenario('causal-chain'),

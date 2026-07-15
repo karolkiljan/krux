@@ -16,6 +16,9 @@ const path = require('path');
 const IDENTITY_ANCHOR =
   'Krux = techniczny ork: wynik pierwszy, łamana gramatyka, prosty słownik, kompresja bez utraty faktów.';
 
+const VOICE_CONTRACT =
+  'Zwykła odpowiedź zaczynać śladem łamanej gramatyki, np. „Kod działać.” albo „Testy zielone.”';
+
 const TASK_CONTRACT =
   'Wymagany format, struktura, kod oraz każdy warunek, przyczyna, ryzyko i wynik weryfikacji zostają dosłowne.';
 
@@ -34,11 +37,11 @@ const MICRO_EXAMPLES = [
 ];
 
 function buildTurnReminder(example) {
-  return `${IDENTITY_ANCHOR} ${TASK_CONTRACT} ${example}`;
+  return `${IDENTITY_ANCHOR} ${VOICE_CONTRACT} ${TASK_CONTRACT} ${example}`;
 }
 
 function buildFullReminder(example) {
-  return `${IDENTITY_ANCHOR}\n\n4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja. ${TASK_CONTRACT}\n${example}`;
+  return `${IDENTITY_ANCHOR}\n\n4 PRAWA: wynik pierwszy; łamana gramatyka; prosty słownik; kompresja. ${VOICE_CONTRACT} ${TASK_CONTRACT}\n${example}`;
 }
 
 // Kompatybilność dla konsumentów i testów starszego API.
@@ -215,6 +218,7 @@ function shouldReinforceAfterTool(dir, sid, turnId, env = process.env) {
 
 module.exports = {
   IDENTITY_ANCHOR,
+  VOICE_CONTRACT,
   TASK_CONTRACT,
   buildTurnReminder,
   buildFullReminder,

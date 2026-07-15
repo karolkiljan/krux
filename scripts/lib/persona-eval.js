@@ -4,9 +4,10 @@ const {
   MICRO_EXAMPLES: DEMOS,
   buildTurnReminder,
 } = require('../../hooks/lib/drift-guard');
+const { voiceSignals } = require('../../hooks/lib/persona-voice');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 7;
+const SCORER_VERSION = 9;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -128,26 +129,6 @@ const OFFER_PATTERNS = [
   /czy chcesz/giu,
 ];
 
-const BROKEN_GRAMMAR_PATTERNS = [
-  /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|krux)\s+(?:pusty|paść|gnić|siedzieć|widzieć|mieć|zielone|trup)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*|kolejka|producent|opóźnienie)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
-  /\bRetry\s+tylko\b/giu,
-];
-
-const LEXICON_PATTERNS = [
-  /(?:^|[^\p{L}])(?:paść|gnić|trup|robak|wynocha|krux|query|węszyć|wykuć|stal|granit|wina)(?=$|[^\p{L}])/giu,
-];
-
-const COMPRESSION_PATTERNS = [
-  /[→=]/g,
-  /;/g,
-  /(?:^|[^\p{L}])max(?:imum)?\s*\d+/giu,
-  /timeout\/429\/5xx/giu,
-  /backoff\s*\+\s*jitter/giu,
-  /(?:^|[.!?]\s+)(?:Wynik|Przyczyna|Fix|Weryfikacja|Retry|Mutacj\p{L}*)\s*:/giu,
-];
-
 function composePrompt(variant, scenario, exampleIndex = 0) {
   if (!VARIANTS.includes(variant)) throw new Error(`Nieznany wariant: ${variant}`);
   if (!scenario || typeof scenario.prompt !== 'string') {
@@ -169,10 +150,6 @@ function countPatterns(text, patterns) {
     const matcher = new RegExp(pattern.source, flags);
     return total + Array.from(text.matchAll(matcher)).length;
   }, 0);
-}
-
-function countPatternKinds(text, patterns) {
-  return patterns.filter(pattern => new RegExp(pattern.source, pattern.flags).test(text)).length;
 }
 
 function exactJsonMatches(text, expected) {
@@ -211,9 +188,10 @@ function scoreResponse(scenario, response) {
   const spokenText = personaText(response);
   const firstPersonCount = countPatterns(spokenText, FIRST_PERSON_PATTERNS);
   const offerCount = countPatterns(spokenText, OFFER_PATTERNS);
-  const brokenGrammarCount = countPatterns(spokenText, BROKEN_GRAMMAR_PATTERNS);
-  const lexiconCount = countPatterns(spokenText, LEXICON_PATTERNS);
-  const compressionCount = countPatternKinds(spokenText, COMPRESSION_PATTERNS);
+  const voice = voiceSignals(spokenText);
+  const brokenGrammarCount = voice.brokenGrammarCount;
+  const lexiconCount = voice.lexiconCount;
+  const compressionCount = voice.compressionCount;
   const withinBudget = !scenario.maxWords || words <= scenario.maxWords;
 
   return {
@@ -223,8 +201,7 @@ function scoreResponse(scenario, response) {
         firstPersonCount === 0 &&
         offerCount === 0 &&
         (
-          brokenGrammarCount > 0 ||
-          (lexiconCount > 0 && compressionCount > 0)
+          voice.pass
         )
       ),
       firstPersonCount,

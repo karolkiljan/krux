@@ -4,7 +4,7 @@ const { collectStdin, parsePayload } = require('./hook-io');
 const { isSessionActive, isStrictTurn } = require('../lib/drift-guard');
 const { needsPersonaRewrite } = require('../lib/persona-voice');
 
-const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Nadaj jej głos Krux: łamana gramatyka, kompresja i jeden naturalny ślad orkowego słownika.';
+const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Zacznij naturalnym, treściowym śladem łamanej gramatyki, np. „Kod działać.”, „Testy zielone.” albo „Parser sprawdzać format.”; dodaj kompresję lub jedno orkowe słowo.';
 
 function decisionForPayload(payload, dir, env = process.env) {
   if (!payload || !dir || payload.hook_event_name !== 'Stop') return null;

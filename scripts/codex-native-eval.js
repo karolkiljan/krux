@@ -16,7 +16,17 @@ const ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_ROOT = path.join(ROOT, 'benchmarks', 'codex-native-eval');
 const PERSONALITIES = ['none', 'pragmatic', 'friendly'];
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
-const EVALUATOR_VERSION = 1;
+const EVALUATOR_VERSION = 2;
+const MIN_PERSONA_PASS_RATE = 0.8;
+const ACCEPTANCE_CRITERIA = Object.freeze({
+  nativeEveryTurnAnchored: true,
+  controlHasNoKruxContext: true,
+  minContinuationCountPerRepetition: 1,
+  nativeTaskPassRate: 1,
+  nativePersonaPassRateMin: MIN_PERSONA_PASS_RATE,
+  nativePersonaMustBeatControl: true,
+  maxWordInflationVsControl: 0,
+});
 
 function scenario(id) {
   const found = SCENARIOS.find(item => item.id === id);
@@ -310,11 +320,16 @@ function reportEvidence(rows) {
   };
 }
 
-function acceptedSummary(summary) {
+function acceptedSummary(summary, evidence, reps = 1) {
   return Boolean(
     summary.native
     && summary.control
+    && evidence
+    && evidence.nativeEveryTurnAnchored === ACCEPTANCE_CRITERIA.nativeEveryTurnAnchored
+    && evidence.controlHasNoKruxContext === ACCEPTANCE_CRITERIA.controlHasNoKruxContext
+    && evidence.continuationCount >= reps * ACCEPTANCE_CRITERIA.minContinuationCountPerRepetition
     && summary.native.taskPassRate === 1
+    && summary.native.personaPassRate >= MIN_PERSONA_PASS_RATE
     && summary.native.personaPassRate > summary.control.personaPassRate
     && summary.native.wordInflationVsControl <= 0
   );
@@ -372,7 +387,8 @@ function runEvaluation(options) {
       metadata,
       summary,
       evidence,
-      accepted: status === 'COMPLETE' && acceptedSummary(summary),
+      acceptanceCriteria: ACCEPTANCE_CRITERIA,
+      accepted: status === 'COMPLETE' && acceptedSummary(summary, evidence, reps),
       ...extras,
     };
     fs.writeFileSync(path.join(runDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
@@ -511,6 +527,8 @@ if (require.main === module) main();
 
 module.exports = {
   EVALUATOR_VERSION,
+  MIN_PERSONA_PASS_RATE,
+  ACCEPTANCE_CRITERIA,
   PERSONALITIES,
   TURN_BLUEPRINT,
   parseArgs,

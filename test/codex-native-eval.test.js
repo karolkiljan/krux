@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
+  MIN_PERSONA_PASS_RATE,
+  ACCEPTANCE_CRITERIA,
   TURN_BLUEPRINT,
   parseArgs,
   plannedTurns,
@@ -11,6 +13,7 @@ const {
   parseCodexJson,
   extractTranscriptEvidence,
   createIsolatedHome,
+  acceptedSummary,
   runEvaluation,
 } = require('../scripts/codex-native-eval');
 
@@ -129,6 +132,39 @@ test('dry-run nie woła Codexa i zwraca 24 tury dla jednej próby', () => {
   assert.equal(calls, 0);
 });
 
+test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', () => {
+  const summary = {
+    control: { personaPassRate: 0.1 },
+    native: {
+      taskPassRate: 1,
+      personaPassRate: MIN_PERSONA_PASS_RATE,
+      wordInflationVsControl: 0,
+    },
+  };
+  const evidence = {
+    nativeEveryTurnAnchored: true,
+    controlHasNoKruxContext: true,
+    continuationCount: 5,
+  };
+
+  assert.equal(acceptedSummary(summary, evidence, 5), true);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, personaPassRate: 0.79 },
+  }, evidence, 5), false);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, taskPassRate: 0.99 },
+  }, evidence, 5), false);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, wordInflationVsControl: 0.01 },
+  }, evidence, 5), false);
+  assert.equal(acceptedSummary(summary, { ...evidence, nativeEveryTurnAnchored: false }, 5), false);
+  assert.equal(acceptedSummary(summary, { ...evidence, controlHasNoKruxContext: false }, 5), false);
+  assert.equal(acceptedSummary(summary, { ...evidence, continuationCount: 4 }, 5), false);
+});
+
 test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody przed scoringiem', () => {
   withTempDir(root => {
     const sourceHome = path.join(root, 'source-home');
@@ -201,6 +237,8 @@ test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody prz
     assert.equal(result.evidence.controlHasNoKruxContext, true);
     assert.equal(result.evidence.continuationCount, 1);
     assert.ok(result.evidence.finalGuardActivations >= 1);
+    assert.deepEqual(result.acceptanceCriteria, ACCEPTANCE_CRITERIA);
+    assert.equal(result.accepted, false);
     assert.equal(fs.existsSync(scratch), false);
 
     const rawRows = fs.readFileSync(path.join(result.runDir, 'raw.jsonl'), 'utf8').trim().split('\n');
