@@ -245,3 +245,49 @@ test("konkret toggle reports turn-only scope when the flag cannot be written", (
   assert.match(result.stderr, /błąd zapisu konkret/u);
   assert.match(context(result), /tylko w tej turze/u);
 });
+
+test("exact flow phrases persist a flag file and echo the iteration contract", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz flow" }, env);
+  assert.equal(on.status, 0);
+  assert.match(context(on), /Flow aktywny/u);
+  assert.equal(fs.existsSync(path.join(data, ".krux-flow")), true);
+
+  const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "tak" }, env);
+  assert.equal(ordinary.status, 0);
+  assert.equal(ordinary.stdout, "");
+
+  const off = run({ hook_event_name: "UserPromptSubmit", prompt: "WYŁĄCZ FLOW" }, env);
+  assert.equal(off.status, 0);
+  assert.match(context(off), /Flow wyłączony/u);
+  assert.equal(fs.existsSync(path.join(data, ".krux-flow")), false);
+});
+
+test("SessionStart combines persona, konkret and flow in order when all active", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  run({ hook_event_name: "UserPromptSubmit", prompt: "włącz flow" }, env);
+  const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
+  assert.equal(result.status, 0);
+  const text = context(result);
+  assert.ok(text.indexOf("techniczny ork") < text.indexOf("Konkret aktywny"));
+  assert.ok(text.indexOf("Konkret aktywny") < text.indexOf("Flow aktywny"));
+});
+
+test("flow toggle without plugin data reports turn-only scope", () => {
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz flow" });
+  assert.equal(on.status, 0);
+  assert.match(context(on), /tylko w tej turze/u);
+});
+
+test("flow toggle reports turn-only scope when the flag cannot be written", () => {
+  const badData = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-")), "not-a-directory");
+  fs.writeFileSync(badData, "x");
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: badData };
+  const result = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz flow" }, env);
+  assert.equal(result.status, 0);
+  assert.match(result.stderr, /błąd zapisu flow/u);
+  assert.match(context(result), /tylko w tej turze/u);
+});

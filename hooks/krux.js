@@ -8,6 +8,7 @@ const root = process.env.CLAUDE_PLUGIN_ROOT || process.env.PLUGIN_ROOT || path.r
 const data = process.env.CLAUDE_PLUGIN_DATA || process.env.PLUGIN_DATA || "";
 const modePath = data ? path.join(data, ".krux-mode") : "";
 const konkretPath = data ? path.join(data, ".krux-konkret") : "";
+const flowPath = data ? path.join(data, ".krux-flow") : "";
 
 function readInput() {
   try {
@@ -94,6 +95,7 @@ function emit(event, additionalContext) {
 }
 
 const KONKRET_TEXT = "Konkret aktywny: dokładnie to o co proszę, nic więcej, najprościej. Sprawa obok → 1 linia raportu, nie ruszaj. Dwuznaczne → pytanie, nie zgadywanie.";
+const FLOW_TEXT = "Flow aktywny: jeden najmniejszy ruch + powód, pytanie o zgodę. Po zgodzie wykonaj tylko ten ruch, raportuj plik:linia i status testu, następny ruch z rezultatu.";
 
 const input = readInput();
 if (!input || typeof input.hook_event_name !== "string") process.exit(0);
@@ -104,6 +106,7 @@ if (event === "SessionStart") {
   const parts = [];
   if (modeIsOn()) parts.push(persona());
   if (flagOn(konkretPath)) parts.push(KONKRET_TEXT);
+  if (flagOn(flowPath)) parts.push(FLOW_TEXT);
   if (parts.length) emit(event, parts.join("\n\n"));
 } else if (event === "UserPromptSubmit") {
   const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
@@ -122,5 +125,11 @@ if (event === "SessionStart") {
   } else if (/^włącz konkret$/iu.test(prompt)) {
     const saved = setFlag(konkretPath, true, "konkret");
     emit(event, saved ? KONKRET_TEXT : `${KONKRET_TEXT} (tylko w tej turze)`);
+  } else if (/^wyłącz flow$/iu.test(prompt)) {
+    const saved = setFlag(flowPath, false, "flow");
+    emit(event, saved ? "Flow wyłączony." : "Flow wyłączony tylko w tej turze.");
+  } else if (/^włącz flow$/iu.test(prompt)) {
+    const saved = setFlag(flowPath, true, "flow");
+    emit(event, saved ? FLOW_TEXT : `${FLOW_TEXT} (tylko w tej turze)`);
   }
 }
