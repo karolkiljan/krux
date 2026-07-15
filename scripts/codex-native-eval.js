@@ -17,7 +17,8 @@ const ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_ROOT = path.join(ROOT, 'benchmarks', 'codex-native-eval');
 const PERSONALITIES = ['none', 'pragmatic', 'friendly'];
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
-const EVALUATOR_VERSION = 2;
+const EVALUATOR_VERSION = 3;
+const MIN_NATIVE_PERSONA_PASS_RATE = 0.8;
 
 function scenario(id) {
   const found = SCENARIOS.find(item => item.id === id);
@@ -315,14 +316,21 @@ function reportEvidence(rows) {
   };
 }
 
+function acceptanceGates(summary) {
+  return {
+    nativeTaskPass: summary.native?.taskPassRate === 1,
+    nativePersonaFloor: summary.native?.personaPassRate >= MIN_NATIVE_PERSONA_PASS_RATE,
+    nativePersonaBeatsControl: (
+      typeof summary.native?.personaPassRate === 'number'
+      && typeof summary.control?.personaPassRate === 'number'
+      && summary.native.personaPassRate > summary.control.personaPassRate
+    ),
+    noWordInflation: summary.native?.wordInflationVsControl <= 0,
+  };
+}
+
 function acceptedSummary(summary) {
-  return Boolean(
-    summary.native
-    && summary.control
-    && summary.native.taskPassRate === 1
-    && summary.native.personaPassRate > summary.control.personaPassRate
-    && summary.native.wordInflationVsControl <= 0
-  );
+  return Object.values(acceptanceGates(summary)).every(Boolean);
 }
 
 function runEvaluation(options) {
@@ -369,6 +377,7 @@ function runEvaluation(options) {
   const writeReport = (status, extras = {}) => {
     const summary = summarizeResults(scoredRows);
     const evidence = reportEvidence(rows);
+    const gates = acceptanceGates(summary);
     const report = {
       status,
       reps,
@@ -377,7 +386,8 @@ function runEvaluation(options) {
       metadata,
       summary,
       evidence,
-      accepted: status === 'COMPLETE' && acceptedSummary(summary),
+      gates,
+      accepted: status === 'COMPLETE' && Object.values(gates).every(Boolean),
       ...extras,
     };
     fs.writeFileSync(path.join(runDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
@@ -532,6 +542,8 @@ module.exports = {
   parseCodexJson,
   extractTranscriptEvidence,
   createIsolatedHome,
+  MIN_NATIVE_PERSONA_PASS_RATE,
+  acceptanceGates,
   acceptedSummary,
   runEvaluation,
 };

@@ -4,9 +4,10 @@ const {
   MICRO_EXAMPLES: DEMOS,
   buildTurnReminder,
 } = require('../../hooks/lib/drift-guard');
+const { voiceSignals } = require('../../hooks/lib/persona-voice');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 8;
+const SCORER_VERSION = 9;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -209,11 +210,21 @@ function scoreResponse(scenario, response) {
   const words = wordCount(response);
   const personaRequired = scenario.personaExpected !== false;
   const spokenText = personaText(response);
+  const runtimeVoice = voiceSignals(response);
   const firstPersonCount = countPatterns(spokenText, FIRST_PERSON_PATTERNS);
   const offerCount = countPatterns(spokenText, OFFER_PATTERNS);
-  const brokenGrammarCount = countPatterns(spokenText, BROKEN_GRAMMAR_PATTERNS);
-  const lexiconCount = countPatterns(spokenText, LEXICON_PATTERNS);
-  const compressionCount = countPatternKinds(spokenText, COMPRESSION_PATTERNS);
+  const brokenGrammarCount = Math.max(
+    countPatterns(spokenText, BROKEN_GRAMMAR_PATTERNS),
+    Number(runtimeVoice.brokenGrammar),
+  );
+  const lexiconCount = Math.max(
+    countPatterns(spokenText, LEXICON_PATTERNS),
+    Number(runtimeVoice.lexicon),
+  );
+  const compressionCount = Math.max(
+    countPatternKinds(spokenText, COMPRESSION_PATTERNS),
+    Number(runtimeVoice.compression),
+  );
   const withinBudget = !scenario.maxWords || words <= scenario.maxWords;
 
   return {
@@ -222,10 +233,7 @@ function scoreResponse(scenario, response) {
       pass: !personaRequired || (
         firstPersonCount === 0 &&
         offerCount === 0 &&
-        (
-          brokenGrammarCount > 0 ||
-          (lexiconCount > 0 && compressionCount > 0)
-        )
+        runtimeVoice.pass
       ),
       firstPersonCount,
       offerCount,

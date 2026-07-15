@@ -63,6 +63,8 @@ test('aktywny neutralny finał blokuje Stop dokładnie raz', () => {
       reason: FINAL_GUARD_REASON,
     });
     assert.match(FINAL_GUARD_REASON, /Kod działać → testy zielone; robak wynocha/);
+    assert.match(FINAL_GUARD_REASON, /muszą wystąpić oba/u);
+    assert.match(FINAL_GUARD_REASON, /\[rzecz techniczna\] \[bezokolicznik\]/u);
     assert.equal(finalGuardActivationCount(dir, 'sid-a'), 1);
 
     const second = runStop(dir, {

@@ -1,5 +1,6 @@
 const LEXICON_RE = /(?:^|[^\p{L}])(?:robak|trup|gnić|wynocha|wykuć|stal|granit|paść|horda|kilof|węszyć|puchnąć)(?=$|[^\p{L}])/iu;
-const BROKEN_RE = /(?:^|[^\p{L}])(?:cache|baza|parser|regex|kod|testy?|build|linter|worker|indeks|węzeł|drzewo|wyszukiwanie|kolejka|producent|system|robota|hook|plugin|guard|model|codex)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/iu;
+const BROKEN_RE = /(?:^|[^\p{L}])(?:circuit\s+breaker|cache|baza|parser|walidacj\p{L}*|regex|kod|testy?|build|linter|worker|indeks|węzeł|drzewo|wyszukiwanie|kolejka|producent|opóźnienie|system|robota|hook|plugin|guard|model|codex|redis|api)(?:\s*:\s*(?:\d+)?)?\s+(?:nie\s+)?\p{L}+(?:ć|c)(?=$|[^\p{L}])/iu;
+const BROKEN_STATE_RE = /(?:^|[^\p{L}])(?:cache\s+pusty|baza\s+przeciążona|testy?\s+zielone|kod\s+trup)(?=$|[^\p{L}])/iu;
 const COMPRESSION_RE = /[→=]|(?:^|[.!?]\s+)(?:Zrobione|Gotowe|Wynik|Przyczyna|Fix|Weryfikacja)\s*[:.]/iu;
 const CONVENTIONAL_COMMIT_RE = /^(?:build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(?:\([^\n)]+\))?!?: [^\n]+$/u;
 
@@ -23,7 +24,7 @@ function isMachineExact(text) {
 function voiceSignals(text) {
   const value = spokenText(text);
   const result = {
-    brokenGrammar: BROKEN_RE.test(value),
+    brokenGrammar: BROKEN_RE.test(value) || BROKEN_STATE_RE.test(value),
     compression: COMPRESSION_RE.test(value),
     lexicon: LEXICON_RE.test(value),
   };

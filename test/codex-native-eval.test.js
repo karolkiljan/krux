@@ -11,6 +11,8 @@ const {
   parseCodexJson,
   extractTranscriptEvidence,
   createIsolatedHome,
+  MIN_NATIVE_PERSONA_PASS_RATE,
+  acceptedSummary,
   runEvaluation,
 } = require('../scripts/codex-native-eval');
 const { recordFinalGuardActivation } = require('../hooks/lib/drift-guard');
@@ -128,6 +130,31 @@ test('dry-run nie woła Codexa i zwraca 24 tury dla jednej próby', () => {
   assert.equal(result.status, 'DRY_RUN');
   assert.equal(result.calls.length, 24);
   assert.equal(calls, 0);
+});
+
+test('acceptedSummary wymaga co najmniej 80% persony, pełnego zadania i braku inflacji', () => {
+  const summary = {
+    control: { personaPassRate: 0 },
+    native: {
+      taskPassRate: 1,
+      personaPassRate: MIN_NATIVE_PERSONA_PASS_RATE,
+      wordInflationVsControl: 0,
+    },
+  };
+  assert.equal(MIN_NATIVE_PERSONA_PASS_RATE, 0.8);
+  assert.equal(acceptedSummary(summary), true);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, personaPassRate: 0.79 },
+  }), false);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, taskPassRate: 0.99 },
+  }), false);
+  assert.equal(acceptedSummary({
+    ...summary,
+    native: { ...summary.native, wordInflationVsControl: 0.01 },
+  }), false);
 });
 
 test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody przed scoringiem', () => {

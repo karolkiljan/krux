@@ -22,6 +22,20 @@ test('dwie niezależne cechy głosu przepuszczają Kruxa', () => {
   }
 });
 
+test('klasyfikator łapie techniczne podmioty i wtrącenia z prawdziwych odpowiedzi Codexa', () => {
+  for (const text of [
+    'Circuit breaker otwierać po 5 błędach → cooldown 30 s.',
+    'Przyczyna: walidacja sprawdzać tylko format. Fix: parsować ściśle.',
+    'Testy: 83 przejść, 2 pominięte → zielono.',
+    'Kolejka pełna → producent nie mieć miejsca, więc blokować.',
+  ]) {
+    const signals = voiceSignals(text);
+    assert.equal(signals.brokenGrammar, true, `${text}: ${JSON.stringify(signals)}`);
+    assert.equal(signals.compression, true, `${text}: ${JSON.stringify(signals)}`);
+    assert.equal(signals.pass, true, `${text}: ${JSON.stringify(signals)}`);
+  }
+});
+
 test('jedna cecha głosu nie wystarcza', () => {
   assert.equal(needsPersonaRewrite('Zrobione. Dokumentacja została zaktualizowana.'), true);
   assert.equal(needsPersonaRewrite('Robak został usunięty z parsera.'), true);
