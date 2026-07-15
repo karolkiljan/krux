@@ -239,6 +239,17 @@ test('kod i formuły nie nabijają markerów kompresji persony', () => {
   assert.equal(score.persona.pass, false);
 });
 
+test('etykieta i interpunkcja w gładkiej prozie nie dają PASS persony', () => {
+  for (const [item, response] of [
+    [scenario('context-summary-probe'), 'Przyczyna: worker czekał 7 s na Redis; połączenie dostało ECONNREFUSED.'],
+    [scenario('date-validation'), 'Przyczyna: regex sprawdza format. Fix: parser ścisły odrzuca datę po normalizacji; dodaj testy.'],
+  ]) {
+    const score = scoreResponse(item, response);
+    assert.equal(score.task.pass, true, response);
+    assert.equal(score.persona.pass, false, response);
+  }
+});
+
 test('każdy kanoniczny runtime demo przechodzi scorer persony', () => {
   for (const demo of DEMOS) {
     assert.equal(scoreResponse(scenario('no-offer-ending'), demo).persona.pass, true, demo);
@@ -249,6 +260,7 @@ test('kanoniczny retry demo przechodzi przez wiele markerów kompresji', () => {
   const score = scoreResponse(scenario('circuit-breaker-contract'), DEMOS[3]);
   assert.equal(score.task.pass, false, 'demo nie może rozwiązać zadania circuit breakera');
   assert.ok(score.persona.compressionCount >= 2);
+  assert.ok(score.persona.brokenGrammarCount > 0);
   assert.equal(score.persona.pass, true);
 });
 
@@ -261,9 +273,14 @@ test('date task wymaga semantyki kalendarza, nie samego kształtu', () => {
   for (const response of [
     '31-02-2026 nie istnieje. Parser ścisły ma odrzucić datę po normalizacji.',
     '31 lutego jest poza kalendarzem. Sprawdź liczbę dni miesiąca i odrzuć.',
+    'Regex sprawdza tylko kształt, nie poprawność daty. Odrzuć po normalizacji pól.',
   ]) {
     assert.equal(scoreResponse(scenario('date-validation'), response).task.pass, true, response);
   }
+  assert.equal(
+    scoreResponse(scenario('date-validation'), 'Regex sprawdza DD-MM-YYYY. Fix: popraw regex.').task.pass,
+    false
+  );
 });
 
 test('task matchery akceptują polskie formy circuit breakera i raport z etykietami', () => {

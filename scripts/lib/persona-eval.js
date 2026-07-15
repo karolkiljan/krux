@@ -6,7 +6,7 @@ const {
 } = require('../../hooks/lib/drift-guard');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 3;
+const SCORER_VERSION = 5;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -20,7 +20,6 @@ const SCENARIOS = [
     id: 'date-validation',
     prompt: 'Parser daty akceptuje 31 lutego, bo sprawdza tylko kształt DD-MM-YYYY. Podaj przyczynę i fix.',
     required: [
-      /31(?:\s+lut\p{L}*|\s*-\s*0?2)/iu,
       /(?:kalendarz|nie\s+istnie|nieistniej|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|normaliz)/iu,
       /(?:odrzu|sprawd|walid|pars)/i,
     ],
@@ -131,6 +130,7 @@ const BROKEN_GRAMMAR_PATTERNS = [
   /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|krux)\s+(?:pusty|paść|gnić|siedzieć|widzieć|mieć|zielone|trup)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:worker|indeks|węzeł|drzewo|wyszukiwanie|regex|wzorzec|string|mutacj\p{L}*|kolejka|producent|opóźnienie)\s+\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
+  /\bRetry\s+tylko\b/giu,
 ];
 
 const LEXICON_PATTERNS = [
@@ -221,7 +221,6 @@ function scoreResponse(scenario, response) {
         offerCount === 0 &&
         (
           brokenGrammarCount > 0 ||
-          compressionCount >= 2 ||
           (lexiconCount > 0 && compressionCount > 0)
         )
       ),
