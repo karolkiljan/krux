@@ -17,6 +17,7 @@ const {
   rescoreRun,
   runEvaluation,
 } = require('../scripts/codex-native-eval');
+const { recordFinalGuardActivation } = require('../hooks/lib/drift-guard');
 
 function withTempDir(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-native-eval-test-'));
@@ -263,7 +264,18 @@ test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody prz
       const first = args[1] !== 'resume';
       const events = [];
       if (first) events.push({ type: 'thread.started', thread_id: native ? 'native-thread' : 'control-thread' });
+      if (prompt.includes('cztery osobne wywołania')) {
+        events.push({ type: 'item.completed', item: { type: 'agent_message', text: 'Preambuła narzędziowa.' } });
+      }
       if (native && prompt.includes('Dokumentacja zaktualizowana')) {
+        const dataDir = path.join(
+          options.env.CODEX_HOME,
+          'plugins',
+          'data',
+          'krux-krux-marketplace',
+        );
+        fs.mkdirSync(dataDir, { recursive: true });
+        recordFinalGuardActivation(dataDir, 'fixture');
         events.push({ type: 'item.completed', item: { type: 'agent_message', text: 'Neutralnie.' } });
       }
       events.push({ type: 'item.completed', item: { type: 'agent_message', text: response } });
@@ -286,7 +298,7 @@ test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody prz
     assert.equal(result.evidence.nativeEveryTurnAnchored, true);
     assert.equal(result.evidence.controlHasNoKruxContext, true);
     assert.equal(result.evidence.continuationCount, 1);
-    assert.ok(result.evidence.finalGuardActivations >= 1);
+    assert.equal(result.evidence.finalGuardActivations, 2);
     assert.deepEqual(result.acceptanceCriteria, ACCEPTANCE_CRITERIA);
     assert.equal(result.accepted, false);
     assert.equal(fs.existsSync(scratch), false);
@@ -296,5 +308,12 @@ test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody prz
     assert.equal(rawRows.length, 24);
     assert.equal(scoreRows.length, 24);
     assert.equal('score' in JSON.parse(rawRows[0]), false);
+    const parsedRows = rawRows.map(JSON.parse);
+    const controlTool = parsedRows.find(row => row.variant === 'control' && row.kind === 'tool-probe');
+    assert.equal(controlTool.agentMessages.length, 2, 'preambuła narzędziowa daje dwie wiadomości');
+    assert.equal(controlTool.guardActivations, 0, 'dwie wiadomości bez wpisu hooka to nie final guard');
+    assert.equal(controlTool.preGuardResponse, null);
+    const guarded = parsedRows.find(row => row.variant === 'native' && row.guardActivations === 1);
+    assert.equal(guarded.preGuardResponse, 'Neutralnie.');
   });
 });

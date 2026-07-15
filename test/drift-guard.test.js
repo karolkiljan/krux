@@ -34,7 +34,12 @@ const {
   markPromptTurn,
   isStrictTurn,
   shouldReinforceAfterTool,
+  FINAL_GUARD_FILENAME,
+  recordFinalGuardActivation,
+  finalGuardActivationCount,
+  totalFinalGuardActivations,
 } = require('../hooks/lib/drift-guard');
+const { voiceSignals } = require('../hooks/lib/persona-voice');
 
 function withEnv(key, value, fn) {
   const original = process.env[key];
@@ -91,6 +96,12 @@ test('MICRO_EXAMPLES pokazują wyłącznie docelową odpowiedź', () => {
     assert.match(example, /^Wzorzec Krux:/, 'przykład pokazuje docelowy kształt');
     assert.doesNotMatch(example, /Nie:|ZAKAZ|→ Krux:/, 'brak anty-wzorca');
     assert.doesNotMatch(example, /\n/, 'przykład mieści się w jednej linii');
+  }
+});
+
+test('każdy MICRO_EXAMPLE spełnia ten sam klasyfikator głosu co final guard', () => {
+  for (const example of MICRO_EXAMPLES) {
+    assert.equal(voiceSignals(example).pass, true, `${example}: ${JSON.stringify(voiceSignals(example))}`);
   }
 });
 
@@ -277,6 +288,20 @@ test('writeCount: prune 24h działa też w magazynie generycznym', () => {
     const map = JSON.parse(fs.readFileSync(path.join(dir, FILE), 'utf8'));
     assert.equal(map['sid-old'], undefined);
     assert.equal(map['sid-new'].n, 0);
+  });
+});
+
+test('licznik final guarda zapisuje rzeczywiste aktywacje per sesja i sumę', () => {
+  withTempDir(dir => {
+    assert.equal(finalGuardActivationCount(dir, 'sid-a'), 0);
+    assert.equal(totalFinalGuardActivations(dir), 0);
+    recordFinalGuardActivation(dir, 'sid-a');
+    recordFinalGuardActivation(dir, 'sid-a');
+    recordFinalGuardActivation(dir, 'sid-b');
+    assert.equal(finalGuardActivationCount(dir, 'sid-a'), 2);
+    assert.equal(finalGuardActivationCount(dir, 'sid-b'), 1);
+    assert.equal(totalFinalGuardActivations(dir), 3);
+    assert.equal(fs.existsSync(path.join(dir, FINAL_GUARD_FILENAME)), true);
   });
 });
 

@@ -153,6 +153,14 @@ test('task score uznaje pełny polski kontrakt circuit breakera', () => {
   assert.equal(circuitBreaker.task.pass, true);
 });
 
+test('task score uznaje „znów otworzyć” za ponowne otwarcie circuit breakera', () => {
+  const score = scoreResponse(
+    scenario('circuit-breaker-contract'),
+    'Circuit breaker otworzyć po 5 kolejnych błędach; cooldown 30 s. Potem half-open z 1 próbą: sukces → zamknąć, porażka → znów otworzyć; robak nie przejść.'
+  );
+  assert.equal(score.task.pass, true);
+});
+
 test('gładka odpowiedź przechodzi zadanie, ale oblewa personę', () => {
   const score = scoreResponse(
     scenario('causal-chain'),

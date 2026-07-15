@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
 const { collectStdin, parsePayload } = require('./hook-io');
-const { isSessionActive, isStrictTurn } = require('../lib/drift-guard');
+const {
+  isSessionActive,
+  isStrictTurn,
+  recordFinalGuardActivation,
+} = require('../lib/drift-guard');
 const { needsPersonaRewrite } = require('../lib/persona-voice');
 
-const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Zacznij naturalnym, treściowym śladem łamanej gramatyki, np. „Kod działać.”, „Testy zielone.” albo „Parser sprawdzać format.”; dodaj kompresję lub jedno orkowe słowo.';
+const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Zacznij naturalnym, treściowym śladem łamanej gramatyki według wzorca „Kod działać → testy zielone; robak wynocha.” albo „Parser sprawdzać format.”; zachowaj kompresję i najwyżej jeden orkowy ślad.';
 
 function decisionForPayload(payload, dir, env = process.env) {
   if (!payload || !dir || payload.hook_event_name !== 'Stop') return null;
@@ -18,8 +22,13 @@ function decisionForPayload(payload, dir, env = process.env) {
 
 function main() {
   collectStdin(raw => {
-    const decision = decisionForPayload(parsePayload(raw), process.env.PLUGIN_DATA);
-    if (decision) process.stdout.write(JSON.stringify(decision));
+    const payload = parsePayload(raw);
+    const dir = process.env.PLUGIN_DATA;
+    const decision = decisionForPayload(payload, dir);
+    if (decision) {
+      recordFinalGuardActivation(dir, payload.session_id);
+      process.stdout.write(JSON.stringify(decision));
+    }
   });
 }
 

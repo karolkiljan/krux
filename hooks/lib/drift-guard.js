@@ -31,9 +31,9 @@ function turnReminderEnabled() {
 // i techniczny konkret, zamiast utrwalać niepożądany styl przez anty-przykład.
 const MICRO_EXAMPLES = [
   'Wzorzec Krux: „Wina walidacja: regex przepuszczać pusty email. Fix: odrzucić pusty string przed regexem.”',
-  'Wzorzec Krux: „Zrobione. Testy zielone.”',
-  'Wzorzec Krux: „Krux sprawdził logi. Przyczyna: timeout DNS po 5 s.”',
-  'Wzorzec Krux: „Retry tylko timeout/429/5xx, max 3, backoff + jitter; mutacja wymaga idempotency key.”',
+  'Wzorzec Krux: „Testy przechodzić → zielone; robak wynocha.”',
+  'Wzorzec Krux: „Worker czekać 5 s na DNS → timeout; robak namierzony.”',
+  'Wzorzec Krux: „System ponawiać tylko timeout/429/5xx, max 3 → backoff + jitter; mutacja wymaga idempotency key.”',
 ];
 
 function buildTurnReminder(example) {
@@ -171,6 +171,7 @@ function bumpTurnCount(claudeDir, sid) {
 // --- stan natywnej tury Codexa ---
 
 const CODEX_TURN_FILENAME = '.krux-codex-turn-context';
+const FINAL_GUARD_FILENAME = '.krux-final-guard-count';
 const DEFAULT_TOOL_INTERVAL = 4;
 
 function toolInterval(env = process.env) {
@@ -216,6 +217,24 @@ function shouldReinforceAfterTool(dir, sid, turnId, env = process.env) {
   return shouldEmit;
 }
 
+function recordFinalGuardActivation(dir, sid) {
+  const next = (readCount(dir, FINAL_GUARD_FILENAME, sid) || 0) + 1;
+  writeCount(dir, FINAL_GUARD_FILENAME, sid, next);
+  return next;
+}
+
+function finalGuardActivationCount(dir, sid) {
+  return readCount(dir, FINAL_GUARD_FILENAME, sid) || 0;
+}
+
+function totalFinalGuardActivations(dir) {
+  const store = readStore(path.join(dir, FINAL_GUARD_FILENAME));
+  return Object.values(store).reduce(
+    (sum, entry) => sum + (entry && typeof entry.n === 'number' ? entry.n : 0),
+    0,
+  );
+}
+
 module.exports = {
   IDENTITY_ANCHOR,
   VOICE_CONTRACT,
@@ -241,9 +260,13 @@ module.exports = {
   resetTurnCount,
   bumpTurnCount,
   CODEX_TURN_FILENAME,
+  FINAL_GUARD_FILENAME,
   DEFAULT_TOOL_INTERVAL,
   toolInterval,
   markPromptTurn,
   isStrictTurn,
   shouldReinforceAfterTool,
+  recordFinalGuardActivation,
+  finalGuardActivationCount,
+  totalFinalGuardActivations,
 };
