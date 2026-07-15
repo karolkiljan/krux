@@ -15,8 +15,8 @@ test('.codex-plugin/plugin.json używa wspieranego kontraktu Codexa', () => {
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.equal(manifest.skills, './skills/');
   assert.equal('agents' in manifest, false, 'Codex nie ładuje agentów z manifestu pluginu');
-  assert.equal('hooks' in manifest, false, 'domyślne hooks/hooks.json nie wymaga pola manifestu');
-  assert.equal(fs.existsSync(path.join(ROOT, 'hooks', 'hooks.json')), true);
+  assert.equal(manifest.hooks, './hooks/codex/hooks.json');
+  assert.equal(fs.existsSync(path.join(ROOT, 'hooks', 'codex', 'hooks.json')), true);
   assert.deepEqual(
     Object.keys(manifest.interface || {}).filter(key => [
       'displayName',
@@ -29,6 +29,27 @@ test('.codex-plugin/plugin.json używa wspieranego kontraktu Codexa', () => {
     ].includes(key)).sort(),
     ['capabilities', 'category', 'defaultPrompt', 'developerName', 'displayName', 'longDescription', 'shortDescription'],
   );
+});
+
+test('natywny manifest hooków pokrywa lifecycle Codexa bez zależności Claude', () => {
+  const nativePath = path.join(ROOT, 'hooks', 'codex', 'hooks.json');
+  const nativeText = fs.readFileSync(nativePath, 'utf8');
+  const native = JSON.parse(nativeText).hooks;
+
+  assert.deepEqual(Object.keys(native).sort(), [
+    'PostToolUse',
+    'SessionStart',
+    'Stop',
+    'SubagentStart',
+    'UserPromptSubmit',
+  ]);
+  assert.equal(native.SessionStart[0].matcher, 'startup|resume|clear|compact');
+  const commands = Object.values(native).flat()
+    .flatMap(group => group.hooks)
+    .map(hook => hook.command);
+  assert.equal(commands.length, 8, 'pięć eventów, osiem definicji komend');
+  for (const command of commands) assert.match(command, /\$\{PLUGIN_ROOT\}/);
+  assert.doesNotMatch(nativeText, /CLAUDE_PLUGIN_(?:ROOT|DATA)|~\/\.claude/);
 });
 
 test('ścieżki w .codex-plugin/plugin.json wskazują na istniejące, śledzone pliki', () => {

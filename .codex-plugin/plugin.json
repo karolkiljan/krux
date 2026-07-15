@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": ["polish", "compression", "persona", "terse", "orc"],
   "skills": "./skills/",
+  "hooks": "./hooks/codex/hooks.json",
   "interface": {
     "displayName": "Krux",
     "shortDescription": "Zwięzła persona i iteracyjny flow do pracy z kodem",

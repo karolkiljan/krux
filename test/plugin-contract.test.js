@@ -45,6 +45,19 @@ test('hooks.json ma cytowane ścieżki do istniejących hooków', () => {
   }
 });
 
+test('Codex ma osobny manifest hooków i wszystkie jego targety istnieją', () => {
+  const manifest = readJson('.codex-plugin/plugin.json');
+  assert.equal(manifest.hooks, './hooks/codex/hooks.json');
+  const groups = Object.values(readJson('hooks/codex/hooks.json').hooks).flat();
+  const commands = groups.flatMap(group => group.hooks).map(hook => hook.command);
+
+  for (const command of commands) {
+    const match = command.match(/^node "\$\{PLUGIN_ROOT\}(\/hooks\/[^"\n]+\.js)"$/);
+    assert.ok(match, `niecytowana albo obca komenda Codexa: ${command}`);
+    assert.equal(fs.existsSync(path.join(ROOT, match[1])), true, `martwy target: ${match[1]}`);
+  }
+});
+
 test('flow nie włącza głosu persony', () => {
   const flow = fs.readFileSync(path.join(ROOT, 'skills', 'krux-flow', 'SKILL.md'), 'utf8');
   assert.match(flow, /Flow definiuje strukturę, nie głos/);
