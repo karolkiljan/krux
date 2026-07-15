@@ -8,6 +8,26 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const codexProbe = spawnSync('codex', ['--version'], { encoding: 'utf8' });
 const HAS_CODEX = codexProbe.status === 0;
+const COPY_EXCLUDES = new Set([
+  '.git',
+  '.worktrees',
+  'benchmarks',
+  'node_modules',
+  '.idea',
+  '.claude',
+  '.remember',
+]);
+
+function copyPluginSource(target) {
+  fs.cpSync(ROOT, target, {
+    recursive: true,
+    filter(source) {
+      const relative = path.relative(ROOT, source);
+      if (!relative) return true;
+      return !COPY_EXCLUDES.has(relative.split(path.sep)[0]);
+    },
+  });
+}
 
 function runCodex(args, env) {
   const result = spawnSync('codex', args, {
@@ -28,7 +48,9 @@ test('Codex CLI instaluje plugin i odkrywa wyłącznie wspierane komponenty', { 
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'krux-codex-cli-'));
   const home = path.join(temp, 'home');
   const codexHome = path.join(home, '.codex');
+  const marketplaceRoot = path.join(temp, 'marketplace');
   fs.mkdirSync(codexHome, { recursive: true });
+  copyPluginSource(marketplaceRoot);
 
   const env = {
     ...process.env,
@@ -38,7 +60,7 @@ test('Codex CLI instaluje plugin i odkrywa wyłącznie wspierane komponenty', { 
   delete env.PLUGIN_DATA;
 
   try {
-    runCodex(['plugin', 'marketplace', 'add', ROOT, '--json'], env);
+    runCodex(['plugin', 'marketplace', 'add', marketplaceRoot, '--json'], env);
     const installed = JSON.parse(
       runCodex(['plugin', 'add', 'krux@krux-marketplace', '--json'], env),
     );
