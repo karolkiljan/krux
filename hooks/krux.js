@@ -7,6 +7,7 @@ const path = require("node:path");
 const root = process.env.CLAUDE_PLUGIN_ROOT || process.env.PLUGIN_ROOT || path.resolve(__dirname, "..");
 const data = process.env.CLAUDE_PLUGIN_DATA || process.env.PLUGIN_DATA || "";
 const modePath = data ? path.join(data, ".krux-mode") : "";
+const konkretPath = data ? path.join(data, ".krux-konkret") : "";
 
 function readInput() {
   try {
@@ -52,6 +53,27 @@ function writeMode(mode) {
   }
 }
 
+function flagOn(filePath) {
+  return Boolean(filePath) && fs.existsSync(filePath);
+}
+
+function setFlag(filePath, on, label) {
+  if (!filePath) return false;
+  try {
+    if (on) {
+      fs.mkdirSync(data, { recursive: true });
+      fs.closeSync(fs.openSync(filePath, "w"));
+    } else {
+      fs.unlinkSync(filePath);
+    }
+    return true;
+  } catch (error) {
+    if (!on && error.code === "ENOENT") return true;
+    process.stderr.write(`krux: błąd zapisu ${label}: ${error.message}\n`);
+    return false;
+  }
+}
+
 function persona() {
   const skill = path.join(root, "skills", "krux", "SKILL.md");
   try {
@@ -71,13 +93,18 @@ function emit(event, additionalContext) {
   }));
 }
 
+const KONKRET_TEXT = "Konkret aktywny: dokładnie to o co proszę, nic więcej, najprościej. Sprawa obok → 1 linia raportu, nie ruszaj. Dwuznaczne → pytanie, nie zgadywanie.";
+
 const input = readInput();
 if (!input || typeof input.hook_event_name !== "string") process.exit(0);
 
 const event = input.hook_event_name;
 if (event === "SessionStart") {
-  if (!["startup", "clear", "compact"].includes(input.source) || !modeIsOn()) process.exit(0);
-  emit(event, persona());
+  if (!["startup", "clear", "compact"].includes(input.source)) process.exit(0);
+  const parts = [];
+  if (modeIsOn()) parts.push(persona());
+  if (flagOn(konkretPath)) parts.push(KONKRET_TEXT);
+  if (parts.length) emit(event, parts.join("\n\n"));
 } else if (event === "UserPromptSubmit") {
   const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
   if (/^wyłącz krux$/iu.test(prompt)) {
@@ -89,5 +116,11 @@ if (event === "SessionStart") {
     const saved = writeMode("on");
     const voice = persona();
     emit(event, saved ? voice : `Tryb Krux włączony tylko w tej turze; stan trwały bez zmiany.\n${voice}`.trim());
+  } else if (/^wyłącz konkret$/iu.test(prompt)) {
+    const saved = setFlag(konkretPath, false, "konkret");
+    emit(event, saved ? "Konkret wyłączony." : "Konkret wyłączony tylko w tej turze.");
+  } else if (/^włącz konkret$/iu.test(prompt)) {
+    const saved = setFlag(konkretPath, true, "konkret");
+    emit(event, saved ? KONKRET_TEXT : `${KONKRET_TEXT} (tylko w tej turze)`);
   }
 }

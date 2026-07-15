@@ -186,3 +186,62 @@ test("a simulated 12-turn lifecycle uses at most 128 hook-context words", () => 
   }, 0);
   assert.ok(total <= 128, `hook context = ${total} words`);
 });
+
+test("exact konkret phrases persist a flag file and echo the scope contract", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  assert.equal(on.status, 0);
+  assert.match(context(on), /Konkret aktywny/u);
+  assert.equal(fs.existsSync(path.join(data, ".krux-konkret")), true);
+
+  const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "zwykła tura" }, env);
+  assert.equal(ordinary.status, 0);
+  assert.equal(ordinary.stdout, "");
+
+  const off = run({ hook_event_name: "UserPromptSubmit", prompt: "WYŁĄCZ KONKRET" }, env);
+  assert.equal(off.status, 0);
+  assert.match(context(off), /Konkret wyłączony/u);
+  assert.equal(fs.existsSync(path.join(data, ".krux-konkret")), false);
+});
+
+test("konkret flag survives SessionStart independent of persona state", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  run({ hook_event_name: "UserPromptSubmit", prompt: "wyłącz krux" }, env);
+
+  const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
+  assert.equal(result.status, 0);
+  assert.match(context(result), /Konkret aktywny/u);
+  assert.doesNotMatch(context(result), /techniczny ork/u);
+});
+
+test("SessionStart combines persona and konkret in order when both active", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
+  assert.equal(result.status, 0);
+  const text = context(result);
+  assert.ok(text.indexOf("techniczny ork") < text.indexOf("Konkret aktywny"));
+});
+
+test("konkret toggle without plugin data never activates and reports turn-only scope", () => {
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" });
+  assert.equal(on.status, 0);
+  assert.match(context(on), /tylko w tej turze/u);
+  const check = run({ hook_event_name: "SessionStart", source: "startup" }, { PLUGIN_ROOT: repo });
+  assert.equal(check.status, 0);
+  assert.doesNotMatch(context(check), /Konkret aktywny/u);
+});
+
+test("konkret toggle reports turn-only scope when the flag cannot be written", () => {
+  const badData = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-")), "not-a-directory");
+  fs.writeFileSync(badData, "x");
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: badData };
+  const result = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  assert.equal(result.status, 0);
+  assert.match(result.stderr, /błąd zapisu konkret/u);
+  assert.match(context(result), /tylko w tej turze/u);
+});
