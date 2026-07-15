@@ -18,8 +18,9 @@ const ROOT = path.join(__dirname, '..');
 const DEFAULT_OUTPUT_ROOT = path.join(ROOT, 'benchmarks', 'codex-native-eval');
 const PERSONALITIES = ['none', 'pragmatic', 'friendly'];
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
-const EVALUATOR_VERSION = 2;
-const MIN_PERSONA_PASS_RATE = 0.8;
+const EVALUATOR_VERSION = 3;
+const MIN_NATIVE_PERSONA_PASS_RATE = 0.8;
+const MIN_PERSONA_PASS_RATE = MIN_NATIVE_PERSONA_PASS_RATE;
 const ACCEPTANCE_CRITERIA = Object.freeze({
   nativeEveryTurnAnchored: true,
   controlHasNoKruxContext: true,
@@ -331,19 +332,34 @@ function reportEvidence(rows) {
   };
 }
 
+function acceptanceGates(summary, evidence, reps = 1) {
+  return {
+    nativeEveryTurnAnchored: (
+      evidence?.nativeEveryTurnAnchored === ACCEPTANCE_CRITERIA.nativeEveryTurnAnchored
+    ),
+    controlHasNoKruxContext: (
+      evidence?.controlHasNoKruxContext === ACCEPTANCE_CRITERIA.controlHasNoKruxContext
+    ),
+    continuationPerRepetition: (
+      typeof evidence?.continuationCount === 'number'
+      && evidence.continuationCount >= reps * ACCEPTANCE_CRITERIA.minContinuationCountPerRepetition
+    ),
+    nativeTaskPass: summary.native?.taskPassRate === 1,
+    nativePersonaFloor: summary.native?.personaPassRate >= MIN_NATIVE_PERSONA_PASS_RATE,
+    nativePersonaBeatsControl: (
+      typeof summary.native?.personaPassRate === 'number'
+      && typeof summary.control?.personaPassRate === 'number'
+      && summary.native.personaPassRate > summary.control.personaPassRate
+    ),
+    noWordInflation: (
+      typeof summary.native?.wordInflationVsControl === 'number'
+      && summary.native.wordInflationVsControl <= 0
+    ),
+  };
+}
+
 function acceptedSummary(summary, evidence, reps = 1) {
-  return Boolean(
-    summary.native
-    && summary.control
-    && evidence
-    && evidence.nativeEveryTurnAnchored === ACCEPTANCE_CRITERIA.nativeEveryTurnAnchored
-    && evidence.controlHasNoKruxContext === ACCEPTANCE_CRITERIA.controlHasNoKruxContext
-    && evidence.continuationCount >= reps * ACCEPTANCE_CRITERIA.minContinuationCountPerRepetition
-    && summary.native.taskPassRate === 1
-    && summary.native.personaPassRate >= MIN_PERSONA_PASS_RATE
-    && summary.native.personaPassRate > summary.control.personaPassRate
-    && summary.native.wordInflationVsControl <= 0
-  );
+  return Object.values(acceptanceGates(summary, evidence, reps)).every(Boolean);
 }
 
 function rescoreRun(runDir, options = {}) {
@@ -368,6 +384,7 @@ function rescoreRun(runDir, options = {}) {
     : previous.status;
   const summary = summarizeResults(scoredRows);
   const evidence = reportEvidence(rows);
+  const gates = acceptanceGates(summary, evidence, reps);
   const now = options.now || (() => new Date());
   const metadata = {
     ...(previous.metadata || {}),
@@ -386,6 +403,7 @@ function rescoreRun(runDir, options = {}) {
     summary,
     evidence,
     acceptanceCriteria: ACCEPTANCE_CRITERIA,
+    gates,
     accepted: status === 'COMPLETE' && acceptedSummary(summary, evidence, reps),
   };
   if (!rawComplete) report.rescoreError = 'Raw jest pusty, niekompletny albo nie zgadza się z attempts';
@@ -442,6 +460,7 @@ function runEvaluation(options) {
   const writeReport = (status, extras = {}) => {
     const summary = summarizeResults(scoredRows);
     const evidence = reportEvidence(rows);
+    const gates = acceptanceGates(summary, evidence, reps);
     const report = {
       status,
       reps,
@@ -452,6 +471,7 @@ function runEvaluation(options) {
       evidence,
       acceptanceCriteria: ACCEPTANCE_CRITERIA,
       accepted: status === 'COMPLETE' && acceptedSummary(summary, evidence, reps),
+      gates,
       ...extras,
     };
     fs.writeFileSync(path.join(runDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
@@ -611,6 +631,8 @@ module.exports = {
   parseCodexJson,
   extractTranscriptEvidence,
   createIsolatedHome,
+  MIN_NATIVE_PERSONA_PASS_RATE,
+  acceptanceGates,
   acceptedSummary,
   rescoreRun,
   runEvaluation,

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
-  MIN_PERSONA_PASS_RATE,
+  MIN_NATIVE_PERSONA_PASS_RATE,
   ACCEPTANCE_CRITERIA,
   TURN_BLUEPRINT,
   parseArgs,
@@ -13,6 +13,7 @@ const {
   parseCodexJson,
   extractTranscriptEvidence,
   createIsolatedHome,
+  acceptanceGates,
   acceptedSummary,
   rescoreRun,
   runEvaluation,
@@ -188,7 +189,7 @@ test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', (
     control: { personaPassRate: 0.1 },
     native: {
       taskPassRate: 1,
-      personaPassRate: MIN_PERSONA_PASS_RATE,
+      personaPassRate: MIN_NATIVE_PERSONA_PASS_RATE,
       wordInflationVsControl: 0,
     },
   };
@@ -198,6 +199,16 @@ test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', (
     continuationCount: 5,
   };
 
+  assert.equal(MIN_NATIVE_PERSONA_PASS_RATE, 0.8);
+  assert.deepEqual(acceptanceGates(summary, evidence, 5), {
+    nativeEveryTurnAnchored: true,
+    controlHasNoKruxContext: true,
+    continuationPerRepetition: true,
+    nativeTaskPass: true,
+    nativePersonaFloor: true,
+    nativePersonaBeatsControl: true,
+    noWordInflation: true,
+  });
   assert.equal(acceptedSummary(summary, evidence, 5), true);
   assert.equal(acceptedSummary({
     ...summary,

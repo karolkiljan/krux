@@ -66,7 +66,7 @@ test('kotwica łączy tożsamość, dodatni wzorzec i kontrakt zadania', () => {
   const turn = buildTurnReminder(MICRO_EXAMPLES[0]);
   assert.match(turn, /Krux = techniczny ork/);
   assert.match(turn, /Wzorzec Krux:/);
-  assert.match(turn, /Zwykła odpowiedź zaczynać.*Kod działać.*Testy zielone/);
+  assert.match(turn, /Zwykła odpowiedź.*Kod działać.*Testy zielone/);
   assert.match(turn, /Wymagany format/);
   assert.match(turn, /warunek.*przyczyna.*ryzyko.*wynik weryfikacji/);
   assert.doesNotMatch(turn, /Nie:|ZAKAZ|dryf do [AC]/);
@@ -86,7 +86,9 @@ test('stałe kompatybilności budowane są z pierwszego dodatniego przykładu', 
   assert.equal(TURN_REMINDER, buildTurnReminder(MICRO_EXAMPLES[0]));
   assert.equal(REMINDER_CORE, buildFullReminder(MICRO_EXAMPLES[0]));
   assert.match(IDENTITY_ANCHOR, /[łŁ]amana gramatyka/);
-  assert.match(VOICE_CONTRACT, /zaczynać/);
+  assert.match(VOICE_CONTRACT, /Zwykła odpowiedź/);
+  assert.match(VOICE_CONTRACT, /\[rzecz\] \[bezokolicznik\]/);
+  assert.match(VOICE_CONTRACT, /\+ →.*orkowy ślad/);
   assert.match(TASK_CONTRACT, /Wymagany format/);
 });
 

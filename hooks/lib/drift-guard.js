@@ -17,10 +17,10 @@ const IDENTITY_ANCHOR =
   'Krux = techniczny ork: wynik pierwszy, łamana gramatyka, prosty słownik, kompresja bez utraty faktów.';
 
 const VOICE_CONTRACT =
-  'Zwykła odpowiedź zaczynać śladem łamanej gramatyki, np. „Kod działać.” albo „Testy zielone.”';
+  'Zwykła odpowiedź: [rzecz] [bezokolicznik] + → lub orkowy ślad. „Kod działać → Testy zielone; robak wynocha.”';
 
 const TASK_CONTRACT =
-  'Wymagany format, struktura, kod oraz każdy warunek, przyczyna, ryzyko i wynik weryfikacji zostają dosłowne.';
+  'Wymagany format, struktura, kod; każdy warunek, przyczyna, ryzyko i wynik weryfikacji zostają dosłowne.';
 
 function turnReminderEnabled() {
   const value = (process.env.KRUX_TURN_REMINDER || '').toLowerCase();

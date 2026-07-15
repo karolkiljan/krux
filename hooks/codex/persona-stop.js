@@ -8,7 +8,7 @@ const {
 } = require('../lib/drift-guard');
 const { needsPersonaRewrite } = require('../lib/persona-voice');
 
-const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Zacznij naturalnym, treściowym śladem łamanej gramatyki według wzorca „Kod działać → testy zielone; robak wynocha.” albo „Parser sprawdzać format.”; zachowaj kompresję i najwyżej jeden orkowy ślad.';
+const FINAL_GUARD_REASON = 'KRUX FINAL GUARD: Zwróć ponownie jedną kompletną, samodzielną wersję zastępującą poprzednią. Zachowaj dosłownie sens, fakty, warunki, format i wynik weryfikacji. Odpowiedź musi się zmienić i muszą wystąpić oba sygnały: (1) co najmniej jeden układ [rzecz techniczna] [bezokolicznik], (2) kompresja przez → albo najwyżej jeden orkowy ślad. Bez pierwszej osoby i oferty dalszej pracy. Dodatni wzorzec: „Kod działać → testy zielone; robak wynocha.”';
 
 function decisionForPayload(payload, dir, env = process.env) {
   if (!payload || !dir || payload.hook_event_name !== 'Stop') return null;

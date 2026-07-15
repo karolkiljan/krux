@@ -295,7 +295,8 @@ test('dokumentacja opisuje pełny natywny lifecycle i instalację Codexa', () =>
   assert.match(architecture, /nie traktuj[\s\S]{0,160}jednego manifestu[\s\S]{0,160}źródła prawdy/i);
   assert.match(architecture, /minimum[^\n]+80%/i);
   assert.match(nativePersonaDesign, /minimum[^\n]+80%/i);
-  assert.match(nativePersonaDesign, /łaman\p{L}* gramatyk\p{L}*[^\n]+(?:albo|lub)[^\n]+słownik[^\n]+kompresj/iu);
+  assert.match(nativePersonaDesign, /dwóch sygnałów:[\s\S]{0,120}łaman\p{L}*[\s\S]{0,120}kompresj\p{L}* albo orkowego\s+słownika/iu);
+  assert.match(nativePersonaDesign, /sama łamana gramatyka nie wystarcza/iu);
 });
 
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {

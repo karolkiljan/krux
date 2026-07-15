@@ -10,15 +10,15 @@ test('neutralny finał wymaga korekty', () => {
   assert.equal(needsPersonaRewrite('Dokumentacja została zaktualizowana. Build przechodzi.'), true);
 });
 
-test('kanoniczna łamana gramatyka sama jest mierzalnym śladem Kruxa', () => {
+test('kanoniczny głos łączy łamaną gramatykę z kompresją albo słownikiem', () => {
   for (const text of [
     'Cache pusty → każdy query w bazę → baza paść.',
     'Zrobione. Robak wynocha, kod stać mocno.',
     'Przyczyna: indeks puchnąć. Fix: indeks wykuć od nowa.',
     'Parser sprawdzać tylko format. Fix: walidacja odrzucać 31 lutego.',
     'Przyczyna: Redis nie wstać.',
-    'Circuit breaker otwierać po 5 błędach.',
-    'Breaker otworzyć po 5 błędach.',
+    'Circuit breaker otwierać po 5 błędach → cooldown 30 s.',
+    'Breaker otworzyć po 5 błędach → cooldown 30 s.',
     'Dokumentacja zaktualizowana. Build przechodzi, robota zakończona.',
     'Dokumentacja zaktualizowana. Build przechodzi. Robota stoi mocno.',
   ]) {
@@ -28,15 +28,31 @@ test('kanoniczna łamana gramatyka sama jest mierzalnym śladem Kruxa', () => {
   }
 });
 
-test('sam ornament albo sama kompresja nie wystarcza', () => {
+test('klasyfikator łapie techniczne podmioty i wtrącenia z prawdziwych odpowiedzi Codexa', () => {
+  for (const text of [
+    'Circuit breaker otwierać po 5 błędach → cooldown 30 s.',
+    'Przyczyna: walidacja sprawdzać tylko format. Fix: parsować ściśle.',
+    'Testy: 83 przejść, 2 pominięte → zielono.',
+    'Kolejka pełna → producent nie mieć miejsca, więc blokować.',
+  ]) {
+    const signals = voiceSignals(text);
+    assert.equal(signals.brokenGrammar, true, `${text}: ${JSON.stringify(signals)}`);
+    assert.equal(signals.compression, true, `${text}: ${JSON.stringify(signals)}`);
+    assert.equal(signals.pass, true, `${text}: ${JSON.stringify(signals)}`);
+  }
+});
+
+test('jedna cecha głosu nie wystarcza', () => {
   assert.equal(needsPersonaRewrite('Zrobione. Dokumentacja została zaktualizowana.'), true);
   assert.equal(needsPersonaRewrite('Robak został usunięty z parsera.'), true);
   assert.equal(needsPersonaRewrite('Dokumentacja została zaktualizowana → build przechodzi.'), true);
+  assert.equal(needsPersonaRewrite('Circuit breaker otwierać po 5 błędach.'), true);
 });
 
-test('orkowy słownik plus skompresowany raport tworzą pełny ślad', () => {
-  const text = 'Robota zakończona. Linter: 0 błędów. Testy: 83 przeszły, 2 pominięte. Stal.';
+test('łamana gramatyka, orkowy słownik i kompresja tworzą pełny ślad', () => {
+  const text = 'Robota zakończona. Linter: 0 błędów. Testy: 83 przejść, 2 pominięte. Stal.';
   const signals = voiceSignals(text);
+  assert.equal(signals.brokenGrammar, true);
   assert.equal(signals.lexicon, true);
   assert.equal(signals.compression, true);
   assert.equal(signals.pass, true);

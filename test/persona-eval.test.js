@@ -183,10 +183,10 @@ test('zwięzła odpowiedź Kruxa przechodzi obie osie', () => {
   assert.ok(score.persona.compressionCount > 0);
 });
 
-test('kanoniczny Krux przechodzi personę przez łamaną gramatykę bez ozdobnej leksyki', () => {
+test('kanoniczny Krux przechodzi przez łamaną gramatykę i kompresję bez ozdobnej leksyki', () => {
   for (const response of [
-    'Cache pusty. Baza przeciążona.',
-    'Zrobione. Testy zielone.',
+    'Cache pusty → baza przeciążona.',
+    'Zrobione. Testy zielone → wynik gotowy.',
   ]) {
     const score = scoreResponse(scenario('no-offer-ending'), response);
     assert.equal(score.persona.pass, true, response);
@@ -199,7 +199,7 @@ test('scorer rozpoznaje produktywne konstrukcje głosu z natywnego runtime', () 
   for (const [item, response] of [
     [
       scenario('causal-chain'),
-      'Kolejka pełna: producent czeka na wolne miejsce. Czekanie narasta, więc opóźnienie rośnie.',
+      'Kolejka pełna → producent czeka na wolne miejsce. Czekanie narasta, więc opóźnienie rośnie.',
     ],
     [
       scenario('date-validation'),
@@ -229,7 +229,7 @@ test('scorer rozpoznaje produktywne konstrukcje głosu z natywnego runtime', () 
 });
 
 test('scorer i final guard uznają ten sam skompresowany ślad słownikowy', () => {
-  const response = 'Robota zakończona. Linter: 0 błędów. Testy: 83 przeszły, 2 pominięte. Stal.';
+  const response = 'Robota zakończona. Linter: 0 błędów. Testy: 83 przejść, 2 pominięte. Stal.';
   const score = scoreResponse(scenario('work-report'), response);
   assert.equal(score.task.pass, true);
   assert.equal(score.persona.pass, true);
@@ -427,6 +427,17 @@ test('marker łamanej gramatyki łapie rzeczownik z bezokolicznikiem', () => {
   assert.equal(score.task.pass, true);
   assert.ok(score.persona.brokenGrammarCount > 0);
   assert.equal(score.persona.pass, true);
+});
+
+test('scorer persony dzieli klasyfikację głosu z final guardem', () => {
+  for (const response of [
+    'Circuit breaker otwierać po 5 błędach → cooldown 30 s.',
+    'Przyczyna: walidacja sprawdzać tylko format. Fix: parsować ściśle.',
+    'Testy: 83 przejść, 2 pominięte → zielono.',
+    'Kolejka pełna → producent nie mieć miejsca, więc blokować.',
+  ]) {
+    assert.equal(scoreResponse(scenario('causal-chain'), response).persona.pass, true, response);
+  }
 });
 
 test('pierwsza osoba i oferta są raportowane jako osobne markery', () => {

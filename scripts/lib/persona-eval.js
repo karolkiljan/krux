@@ -7,7 +7,7 @@ const {
 const { voiceSignals } = require('../../hooks/lib/persona-voice');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 11;
+const SCORER_VERSION = 12;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
