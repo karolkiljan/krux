@@ -363,10 +363,10 @@ function rescoreRun(runDir, options = {}) {
   }, rescoredAt);
   const metadata = {
     ...currentMetadata,
-    gitSha: sourceMetadata?.gitSha || currentMetadata.gitSha,
+    gitSha: sourceMetadata?.gitSha || 'unknown',
     model: sourceMetadata?.model || currentMetadata.model,
     cliVersion: sourceMetadata?.cliVersion || currentMetadata.cliVersion,
-    generatedAt: sourceMetadata?.generatedAt || currentMetadata.generatedAt,
+    generatedAt: sourceMetadata?.generatedAt || 'unknown',
     scorerGitSha: currentMetadata.gitSha,
     rescoredAt,
   };
@@ -410,7 +410,7 @@ function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
     const result = options.rescore
-      ? rescoreRun(path.resolve(options.rescore))
+      ? rescoreRun(path.resolve(options.rescore), options)
       : runEvaluation({ ...options, cliVersion: detectCliVersion(options.host) });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (result.status === 'ERROR') process.exitCode = 1;

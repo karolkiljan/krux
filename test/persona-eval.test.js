@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const {
   VARIANTS,
@@ -229,6 +230,18 @@ test('pierwsza osoba przyszła blokuje PASS mimo markerów kompresji', () => {
   assert.equal(score.persona.pass, false);
 });
 
+test('typowe formy pierwszej osoby w raporcie blokują PASS persony', () => {
+  for (const response of [
+    'Dodałem raport. Testy zielone.',
+    'Opiszę wynik. Testy zielone.',
+    'Przedstawię diagnozę. Testy zielone.',
+  ]) {
+    const score = scoreResponse(scenario('no-offer-ending'), response);
+    assert.ok(score.persona.firstPersonCount > 0, response);
+    assert.equal(score.persona.pass, false, response);
+  }
+});
+
 test('kod i formuły nie nabijają markerów kompresji persony', () => {
   const score = scoreResponse(
     scenario('causal-chain'),
@@ -279,6 +292,10 @@ test('date task wymaga semantyki kalendarza, nie samego kształtu', () => {
   }
   assert.equal(
     scoreResponse(scenario('date-validation'), 'Regex sprawdza DD-MM-YYYY. Fix: popraw regex.').task.pass,
+    false
+  );
+  assert.equal(
+    scoreResponse(scenario('date-validation'), 'Normalizacja daty. Parsowanie naprawia problem.').task.pass,
     false
   );
 });
@@ -768,5 +785,28 @@ test('rescoreRun zachowuje SKIP i nie uznaje pustego raw za COMPLETE', () => {
     assert.equal(skipped.results.length, 0);
     assert.equal(empty.status, 'ERROR');
     assert.match(empty.reason, /brak prób|pusty raw/i);
+  });
+});
+
+test('CLI rescore przekazuje model, ale nie przypisuje raw bieżącego SHA ani czasu', () => {
+  withTempDir(runDir => {
+    const item = scenario('causal-chain');
+    fs.writeFileSync(path.join(runDir, 'raw.jsonl'), `${JSON.stringify({
+      status: 'COMPLETE', host: 'codex', variant: 'control', scenario: item.id,
+      repetition: 1, prompt: item.prompt,
+      response: 'Kolejka pełna → producent blokować → opóźnienie rosnąć.', exitCode: 0,
+    })}\n`);
+    const completed = spawnSync(process.execPath, [
+      path.join(__dirname, '..', 'scripts', 'persona-eval.js'),
+      '--rescore', runDir,
+      '--model', 'source-model',
+    ], { encoding: 'utf8' });
+    assert.equal(completed.status, 0, completed.stderr);
+    const report = JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'), 'utf8'));
+    assert.equal(report.metadata.model, 'source-model');
+    assert.equal(report.metadata.gitSha, 'unknown');
+    assert.equal(report.metadata.generatedAt, 'unknown');
+    assert.notEqual(report.metadata.scorerGitSha, 'unknown');
+    assert.notEqual(report.metadata.scorerGitSha, report.metadata.gitSha);
   });
 });

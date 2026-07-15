@@ -6,7 +6,7 @@ const {
 } = require('../../hooks/lib/drift-guard');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 5;
+const SCORER_VERSION = 6;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -20,7 +20,7 @@ const SCENARIOS = [
     id: 'date-validation',
     prompt: 'Parser daty akceptuje 31 lutego, bo sprawdza tylko kształt DD-MM-YYYY. Podaj przyczynę i fix.',
     required: [
-      /(?:kalendarz|nie\s+istnie|nieistniej|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|normaliz)/iu,
+      /(?:kalendarz|nie\s+istnie|nieistniej|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|(?:odrzu|porówn|różni|niezgod|błęd)[^.!;\n]{0,50}normaliz|normaliz[^.!;\n]{0,50}(?:odrzu|porówn|różni|niezgod|błęd))/iu,
       /(?:odrzu|sprawd|walid|pars)/i,
     ],
     maxWords: 55,
@@ -117,6 +117,8 @@ const LEGACY_SCENARIOS = [
 
 const FIRST_PERSON_PATTERNS = [
   /(?:^|[^\p{L}])(?:ja|mam|mogę|uważam|wyjaśni(?:ę|łem|łam)|zrobi(?:ę|łem|łam)|sprawdzi(?:łem|łam|ę)|przygot(?:owałem|owałam|uję)|naprawi(?:łem|łam|ę))(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])\p{L}+(?:łem|łam)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:opiszę|przedstawię|pokażę|dodam|omówię|podsumuję|wytłumaczę|zacznę)(?=$|[^\p{L}])/giu,
 ];
 
 const OFFER_PATTERNS = [
