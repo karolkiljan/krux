@@ -1,8 +1,0 @@
-{
-  "ork-tropiciel": ["debug", "błąd", "stack trace", "napraw bug", "co pada", "crash", "znajdź", "gdzie jest", "szukaj", "explore"],
-  "ork-tester": ["test", "testy", "npm test", "verify", "coverage", "unit test", "uruchom testy"],
-  "ork-sedzia": ["review", "przejrzyj", "audyt", "ocena kodu"],
-  "ork-burzyciel": ["usuń", "wywal", "zburz", "duplikacja", "podziel plik", "martwy kod"],
-  "ork-kowal": ["backend", "API", "endpoint", "baza danych", "SQL", "server", "model danych"],
-  "ork-malarz": ["UI", "frontend", "wygląd", "design", "CSS", "komponent"]
-}

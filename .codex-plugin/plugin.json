@@ -1,7 +1,7 @@
 {
   "name": "krux",
-  "version": "2.11.0",
-  "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
+  "version": "3.0.0",
+  "description": "Minimalna polska persona technicznego orka i Horda specjalist\u00f3w na \u017c\u0105danie.",
   "author": {
     "name": "Karol Kiljan",
     "url": "https://github.com/karolkiljan"
@@ -9,20 +9,29 @@
   "homepage": "https://github.com/karolkiljan/krux",
   "repository": "https://github.com/karolkiljan/krux",
   "license": "MIT",
-  "keywords": ["polish", "compression", "persona", "terse", "orc"],
+  "keywords": [
+    "polish",
+    "compression",
+    "persona",
+    "terse",
+    "orc"
+  ],
   "skills": "./skills/",
-  "hooks": "./hooks/codex/hooks.json",
   "interface": {
     "displayName": "Krux",
-    "shortDescription": "Zwięzła persona i iteracyjny flow do pracy z kodem",
-    "longDescription": "Krux kompresuje odpowiedzi bez utraty treści technicznej i dodaje opcjonalny tryb pracy jeden ruch na raz.",
+    "shortDescription": "Minimalna polska persona i sze\u015bciu specjalist\u00f3w",
+    "longDescription": "Krux daje zwi\u0119z\u0142y techniczny g\u0142os przy granicach kontekstu, bez narzutu na zwyk\u0142e tury, oraz Hord\u0119 sze\u015bciu specjalist\u00f3w \u0142adowan\u0105 na \u017c\u0105danie.",
     "developerName": "Karol Kiljan",
     "category": "Developer Tools",
-    "capabilities": ["Interactive"],
+    "capabilities": [
+      "Skills",
+      "Hooks",
+      "Subagents"
+    ],
     "websiteURL": "https://github.com/karolkiljan/krux",
     "defaultPrompt": [
-      "$krux:krux — włącz zwięzłą personę Krux",
-      "$krux:krux-flow — pracuj jeden ruch na raz"
+      "$krux:krux \u2014 zastosuj g\u0142os Kruxa",
+      "$krux:krux-horda \u2014 dobierz specjalist\u0119"
     ],
     "brandColor": "#FF6B35"
   }

@@ -1,15 +1,18 @@
 {
   "name": "krux",
-  "version": "2.11.0",
-  "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
+  "version": "3.0.0",
+  "description": "Minimalna polska persona technicznego orka i Horda specjalistów na żądanie.",
+  "type": "commonjs",
   "keywords": [
     "claude-code-plugin",
     "codex-plugin"
   ],
   "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
-    "eval:persona": "node scripts/persona-eval.js",
-    "eval:codex-native": "node scripts/codex-native-eval.js"
+    "test": "node --test",
+    "smoke:context": "node scripts/context-smoke.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "author": "Karol Kiljan",
   "license": "MIT",

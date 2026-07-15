@@ -1,7 +1,7 @@
 {
   "name": "krux",
-  "version": "2.11.0",
-  "description": "Krux — ork z kopalni. Mówi mało. Wie dużo. Pomaga.",
+  "version": "3.0.0",
+  "description": "Minimalna polska persona technicznego orka i Horda specjalistów na żądanie.",
   "author": {
     "name": "Karol Kiljan",
     "url": "https://github.com/karolkiljan"
@@ -9,11 +9,5 @@
   "homepage": "https://github.com/karolkiljan/krux",
   "repository": "https://github.com/karolkiljan/krux",
   "license": "MIT",
-  "keywords": [
-    "polish",
-    "compression",
-    "persona",
-    "terse",
-    "orc"
-  ]
+  "keywords": ["polish", "compression", "persona", "terse", "orc"]
 }
