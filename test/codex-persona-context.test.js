@@ -167,3 +167,61 @@ test('natywny adapter ignoruje CLAUDE_PLUGIN_DATA bez PLUGIN_DATA', () => {
     assert.deepEqual(fs.readdirSync(dir), []);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('PostToolUse kotwiczy automatyczną turę po pierwszym narzędziu', () => {
+  const dir = tempDir();
+  try {
+    run({ hook_event_name: 'SessionStart', source: 'startup', session_id: 'sid-a' }, dir);
+    const context = additionalContext(run({
+      hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'goal-turn',
+    }, dir), 'PostToolUse');
+    assert.match(context, /KRUX CONTINUATION/);
+    assert.match(context, /Wzorzec Krux/);
+    assert.equal(run({
+      hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'goal-turn',
+    }, dir).stdout, '');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('regularna tura dostaje PostToolUse reminder co skonfigurowany interwał', () => {
+  const dir = tempDir();
+  try {
+    run({ hook_event_name: 'SessionStart', source: 'startup', session_id: 'sid-a' }, dir);
+    run({
+      hook_event_name: 'UserPromptSubmit', prompt: 'napraw test',
+      session_id: 'sid-a', turn_id: 'turn-a',
+    }, dir);
+    for (let n = 1; n < 4; n += 1) {
+      assert.equal(run({
+        hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'turn-a',
+      }, dir, { KRUX_CODEX_TOOL_INTERVAL: '4' }).stdout, '', `tool ${n}`);
+    }
+    const context = additionalContext(run({
+      hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'turn-a',
+    }, dir, { KRUX_CODEX_TOOL_INTERVAL: '4' }), 'PostToolUse');
+    assert.match(context, /KRUX CONTINUATION/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('PostToolUse jest cichy dla nieaktywnej sesji i braku turn_id', () => {
+  const dir = tempDir();
+  try {
+    assert.equal(run({
+      hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'turn-a',
+    }, dir).stdout, '');
+    run({ hook_event_name: 'SessionStart', source: 'startup', session_id: 'sid-a' }, dir);
+    assert.equal(run({ hook_event_name: 'PostToolUse', session_id: 'sid-a' }, dir).stdout, '');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('brak session_id nie tworzy globalnej aktywnej sesji ani późniejszych reminderów', () => {
+  const dir = tempDir();
+  try {
+    const start = run({ hook_event_name: 'SessionStart', source: 'startup' }, dir);
+    assert.match(additionalContext(start, 'SessionStart'), /KRUX PERSONA ACTIVE/);
+    assert.equal(fs.existsSync(path.join(dir, '.krux-active-sessions')), false);
+    assert.equal(run({
+      hook_event_name: 'UserPromptSubmit', prompt: 'zwykły prompt', turn_id: 'turn-a',
+    }, dir).stdout, '');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

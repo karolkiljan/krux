@@ -4,16 +4,23 @@ const fs = require('fs');
 const path = require('path');
 const { collectStdin, parsePayload, emitContext } = require('./hook-io');
 const { stripFrontmatter } = require('../lib/hook-io');
-const { classifyPersonaPrompt, getDefaultMode } = require('../lib/persona-mode');
+const {
+  classifyPersonaPrompt,
+  getDefaultMode,
+  isStrictFormatPrompt,
+} = require('../lib/persona-mode');
 const {
   buildTurnReminder,
   buildFullReminder,
+  MICRO_EXAMPLES,
   bumpTurnCount,
   nextMicroExample,
   markSessionActive,
   clearSessionActive,
   isSessionActive,
   resetTurnCount,
+  markPromptTurn,
+  shouldReinforceAfterTool,
 } = require('../lib/drift-guard');
 
 const OFF_CONTEXT = 'KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.';
@@ -31,18 +38,23 @@ function skillBody() {
 }
 
 function fullReminder(dir, sid) {
-  return `KRUX PERSONA ACTIVE. ${buildFullReminder(nextMicroExample(dir, sid))}`;
+  const example = sid ? nextMicroExample(dir, sid) : MICRO_EXAMPLES[0];
+  return `KRUX PERSONA ACTIVE. ${buildFullReminder(example)}`;
 }
 
 function handleSessionStart(dir, sid, source) {
   if (getDefaultMode(dir) === 'off') {
-    clearSessionActive(dir, sid);
-    resetTurnCount(dir, sid);
+    if (sid) {
+      clearSessionActive(dir, sid);
+      resetTurnCount(dir, sid);
+    }
     return;
   }
 
-  markSessionActive(dir, sid);
-  resetTurnCount(dir, sid);
+  if (sid) {
+    markSessionActive(dir, sid);
+    resetTurnCount(dir, sid);
+  }
   if (source === 'resume') {
     emitContext('SessionStart', fullReminder(dir, sid));
     return;
@@ -52,7 +64,7 @@ function handleSessionStart(dir, sid, source) {
   if (body) emitContext('SessionStart', `KRUX PERSONA ACTIVE.\n\n${body}`);
 }
 
-function activatePrompt(dir, sid, persist) {
+function activatePrompt(dir, sid, turnId, persist) {
   if (persist) {
     try {
       fs.writeFileSync(path.join(dir, '.krux-mode'), 'on');
@@ -61,22 +73,25 @@ function activatePrompt(dir, sid, persist) {
       return;
     }
   }
-  markSessionActive(dir, sid);
-  resetTurnCount(dir, sid);
+  if (sid) {
+    markSessionActive(dir, sid);
+    resetTurnCount(dir, sid);
+    markPromptTurn(dir, sid, turnId, { strict: false });
+  }
   emitContext('UserPromptSubmit', fullReminder(dir, sid));
 }
 
-function handlePrompt(dir, sid, rawPrompt) {
+function handlePrompt(dir, sid, turnId, rawPrompt) {
   const prompt = String(rawPrompt || '').trim();
   if (!prompt) return;
   const action = classifyPersonaPrompt(prompt);
 
   if (action === 'one-shot') {
-    activatePrompt(dir, sid, false);
+    activatePrompt(dir, sid, turnId, false);
     return;
   }
   if (action === 'on') {
-    activatePrompt(dir, sid, true);
+    activatePrompt(dir, sid, turnId, true);
     return;
   }
   if (action === 'off') {
@@ -86,13 +101,16 @@ function handlePrompt(dir, sid, rawPrompt) {
       console.error('[KRUX] native write .krux-mode failed:', error.message);
       return;
     }
-    clearSessionActive(dir, sid);
-    resetTurnCount(dir, sid);
+    if (sid) {
+      clearSessionActive(dir, sid);
+      resetTurnCount(dir, sid);
+    }
     emitContext('UserPromptSubmit', OFF_CONTEXT);
     return;
   }
 
-  if (!isSessionActive(dir, sid)) return;
+  if (!sid || !isSessionActive(dir, sid)) return;
+  markPromptTurn(dir, sid, turnId, { strict: isStrictFormatPrompt(prompt) });
   const example = nextMicroExample(dir, sid);
   const reminder = bumpTurnCount(dir, sid)
     ? buildFullReminder(example)
@@ -101,8 +119,17 @@ function handlePrompt(dir, sid, rawPrompt) {
 }
 
 function handleSubagentStart(dir, sid) {
-  if (!isSessionActive(dir, sid)) return;
+  if (!sid || !isSessionActive(dir, sid)) return;
   emitContext('SubagentStart', fullReminder(dir, sid));
+}
+
+function handlePostToolUse(dir, sid, turnId) {
+  if (!sid || !isSessionActive(dir, sid)) return;
+  if (!shouldReinforceAfterTool(dir, sid, turnId)) return;
+  emitContext(
+    'PostToolUse',
+    `KRUX CONTINUATION — ${buildTurnReminder(nextMicroExample(dir, sid))}`,
+  );
 }
 
 collectStdin(raw => {
@@ -122,7 +149,9 @@ collectStdin(raw => {
   if (event === 'SessionStart') {
     handleSessionStart(dir, sid, payload.source || 'startup');
   } else if (event === 'UserPromptSubmit') {
-    handlePrompt(dir, sid, payload.prompt);
+    handlePrompt(dir, sid, payload.turn_id, payload.prompt);
+  } else if (event === 'PostToolUse') {
+    handlePostToolUse(dir, sid, payload.turn_id);
   } else if (event === 'SubagentStart') {
     handleSubagentStart(dir, sid);
   }

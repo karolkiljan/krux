@@ -27,6 +27,12 @@ const {
   clearCount,
   resetTurnCount,
   bumpTurnCount,
+  CODEX_TURN_FILENAME,
+  DEFAULT_TOOL_INTERVAL,
+  toolInterval,
+  markPromptTurn,
+  isStrictTurn,
+  shouldReinforceAfterTool,
 } = require('../hooks/lib/drift-guard');
 
 function withEnv(key, value, fn) {
@@ -355,5 +361,49 @@ test('resetTurnCount nie kasuje rotacji — wzmocnienie persony nie cofa cyklu',
     nextMicroExample(dir, 'sid-a');
     resetTurnCount(dir, 'sid-a');
     assert.equal(nextMicroExample(dir, 'sid-a'), MICRO_EXAMPLES[1], 'cykl idzie dalej po resecie okna');
+  });
+});
+
+// --- natywna kotwica wewnątrz tury narzędziowej Codexa ---
+
+test('toolInterval: domyślnie cztery, poprawny env zmienia próg', () => {
+  assert.equal(toolInterval({}), DEFAULT_TOOL_INTERVAL);
+  assert.equal(toolInterval({ KRUX_CODEX_TOOL_INTERVAL: '2' }), 2);
+  assert.equal(toolInterval({ KRUX_CODEX_TOOL_INTERVAL: '0' }), DEFAULT_TOOL_INTERVAL);
+});
+
+test('regularny prompt kotwiczy turn, potem reminder wraca co czwarte narzędzie', () => {
+  withTempDir(dir => {
+    markPromptTurn(dir, 'sid-a', 'turn-a', { strict: false });
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'turn-a', { KRUX_CODEX_TOOL_INTERVAL: '4' }), false);
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'turn-a', { KRUX_CODEX_TOOL_INTERVAL: '4' }), false);
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'turn-a', { KRUX_CODEX_TOOL_INTERVAL: '4' }), false);
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'turn-a', { KRUX_CODEX_TOOL_INTERVAL: '4' }), true);
+  });
+});
+
+test('automatyczna tura bez UserPromptSubmit dostaje reminder po pierwszym toolu', () => {
+  withTempDir(dir => {
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'goal-turn', {}), true);
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', 'goal-turn', {}), false);
+    assert.equal(fs.existsSync(path.join(dir, CODEX_TURN_FILENAME)), true);
+  });
+});
+
+test('format ścisły jest zapisany tylko dla dokładnego turn_id', () => {
+  withTempDir(dir => {
+    markPromptTurn(dir, 'sid-a', 'json-turn', { strict: true });
+    assert.equal(isStrictTurn(dir, 'sid-a', 'json-turn'), true);
+    assert.equal(isStrictTurn(dir, 'sid-a', 'next-turn'), false);
+    assert.equal(isStrictTurn(dir, 'sid-b', 'json-turn'), false);
+  });
+});
+
+test('brak turn_id nie tworzy stanu ani reminderu', () => {
+  withTempDir(dir => {
+    markPromptTurn(dir, 'sid-a', '', { strict: true });
+    assert.equal(shouldReinforceAfterTool(dir, 'sid-a', '', {}), false);
+    assert.equal(isStrictTurn(dir, 'sid-a', ''), false);
+    assert.equal(fs.existsSync(path.join(dir, CODEX_TURN_FILENAME)), false);
   });
 });

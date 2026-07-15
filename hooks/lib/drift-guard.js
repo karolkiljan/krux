@@ -165,6 +165,54 @@ function bumpTurnCount(claudeDir, sid) {
   return false;
 }
 
+// --- stan natywnej tury Codexa ---
+
+const CODEX_TURN_FILENAME = '.krux-codex-turn-context';
+const DEFAULT_TOOL_INTERVAL = 4;
+
+function toolInterval(env = process.env) {
+  const n = Number.parseInt(env.KRUX_CODEX_TOOL_INTERVAL, 10);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_TOOL_INTERVAL;
+}
+
+function updateTurnEntry(dir, sid, update) {
+  const file = path.join(dir, CODEX_TURN_FILENAME);
+  const store = readStore(file);
+  const key = normalizeSid(sid);
+  store[key] = { ...update(store[key]), t: Date.now() };
+  writeStore(file, store);
+  return store[key];
+}
+
+function markPromptTurn(dir, sid, turnId, { strict = false } = {}) {
+  if (!turnId) return;
+  updateTurnEntry(dir, sid, () => ({ turnId, strict, anchored: true, n: 0 }));
+}
+
+function isStrictTurn(dir, sid, turnId) {
+  if (!turnId) return false;
+  const entry = readStore(path.join(dir, CODEX_TURN_FILENAME))[normalizeSid(sid)];
+  return Boolean(entry && entry.turnId === turnId && entry.strict);
+}
+
+function shouldReinforceAfterTool(dir, sid, turnId, env = process.env) {
+  if (!turnId) return false;
+  let shouldEmit = false;
+  updateTurnEntry(dir, sid, previous => {
+    const entry = previous && previous.turnId === turnId
+      ? { ...previous }
+      : { turnId, strict: false, anchored: false, n: 0 };
+    entry.n += 1;
+    shouldEmit = !entry.anchored || entry.n >= toolInterval(env);
+    if (shouldEmit) {
+      entry.anchored = true;
+      entry.n = 0;
+    }
+    return entry;
+  });
+  return shouldEmit;
+}
+
 module.exports = {
   IDENTITY_ANCHOR,
   TASK_CONTRACT,
@@ -188,4 +236,10 @@ module.exports = {
   isSessionActive,
   resetTurnCount,
   bumpTurnCount,
+  CODEX_TURN_FILENAME,
+  DEFAULT_TOOL_INTERVAL,
+  toolInterval,
+  markPromptTurn,
+  isStrictTurn,
+  shouldReinforceAfterTool,
 };

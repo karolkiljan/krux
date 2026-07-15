@@ -3,7 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { classifyPersonaPrompt, getDefaultMode } = require('../hooks/lib/persona-mode');
+const {
+  classifyPersonaPrompt,
+  getDefaultMode,
+  isStrictFormatPrompt,
+} = require('../hooks/lib/persona-mode');
 
 test('classifyPersonaPrompt zachowuje wszystkie aliasy obu hostów', () => {
   for (const input of ['krux', 'włącz krux', 'wlacz krux', 'start krux', 'aktywuj krux', '$krux:krux on', '/krux:krux on']) {
@@ -42,4 +46,16 @@ test('niepoprawne wartości pliku i env wracają do on', () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('klasyfikator łapie format maszynowy, ale nie zwykłe słowo JSON', () => {
+  for (const prompt of [
+    'Zwróć wyłącznie JSON. Bez markdown.',
+    'Napisz commit message dla tej zmiany.',
+    'Podaj dokładny format wskazany niżej.',
+    'Return this in the exact format.',
+  ]) assert.equal(isStrictFormatPrompt(prompt), true, prompt);
+
+  assert.equal(isStrictFormatPrompt('Wyjaśnij, jak parser czyta JSON.'), false);
+  assert.equal(isStrictFormatPrompt('Dodaj walidację do kodu.'), false);
 });
