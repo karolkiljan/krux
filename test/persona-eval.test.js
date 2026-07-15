@@ -398,6 +398,14 @@ test('task scorer akceptuje poprawne warianty znalezione przez pełny live bench
   assert.equal(breaker.task.pass, true);
 });
 
+test('task scorer zachowuje raport z formą „2 zostać pominięte”', () => {
+  const report = scoreResponse(
+    scenario('work-report'),
+    'Praca zakończona. Linter pokazywać 0 błędów; 83 testy przejść, 2 zostać pominięte → zielone.',
+  );
+  assert.equal(report.task.pass, true);
+});
+
 test('task matchery ignorują inline-code wokół wymaganych liczb', () => {
   const circuit = scoreResponse(
     scenario('circuit-breaker-contract'),
