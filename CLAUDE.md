@@ -14,47 +14,73 @@ Plugin działa na trzech niezależnych osiach:
 
 **Te tryby są niezależne.** Każda kombinacja osi może być aktywna jednocześnie. Nie mieszaj logiki toggle — każdy ma osobny hook (`krux-toggle.js`, `krux-flow-toggle.js`, `krux-konkret-toggle.js`).
 
-## Hooki — co odpala co
+## Adaptery hosta — osobny transport, wspólny rdzeń
 
-| Hook | Plik | Kiedy | Rola |
-|------|------|-------|------|
-| `SessionStart` | `hooks/activate.js` | start, resume, clear, compact | Wstrzykuje SKILL.md persony (startup/compact) lub krótki reminder (resume). Resetuje licznik turnów drift-guard (`.krux-turn-count`) — każde wstrzyknięcie to świeże wzmocnienie. Kopiuje statusline script do `~/.claude/`, proponuje setup jeśli brak. |
-| `UserPromptSubmit` | `hooks/krux-toggle.js` | każdy prompt | Regex match na frazy toggle (`krux`, `stop krux`, itp.) → zmienia `.krux-mode` + `.krux-active` i wstrzykuje jawny stan persony (reset licznika drift-guard). Inaczej, gdy persona aktywna: liczy tury tej sesji od ostatniego wzmocnienia (`hooks/lib/drift-guard.js`, klucz `session_id`). Tury poniżej progu dostają dodatnią kotwicę `KRUX TURN`: tożsamość + dodatni przykład + kontrakt zadania. Po progu (`KRUX_DRIFT_INTERVAL`, domyślnie 10) zastępuje ją pełny `KRUX DRIFT-GUARD` z 4 PRAWAMI i kolejnym przykładem (`MICRO_EXAMPLES`, licznik emisji w `.krux-drift-emit`). `KRUX_TURN_REMINDER=0` wyłącza tylko lekką kotwicę; pełna zostaje. |
-| `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | każdy prompt | Regex match na frazy flow (`flow`, `stop flow`, itp.) → zmienia `.krux-flow-active`. Gdy flag aktywny, wstrzykuje per-turn reminder. |
-| `UserPromptSubmit` | `hooks/krux-konkret-toggle.js` | każdy prompt | Regex match na frazy konkret (`konkret`, `strict`, `konkret off`, itp.) → zmienia `.krux-konkret-active`. Gdy flag aktywny, wstrzykuje per-turn reminder kontraktu zakresu (tylko A, najprostsze, obok = 1 linia raportu, delegacja dziedziczy kontrakt). |
-| `UserPromptSubmit` | `hooks/krux-horda-trigger.js` | każdy prompt | Match słów promptu na triggery z `agents/triggers.json` (word-boundary, fold diakrytyków; fleksja celowo nieobsługiwana) → wstrzykuje podpowiedź delegacji z bramką korzyści. Throttle per-sesja: 1 nudge / `KRUX_HORDA_NUDGE_INTERVAL` (domyślnie 5) turnów. `KRUX_HORDA_NUDGE=0` wyłącza. Niezależny od stanu persony. |
+Dwa osobne adaptery hosta chronią kompatybilność zamiast udawać wspólny runtime.
 
-**Kolejność UserPromptSubmit:** hooki toggle (`krux-toggle`, `krux-flow-toggle`, `krux-konkret-toggle`) odpalają równolegle. Nie zależą od siebie — każdy ogarnia swój regex i plik stanu.
+| Host | Rejestr hooków | Transport persony | Zmienne hosta |
+|------|----------------|-------------------|---------------|
+| Claude Code | `hooks/hooks.json` | `hooks/activate.js`, `hooks/krux-toggle.js` | `CLAUDE_PLUGIN_ROOT`, fallback stanu `~/.claude/` |
+| Codex | `hooks/codex/hooks.json`, wskazany jawnie przez `.codex-plugin/plugin.json` | `hooks/codex/persona-context.js`, `hooks/codex/persona-stop.js` | `PLUGIN_ROOT`, `PLUGIN_DATA` |
 
-**Rejestracja:** Wszystkie aktywne hooki runtime zdefiniowane w `hooks/hooks.json` (format zgodny z Claude Code plugin spec — ten sam kształt JSON co `settings.json` hooks). Ścieżka do plików JS przez `${CLAUDE_PLUGIN_ROOT}/hooks/...`. Nie duplikować rejestracji w `plugin.json` — jedno źródło prawdy.
+Nie traktuj jednego manifestu hooków jako źródła prawdy dla obu hostów. Claude
+i Codex mają różne lifecycle, zmienne i kontrakty outputu. Wspólne źródło prawdy
+to czysta logika w `hooks/lib/persona-mode.js`, `hooks/lib/drift-guard.js` oraz
+`hooks/lib/persona-voice.js`; transport pozostaje osobny.
+
+### Lifecycle Claude Code
+
+| Hook | Plik | Rola |
+|------|------|------|
+| `SessionStart` | `hooks/activate.js` | Startup/compact wstrzykuje skill; resume zwartą kotwicę; obsługuje Claude-only statusline. |
+| `UserPromptSubmit` | `hooks/krux-toggle.js` | Toggle persony i per-turn drift guard. |
+| `UserPromptSubmit` | `hooks/krux-flow-toggle.js` | Niezależny toggle flow. |
+| `UserPromptSubmit` | `hooks/krux-konkret-toggle.js` | Niezależny toggle konkret. |
+| `UserPromptSubmit` | `hooks/krux-horda-trigger.js` | Nudge delegacji według `agents/triggers.json`. |
+
+### Lifecycle Codexa
+
+| Hook | Plik | Rola |
+|------|------|------|
+| `SessionStart` | `hooks/codex/persona-context.js` | Startup/clear/compact wstrzykuje pełny skill; resume zwartą pełną kotwicę; aktywność per sesja. |
+| `UserPromptSubmit` | `hooks/codex/persona-context.js` + trzy istniejące hooki osi | Toggle, kotwica turnu i flaga formatu ścisłego; flow, Horda i konkret zachowują osobny stan. |
+| `PostToolUse` | `hooks/codex/persona-context.js` | Automatyczna tura bez promptu dostaje kotwicę po pierwszym toolu; regularna co `KRUX_CODEX_TOOL_INTERVAL` (domyślnie 4). |
+| `SubagentStart` | `hooks/codex/persona-context.js` | Aktywna sesja rodzica przekazuje zwartą kotwicę subagentowi. |
+| `Stop` | `hooks/codex/persona-stop.js` | Neutralny finał blokuje najwyżej raz; JSON, code-only, Conventional Commit, format ścisły i `stop_hook_active=true` przechodzą. |
+
+Codexowy adapter nie czyta `CLAUDE_PLUGIN_*` ani `~/.claude/`. Brak lub zły
+`PLUGIN_DATA` kończy się cichym sukcesem. Wszystkie context eventy zwracają
+`hookSpecificOutput.hookEventName` zgodny z faktycznym eventem; `Stop` zwraca
+wyłącznie natywne `decision` i `reason`.
 
 ## Stan — gdzie co żyje
 
 | Plik | Kto pisze | Kto czyta | Cel |
 |------|-----------|-----------|-----|
-| `<stateDir>/.krux-mode` | `krux-toggle.js` | `activate.js` | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
+| `<stateDir>/.krux-mode` | adapter persony hosta | adapter persony hosta | Trwały opt-in/out persony między sesjami (`on`/`off`). Jawny wybór z pliku ma pierwszeństwo przed `KRUX_DEFAULT_MODE`, które ustawia tylko stan początkowy. |
 | `<stateDir>/.krux-active` | `krux-toggle.js`, `activate.js` | statusline script tylko pod Claude | Globalny runtime flag — od v2.10.0 czyta go WYŁĄCZNIE statusline (bash bez session_id, ostatnia akcja wygrywa). Gate reminderów siedzi w `.krux-active-sessions`. |
-| `<stateDir>/.krux-active-sessions` | `krux-toggle.js`, `activate.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Per-sesyjny gate per-turn reminderów (JSON map per `session_id`, TTL 24h odświeżany na SessionStart). Wstrzyknięcie SKILL.md jest per-sesja, więc one-shot w sesji A nie szumi reminderami w sesji B; `stop krux` w A nie wycisza żywej sesji B. |
+| `<stateDir>/.krux-active-sessions` | adaptery persony przez `hooks/lib/drift-guard.js` | adaptery persony | Per-sesyjny gate reminderów i Codex final guarda (JSON map per `session_id`, TTL 24h odświeżany na SessionStart). |
 | `<stateDir>/.krux-flow-active` | `krux-flow-toggle.js` | `krux-flow-toggle.js` | Per-turn reminder trigger dla trybu iteracyjnego. Istnienie pliku = ON. |
 | `<stateDir>/.krux-konkret-active` | `krux-konkret-toggle.js` | `krux-konkret-toggle.js` | Per-turn reminder trigger dla trybu konkret. Istnienie pliku = ON. |
 | `<stateDir>/.krux-turn-count` | `krux-toggle.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js` | Liczniki tur od ostatniego wzmocnienia persony — JSON map `{session_id: {n, t}}`, wpisy starsze niż 24h prunowane. Reset (tylko własny wpis sesji) przy SessionStart mode=on i przy jawnym `krux`/`stop krux`. |
 | `<stateDir>/.krux-horda-nudge` | `krux-horda-trigger.js` (`hooks/lib/drift-guard.js`) | `krux-horda-trigger.js` | Throttle podpowiedzi delegacji — ten sam format JSON map per `session_id`; wpis = tury od ostatniego nudge. |
 | `<stateDir>/.krux-drift-emit` | `krux-toggle.js`, `activate.js` (`hooks/lib/drift-guard.js`) | `krux-toggle.js`, `activate.js` | Licznik wyemitowanych kotwic per sesja (ten sam format JSON map) — rotuje dodatni mikro-przykład. Celowo NIE resetowany przy wzmocnieniu persony: rotacja idzie dalej przez całą sesję. |
+| `<stateDir>/.krux-codex-turn-context` | `persona-context.js` | `persona-context.js`, `persona-stop.js` | Codex-only: `turn_id`, format ścisły, liczba tooli i informacja, czy tura dostała kotwicę. |
 | `~/.claude/.krux-statusline-asked` | `activate.js` | `activate.js` | Claude-only marker że prompt o statusline już wyleciał. |
 
 **Asymetria:** `.krux-mode` jest trwałe (między sesjami), `.krux-active` to runtime-only flag. `/krux:krux` i `$krux:krux` zapisują tylko `.krux-active`, bez zmiany `.krux-mode`. `$krux:krux on|off` jawnie zmienia stan trwały.
 
 ## Dystrybucja — Claude Code i Codex CLI
 
-Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-plugin/plugin.json` (Claude Code) i `.codex-plugin/plugin.json` (Codex). `hooks/`, `skills/` i źródłowe role w `agents/` są współdzielone — żadnej kopii persony ani instrukcji roli.
+Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-plugin/plugin.json` (Claude Code) i `.codex-plugin/plugin.json` (Codex). `skills/`, czyste biblioteki `hooks/lib/` i źródłowe role w `agents/` są współdzielone. Entrypointy i rejestry hooków są osobne.
 
-**Stan między hostami.** `hooks/lib/state-dir.js` eksportuje `stateDir()`: zwraca `process.env.PLUGIN_DATA` gdy ustawione (Codex ustawia ten host-neutralny, zapisywalny katalog per-plugin), inaczej `~/.claude/` (Claude Code, dzisiejsze zachowanie 1:1). `activate.js`, `krux-toggle.js`, `krux-flow-toggle.js`, `krux-konkret-toggle.js` czytają katalog stanu przez ten resolver zamiast twardo kodować `~/.claude/`. Statusline (Claude-Code-specific, brak odpowiednika w Codex) jest owinięty w `if (!process.env.PLUGIN_DATA)` w `activate.js` — pod Codexem sekcja w ogóle się nie wykonuje.
+**Stan między hostami.** Natywny adapter persony Codexa wymaga wprost `PLUGIN_DATA`; brak kończy go cicho. Współdzielone hooki flow/Hordy/konkret używają `hooks/lib/state-dir.js`, który pod Codexem wybiera `PLUGIN_DATA`, a pod Claude `~/.claude/`. `activate.js` pozostaje entrypointem Claude; jego statusline jest Claude-only.
 
 **Orki pod Codex.** Manifest pluginu nie instaluje custom agents. `agents/ork-*.md` zostaje jedynym źródłem prawdy: `skills/krux/orchestration-codex.md` każe głównemu agentowi przeczytać właściwą rolę i przekazać jej kluczowe instrukcje natywnemu subagentowi Codexa. `skills/krux/orchestration.md` jest routerem wspólnym, a `orchestration-claude.md` zachowuje `Agent` tool, nazwy `@krux:ork-*` i modele Claude.
 
 ## Skille — jak są ze sobą powiązane
 
-- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA + pary „Ludzie vs Krux" + hierarchia KODEKSU + Granice + odsyłacze) wstrzykiwany przez `activate.js` przy `startup`. **4 PRAWA** = szkielet głosu, **pary** = kalibracja brzmienia, **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`. `orchestration.md` wybiera `orchestration-claude.md` albo `orchestration-codex.md`. Feature flag `KRUX_NATIVE_SKILL=1` (eksperymentalny) wyłącza wstrzyk body; zachowanie osłania `test/activate.test.js`.
+- `krux` — persona. Lean `SKILL.md` (Persona + 4 PRAWA + pary „Ludzie vs Krux" + hierarchia KODEKSU + Granice + odsyłacze) wstrzykuje `activate.js` pod Claude oraz `persona-context.js` pod Codex. **4 PRAWA** = szkielet głosu, **pary** = kalibracja brzmienia, **KODEKS ROBOTY** mówi jak buduje. Szczegółowe CIĘCIA i kontrakt raportu są w `robota.md`. `orchestration.md` wybiera `orchestration-claude.md` albo `orchestration-codex.md`. Feature flag `KRUX_NATIVE_SKILL=1` jest kompatybilnością starego adaptera `activate.js`, nie steruje natywnym lifecycle Codexa.
 - `krux-flow` — orthogonal. Ma własny hook toggle. Skill dokumentuje zasady, hook wymusza je per-turn.
 - `krux-konkret` — orthogonal. Ma własny hook toggle. Tryb chirurgicznej
   precyzji zakresu: tylko A, najprostsze działające, obok = 1 linia raportu,
@@ -63,7 +89,7 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 ## Konwencje — co robić, czego nie
 
 **Co robić:**
-- Nowe hooki → `hooks/*.js`, wszystkie Node.js, bez zewnętrznych zależności. Node.js jest jawnym wymaganiem obu hostów.
+- Nowe hooki → właściwy adapter hosta (`hooks/*.js` dla Claude, `hooks/codex/*.js` dla Codexa), wszystkie Node.js, bez zewnętrznych zależności.
 - Nowe skille → `skills/{name}/SKILL.md`. Claude używa `/krux:{name}`, Codex `$krux:{name}`. Nie dodawać `commands/` — legacy format, skill i tak wygrywa.
 - Diacritics w regex → zawsze tolerować warianty: `[łl]`, `[ąa]` albo `(ł|l)`, `(ą|a)`. Nigdy `[ł|l]` — taki zbiór dopuszcza znak `|`. Wzorce są w `krux-toggle.js` i `krux-flow-toggle.js`.
 - Stan w `~/.claude/` → ukryte pliki prefiksowane `.krux-`.
@@ -73,15 +99,15 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 - Nie mieszać logiki persony i flow w jednym hooku.
 - Nie nadpisywać `.krux-mode` bez wyraźnej intencji usera (slash command vs trigger phrase).
 - Nie dodawać zależności npm — plugin ma być zero-install.
-- Nie zakładać że `SessionStart.source` to zawsze `startup`. Rozróżniaj `startup|resume|clear|compact` w `activate.js`.
+- Nie zakładać że `SessionStart.source` to zawsze `startup`. Rozróżniaj `startup|resume|clear|compact` w obu adapterach.
 
 ## Decyzje projektowe — dlaczego tak
 
-**Resume → krótki reminder, compact → pełny reinject SKILL.md.** Przy resume skill już jest w pamięci modelu (kontekst persistuje). Compact przepisuje kontekst, więc `activate.js` ponownie wstrzykuje pełne SKILL.md, tak samo jak przy `startup`.
+**Resume → zwarta pełna kotwica, compact → pełny reinject SKILL.md.** Resume zachowuje rozmowę, lecz nie wolno zakładać trwałości pozycji developer context; oba adaptery przypominają cały kontrakt w zwartej formie. Compact przepisuje kontekst, więc oba ponownie wstrzykują pełne `SKILL.md`.
 
 **Miks praw, przykładów i kotwicy — trzy warstwy persony.** SKILL.md daje 4 PRAWA oraz przykłady brzmienia, a hook mechanicznie wzmacnia aktywną personę. Runtime składa jeden dodatni kontrakt: tożsamość + dodatni przykład + kontrakt zadania. Własna walidacja brancha `persona-rewrite-fewshot` pokazała, że czysty few-shot może zwiększać gadatliwość i psuć granice. ContextEcho (arXiv:2605.24279) wykazał dryf zależny od modelu i w swoim układzie odzyskiwał personę oraz format przez świeżą, łączoną kotwicę tożsamości i demonstracji; nie dowodzi uniwersalnej przewagi reguł nad przykładami. Wytyczne Anthropic wspierają szczegółową rolę i przykłady. Dlatego Krux zachowuje miks, ale jego skuteczność musi mierzyć lokalnie benchmark, nie sama obecność tekstu w hooku.
 
-**Drift-guard: mechaniczna dodatnia kotwica.** Wzmocnienie czysto zdarzeniowe (SessionStart, jawna fraza toggle) zostawiało między zdarzeniami ciszę, a `context-watch.md` zależał od samoobserwacji modelu. Teraz każda aktywna tura dostaje `KRUX TURN` z tożsamością, kontraktem zachowania treści i rotowanym dodatnim przykładem. `hooks/lib/drift-guard.js` równolegle liczy tury od ostatniego pełnego wzmocnienia; co `KRUX_DRIFT_INTERVAL` tur `krux-toggle.js` zastępuje lekką kotwicę pełnym `KRUX DRIFT-GUARD`, który dodaje esencję 4 PRAW. Runtime nie wywołuje dodatkowego modelu. `KRUX_TURN_REMINDER=0` przywraca ciszę tylko poniżej progu. Liczniki i rotacja są per-sesja, bo globalny licznik psuł kadencję przy równoległych sesjach.
+**Drift-guard: mechaniczna dodatnia kotwica.** Każda aktywna tura dostaje `KRUX TURN` z tożsamością, kontraktem zachowania treści i rotowanym dodatnim przykładem. Co `KRUX_DRIFT_INTERVAL` tur wchodzi pełny `KRUX DRIFT-GUARD`. Codex dodatkowo domyka dziurę automatycznych kontynuacji przez `PostToolUse`: pierwszy tool niezakotwiczonej tury oraz co czwarty tool długiej tury emituje `KRUX CONTINUATION`. Same kotwice nie wołają modelu; tylko `Stop` może raz uruchomić korektę neutralnego finału. Liczniki i rotacja są per sesja.
 
 **Nudge Hordy: delegacja nie zależy od pamięci modelu.** Ta sama filozofia co drift-guard — samoobserwacja zawodna, więc `krux-horda-trigger.js` mechanicznie łapie triggery ról w promptcie i podpowiada sprawdzenie bramki korzyści. Podpowiedź nie wymusza spawnu: decyzja zostaje przy modelu (bramka korzyści w `orchestration.md`). Osobny plik hooka zgodnie z konwencją „nie mieszać logiki"; generyczny magazyn liczników per-sesja współdzielony z drift-guardem przez `hooks/lib/drift-guard.js`.
 
@@ -117,6 +143,8 @@ Pokrycie:
 - `activate.js` — getDefaultMode resolution order (env > plik > default), startup/compact vs resume branch, SKILL.md frontmatter strip, statusline copy, setup prompts, reset licznika drift-guard własnej sesji na każdym mode=on źródle (`test/activate.test.js`)
 - `hooks/lib/drift-guard.js` — skład lekkiej i pełnej dodatniej kotwicy, rotacja przykładów, opt-out `KRUX_TURN_REMINDER=0|off`, próg oraz liczniki per-sesja (`test/drift-guard.test.js`)
 - `persona-eval` — judge-free scorer persony/zadania/kosztu i runner świeżych procesów Codex/Claude; modelowe wywołania tylko przez `npm run eval:persona` (`test/persona-eval.test.js`)
+- `codex-native-eval` — izolowane `CODEX_HOME`, realne `exec/resume`, wariant control/native, dowody transcriptu, `PostToolUse` i final guard (`test/codex-native-eval.test.js`)
+- `codex-persona-context` / `codex-persona-stop` — natywny lifecycle, event-specific envelope, tool cadence, format ścisły i jednorazowa korekta (`test/codex-persona-context.test.js`, `test/codex-persona-stop.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, pełny cykl per-turn/full-guard włącznie z resetem przez compact i `KRUX_TURN_REMINDER=0`) (`test/integration.test.js`)

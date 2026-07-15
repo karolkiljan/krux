@@ -265,6 +265,27 @@ test('dokumentacja uczciwie ogranicza benchmark i opisuje odtwarzalny raport', (
   assert.match(personaDesign, /nie wykonuje natywnego compact/i);
 });
 
+test('dokumentacja opisuje pełny natywny lifecycle i instalację Codexa', () => {
+  assert.match(readme, /codex plugin add krux@krux-marketplace/);
+  assert.match(readme, /\/hooks[\s\S]{0,300}(?:osiem|ośmiu)/i);
+  assert.match(readme, /śwież(?:y|e|ą|ej) (?:task|zadani|sesj|wątek)/i);
+  assert.match(readme, /PLUGIN_ROOT/);
+  assert.match(readme, /PLUGIN_DATA/);
+  assert.match(readme, /AGENTS\.md[\s\S]{0,200}opcjonal/i);
+  assert.match(readme, /npm run eval:codex-native -- --model <model-id> --reps 5 --personality none/);
+
+  for (const value of [
+    'hooks/codex/hooks.json',
+    'persona-context.js',
+    'persona-stop.js',
+    'PostToolUse',
+    'SubagentStart',
+    'Stop',
+  ]) assert.match(architecture, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(architecture, /osobn(?:y|e|ych) adapter/i);
+  assert.match(architecture, /nie traktuj[\s\S]{0,160}jednego manifestu[\s\S]{0,160}źródła prawdy/i);
+});
+
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {
   assert.match(skill, /Prawie każda zwykła odpowiedź[^\n]+jeden krótki akcent postaci/);
 });

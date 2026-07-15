@@ -135,9 +135,21 @@ codex plugin marketplace add karolkiljan/krux
 codex plugin add krux@krux-marketplace
 ```
 
-Po instalacji rozpocznij nowy wątek. Otwórz `/hooks`, przejrzyj cztery komendy z
-`hooks/hooks.json` i zaufaj im. Codex celowo nie uruchamia nowych ani zmienionych
-hooków pluginu bez jednorazowego zatwierdzenia.
+Po instalacji:
+
+1. Otwórz `/hooks`, przejrzyj i zaufaj wszystkim ośmiu definicjom komend z
+   `hooks/codex/hooks.json`. Codex celowo nie uruchamia nowych ani zmienionych
+   hooków bez jednorazowego zatwierdzenia.
+2. Rozpocznij świeże zadanie — już otwarty wątek może trzymać poprzednią kopię
+   pluginu i stary kontekst.
+3. Sprawdź krótkim promptem, czy odpowiedź ma głos Kruxa. W transcripcie powinny
+   pojawić się konteksty `KRUX PERSONA ACTIVE` i `KRUX TURN`; po dłuższej turze
+   narzędziowej także `KRUX CONTINUATION`.
+
+Adapter Codexa używa wyłącznie natywnych `PLUGIN_ROOT` (ścieżka instalacji) i
+`PLUGIN_DATA` (stan pluginu). Nie wymaga globalnego ani projektowego
+`AGENTS.md`. Taki plik jest tylko opcjonalnym fallbackiem, gdy polityka
+organizacji całkowicie wyłącza hooki pluginów; nie jest częścią instalacji Kruxa.
 
 Skille pojawiają się jako `$krux:krux` i `$krux:krux-flow`. Orki nie pojawiają
 się jako osobne custom agents — skill przekazuje ich role natywnym subagentom
@@ -146,6 +158,11 @@ Codexa, gdy delegacja ma sens.
 ## Użycie
 
 Po zaufaniu hookom persona aktywuje się przy starcie sesji. Statusline jest tylko dla Claude Code — tam plugin proponuje konfigurację `[KRUX]` przy pierwszym uruchomieniu; Codex pomija ten krok.
+
+Codex wzmacnia personę na `SessionStart`, `UserPromptSubmit`, `PostToolUse` i
+`SubagentStart`. Przed zakończeniem `Stop` przepuszcza głos Kruxa i formaty
+ścisłe bez zmian, a neutralny finał może raz poprosić model o kompletną korektę.
+`stop_hook_active` blokuje pętlę: druga wersja zawsze przechodzi.
 
 **Trwałe przełączanie** (persystuje między sesjami):
 
@@ -177,6 +194,8 @@ Wyłączenie trwa aż do ręcznego włączenia - niezależnie od sesji.
 export KRUX_DEFAULT_MODE=off            # wyłącz domyślnie
 export KRUX_DRIFT_INTERVAL=10           # co ile turnów pełna kotwica persony
 export KRUX_TURN_REMINDER=0             # wyłącz lekką kotwicę co turę; pełna zostaje
+export KRUX_CODEX_TOOL_INTERVAL=4       # Codex: kotwica co ile wyników narzędzi
+export KRUX_FINAL_GUARD=0                # Codex: wyłącz jednorazową korektę finału
 export KRUX_HORDA_NUDGE=0               # wyłącz podpowiedzi delegacji do orków
 export KRUX_HORDA_NUDGE_INTERVAL=5      # minimalny odstęp turnów między podpowiedziami
 ```
@@ -197,6 +216,7 @@ Uruchom go z katalogu checkoutu repozytorium:
 ```bash
 npm run eval:persona -- --host codex --model <model-id> --reps 5 --variant all
 npm run eval:persona -- --host claude --model <model-id> --reps 5 --variant all
+npm run eval:codex-native -- --model <model-id> --reps 5 --personality none
 ```
 
 Wyniki trafiają do ignorowanego `benchmarks/persona-eval/<run>/`. Surowe
@@ -213,6 +233,13 @@ przeliczenie istniejącego raw bez wywołania modelu:
 ```bash
 npm run eval:persona -- --rescore benchmarks/persona-eval/<run>
 ```
+
+`eval:codex-native` jest testem integracyjnym właściwego pluginu. Tworzy osobne,
+izolowane `CODEX_HOME` dla kontroli i Kruxa, kopiuje tylko `auth.json`, instaluje
+plugin wyłącznie w wariancie `native`, a potem wykonuje po 12 tur przez realne
+`codex exec` + `codex exec resume`. Zapisuje odpowiedzi przed scoringiem, dowody
+z transcriptu, aktywacje final guarda i porównanie kosztu w
+`benchmarks/codex-native-eval/<run>/`.
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
 jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.
