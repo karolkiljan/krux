@@ -4,7 +4,7 @@ Krux = minimalny plugin dla Claude Code i Codex: zwięzły polski głos technicz
 
 ## Co zostaje w kontekście
 
-Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`. Zwykły prompt, narzędzie, resume, start subagenta i Stop dodają 0 słów. Jedynym stanem jest `.krux-mode` w katalogu danych pluginu.
+Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`. Zwykły prompt, narzędzie, resume, start subagenta i Stop dodają 0 słów. Stan trzymają trzy niezależne flagi w katalogu danych pluginu: `.krux-mode`, `.krux-konkret`, `.krux-flow`.
 
 ## Instalacja
 
@@ -28,6 +28,8 @@ W obu hostach przejrzyj i zaufaj jednej komendzie hooka `node .../hooks/krux.js`
 
 - `wyłącz krux` jako cała wiadomość → trwały tryb neutralny.
 - `włącz krux` jako cała wiadomość → trwały głos Kruxa.
+- `włącz konkret` / `wyłącz konkret` → tryb precyzji zakresu: tylko proszone, nic więcej.
+- `włącz flow` / `wyłącz flow` → tryb iteracyjny: jeden ruch na raz, zgoda przed egzekucją.
 - Claude: `/krux:krux-horda`; Codex: `$krux:krux-horda` → mapa specjalistów na żądanie.
 
 | Ork | Fach |

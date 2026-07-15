@@ -102,29 +102,35 @@ test("hook registry has only two one-command lifecycle entries", () => {
   }
 });
 
-test("runtime contains exactly two compact skills and no custom agents", () => {
+test("runtime contains exactly four compact skills and no custom agents", () => {
   const skillDirs = fs.readdirSync(path.join(repo, "skills"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
-  assert.deepEqual(skillDirs, ["krux", "krux-horda"]);
+  assert.deepEqual(skillDirs, ["krux", "krux-flow", "krux-horda", "krux-konkret"]);
   assert.equal(fs.existsSync(path.join(repo, "agents")), false);
 
   const persona = body(fs.readFileSync(path.join(repo, "skills", "krux", "SKILL.md"), "utf8"));
   const horda = body(fs.readFileSync(path.join(repo, "skills", "krux-horda", "SKILL.md"), "utf8"));
+  const konkret = body(fs.readFileSync(path.join(repo, "skills", "krux-konkret", "SKILL.md"), "utf8"));
+  const flow = body(fs.readFileSync(path.join(repo, "skills", "krux-flow", "SKILL.md"), "utf8"));
   assert.ok(words(persona) <= 65);
   assert.ok(words(horda) <= 150);
+  assert.ok(words(konkret) <= 85);
+  assert.ok(words(flow) <= 85);
   for (const role of ["Niuch", "Grom", "Piryt", "Ochra", "Młot", "Lont"]) {
     assert.match(horda, new RegExp(role, "u"));
   }
 });
 
-test("runtime stays below budget with one state file and no legacy vocabulary", () => {
+test("runtime stays below budget with three state files and no legacy vocabulary", () => {
   const runtimeFiles = [...filesUnder("hooks"), ...filesUnder("skills")];
   assert.deepEqual(runtimeFiles.sort(), [
     "hooks/hooks.json",
     "hooks/krux.js",
+    "skills/krux-flow/SKILL.md",
     "skills/krux-horda/SKILL.md",
+    "skills/krux-konkret/SKILL.md",
     "skills/krux/SKILL.md"
   ]);
   const runtimeText = runtimeFiles.map((file) => fs.readFileSync(path.join(repo, file), "utf8")).join("\n");
@@ -132,11 +138,14 @@ test("runtime stays below budget with one state file and no legacy vocabulary", 
     (sum, file) => sum + fs.statSync(path.join(repo, file)).size,
     0
   );
-  assert.ok(runtimeBytes <= 8_000, `runtime = ${runtimeBytes} bytes`);
-  assert.deepEqual([...new Set(runtimeText.match(/\.krux-[\w-]+/gu) || [])], [".krux-mode"]);
+  assert.ok(runtimeBytes <= 8_500, `runtime = ${runtimeBytes} bytes`);
+  assert.deepEqual(
+    [...new Set(runtimeText.match(/\.krux-[\w-]+/gu) || [])].sort(),
+    [".krux-flow", ".krux-konkret", ".krux-mode"]
+  );
   for (const forbidden of [
     "PostToolUse", "SubagentStart", "Stop", "KRUX_DRIFT", "statusline", "_common.md",
-    "triggers.json", "krux-flow", "krux-konkret", "Mordor", "Moria", "Sauron",
+    "triggers.json", "Mordor", "Moria", "Sauron",
     "Tolkien", "Warcraft", "Warhammer"
   ]) {
     assert.doesNotMatch(runtimeText, new RegExp(forbidden, "iu"));
@@ -152,9 +161,7 @@ test("all obsolete runtime paths are absent", () => {
     "hooks/krux-statusline.sh",
     "hooks/krux-toggle.js",
     "hooks/codex",
-    "hooks/lib",
-    "skills/krux-flow",
-    "skills/krux-konkret"
+    "hooks/lib"
   ];
   for (const relative of obsolete) {
     assert.equal(fs.existsSync(path.join(repo, relative)), false, `${relative} still exists`);
@@ -190,7 +197,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
     /^python3 .*\/(?:quick_validate|validate_plugin)\.py(?: |$)/gmu
   );
   assert.match(plan, /one atomic source commit replaces the four intermediate task commits/u);
-  assert.doesNotMatch(`${readme}\n${maintainer}`, /flow|konkret|drift|PostToolUse|statusline|final guard|triggers\.json/iu);
+  assert.doesNotMatch(`${readme}\n${maintainer}`, /drift|PostToolUse|statusline|final guard|triggers\.json/iu);
 });
 
 test("only the focused tests, smoke runner and current design records remain", (t) => {
@@ -206,9 +213,11 @@ test("only the focused tests, smoke runner and current design records remain", (
   ]);
   assert.deepEqual(trackedFilesUnder("scripts"), ["context-smoke.js"]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
+    "2026-07-15-krux-konkret-flow-design.md",
     "2026-07-15-minimal-krux-design.md"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
+    "2026-07-15-krux-konkret-flow.md",
     "2026-07-15-minimal-krux.md"
   ]);
   assert.equal(fs.existsSync(path.join(repo, "agents")), false);
