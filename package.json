@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "eval:persona": "node scripts/persona-eval.js"
+    "eval:persona": "node scripts/persona-eval.js",
+    "eval:codex-native": "node scripts/codex-native-eval.js"
   },
   "author": "Karol Kiljan",
   "license": "MIT",

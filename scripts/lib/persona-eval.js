@@ -202,7 +202,8 @@ function scoreResponse(scenario, response) {
   if (typeof response !== 'string') throw new TypeError('Odpowiedź musi być stringiem');
 
   const required = Array.isArray(scenario.required) ? scenario.required : [];
-  const requiredMatches = required.map(pattern => new RegExp(pattern.source, pattern.flags).test(response));
+  const taskText = response.replace(/`([^`\n]*)`/g, '$1');
+  const requiredMatches = required.map(pattern => new RegExp(pattern.source, pattern.flags).test(taskText));
   const requiredHits = requiredMatches.filter(Boolean).length;
   const exactFormat = exactJsonMatches(response, scenario.exactJson);
   const words = wordCount(response);

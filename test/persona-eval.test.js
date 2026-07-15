@@ -325,6 +325,19 @@ test('task matchery akceptują polskie formy circuit breakera i raport z etykiet
   assert.equal(report.task.pass, true);
 });
 
+test('task matchery ignorują inline-code wokół wymaganych liczb', () => {
+  const circuit = scoreResponse(
+    scenario('circuit-breaker-contract'),
+    'Po `5` kolejnych błędach otwórz. Cooldown `30 s`. Half-open: `1` próba. Sukces zamyka, porażka otwiera ponownie.'
+  );
+  const report = scoreResponse(
+    scenario('work-report'),
+    'Linter: `0` błędów. Testy: `83` przeszły. Pominięte: `2`.'
+  );
+  assert.equal(circuit.task.pass, true);
+  assert.equal(report.task.pass, true);
+});
+
 test('persona i koszt są osobnymi osiami', () => {
   const response = Array(12).fill('Cache pusty → baza paść.').join(' ');
   const score = scoreResponse(scenario('causal-chain'), response);
