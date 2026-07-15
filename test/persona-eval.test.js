@@ -242,6 +242,18 @@ test('typowe formy pierwszej osoby w raporcie blokują PASS persony', () => {
   }
 });
 
+test('rzeczowniki zakończone na -łem nie udają pierwszej osoby', () => {
+  for (const [item, response] of [
+    [scenario('causal-chain'), 'Źródłem problemu jest pełna kolejka, przez co producent blokuje się i opóźnienie rośnie.'],
+    [scenario('context-summary-probe'), 'Między modułem a węzłem worker czekał 7 s na Redis i dostał ECONNREFUSED.'],
+    [scenario('work-report'), 'Ogółem: linter 0 błędów, 83 testy przeszły, pominięte: 2.'],
+  ]) {
+    const score = scoreResponse(item, response);
+    assert.equal(score.task.pass, true, response);
+    assert.equal(score.persona.firstPersonCount, 0, response);
+  }
+});
+
 test('kod i formuły nie nabijają markerów kompresji persony', () => {
   const score = scoreResponse(
     scenario('causal-chain'),

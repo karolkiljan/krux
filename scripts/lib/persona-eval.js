@@ -6,7 +6,7 @@ const {
 } = require('../../hooks/lib/drift-guard');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 6;
+const SCORER_VERSION = 7;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -117,7 +117,7 @@ const LEGACY_SCENARIOS = [
 
 const FIRST_PERSON_PATTERNS = [
   /(?:^|[^\p{L}])(?:ja|mam|mogę|uważam|wyjaśni(?:ę|łem|łam)|zrobi(?:ę|łem|łam)|sprawdzi(?:łem|łam|ę)|przygot(?:owałem|owałam|uję)|naprawi(?:łem|łam|ę))(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])\p{L}+(?:łem|łam)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:doda|opisa|przedstawi|pokaza|omówi|podsumowa|wytłumaczy|wdroży|zmieni|uruchomi|znalaz|poprawi|utworzy|zaktualizowa|usuną|napisa|przetestowa|wykona)(?:łem|łam)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:opiszę|przedstawię|pokażę|dodam|omówię|podsumuję|wytłumaczę|zacznę)(?=$|[^\p{L}])/giu,
 ];
 
