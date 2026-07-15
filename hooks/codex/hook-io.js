@@ -1,19 +1,10 @@
+// krux — transport natywnych eventów Codexa. Czysta hydraulika (stdin, parse,
+// frontmatter) pochodzi ze wspólnego rdzenia hooks/lib/hook-io; tu żyje tylko
+// envelope eventów kontekstowych Codexa. Stop nie przechodzi przez emitContext —
+// persona-stop.js zwraca natywne decision/reason bez hookSpecificOutput.
+const { collectStdin, parsePayload, stripFrontmatter } = require('../lib/hook-io');
+
 const EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PostToolUse', 'SubagentStart']);
-
-function collectStdin(onEnd) {
-  let raw = '';
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', chunk => { raw += chunk; });
-  process.stdin.on('end', () => onEnd(raw));
-}
-
-function parsePayload(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 function contextEnvelope(event, text) {
   if (!EVENTS.has(event)) throw new Error(`Nieobsługiwany event Codexa: ${event}`);
@@ -29,4 +20,11 @@ function emitContext(event, text, output = process.stdout) {
   output.write(JSON.stringify(contextEnvelope(event, text)));
 }
 
-module.exports = { EVENTS, collectStdin, parsePayload, contextEnvelope, emitContext };
+module.exports = {
+  EVENTS,
+  collectStdin,
+  parsePayload,
+  stripFrontmatter,
+  contextEnvelope,
+  emitContext,
+};

@@ -138,10 +138,13 @@ scores i raport bez model call; oba runnery obsługują ten tryb, w tym
 Surowe odpowiedzi trzeba czytać przy każdym trafionym markerze. Brak CLI =
 `SKIP`, nie zaliczony test; `npm test` nie wykonuje wywołań modelu.
 
-Natywny runner ma twardą bramkę `accepted`: task 100%, persona minimum 80% i
-wyżej od kontroli, brak dodatniej inflacji słów, każda tura zakotwiczona,
-kontrola bez kontekstu Kruxa oraz co najmniej jeden `KRUX CONTINUATION` na
-powtórzenie. Dokładny kontrakt trafia do `report.json.acceptanceCriteria`.
+Natywny runner ma twardą bramkę `accepted`: kompletny kształt runu (dokładnie
+jedna COMPLETE tura na każdą trójkę wariant × repetycja × klucz tury blueprintu —
+także przy `--rescore`, więc okrojony raw nie zaliczy), task 100%, persona
+minimum 80% i wyżej od kontroli, brak dodatniej inflacji słów, każda tura
+zakotwiczona, kontrola bez kontekstu Kruxa oraz co najmniej jeden
+`KRUX CONTINUATION` na powtórzenie. Dokładny kontrakt trafia do
+`report.json.acceptanceCriteria`.
 
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, kompaktowy invariant na każdej aktywnej turze, pełny drift-guard zastępujący go co próg, `KRUX_TURN_REMINDER=0` wyłączający tylko invariant + reset na on/off (`test/krux-toggle.test.js`)
@@ -152,7 +155,7 @@ Pokrycie:
 - `hooks/lib/drift-guard.js` — skład lekkiej i pełnej dodatniej kotwicy, rotacja przykładów, opt-out `KRUX_TURN_REMINDER=0|off`, próg oraz liczniki per-sesja (`test/drift-guard.test.js`)
 - `persona-eval` — judge-free scorer persony/zadania/kosztu i runner świeżych procesów Codex/Claude; modelowe wywołania tylko przez `npm run eval:persona` (`test/persona-eval.test.js`)
 - `codex-native-eval` — izolowane `CODEX_HOME`, realne `exec/resume`, wariant control/native, dowody transcriptu, `PostToolUse`, licznik faktycznych aktywacji final guarda i odtwarzalny `--rescore` (`test/codex-native-eval.test.js`)
-- `codex-persona-context` / `codex-persona-stop` — natywny lifecycle, event-specific envelope, tool cadence, format ścisły i jednorazowa korekta (`test/codex-persona-context.test.js`, `test/codex-persona-stop.test.js`)
+- `codex-persona-context` / `codex-persona-stop` — natywny lifecycle, event-specific envelope, tool cadence, format ścisły, opt-out `KRUX_TURN_REMINDER=0` (lekka kotwica cicha, pełna na progu zostaje) i jednorazowa korekta (`test/codex-persona-context.test.js`, `test/codex-persona-stop.test.js`)
 - `triggers-sync` — `agents/triggers.json` zsynchronizowany z `description` każdego orka (`test/triggers-sync.test.js`)
 - `agents-shape` — walidacja frontmatter orków (name/description/model/color/tools, zakaz `<example>` i `user:`/`assistant:`, odsyłacz do `_common.md`, limit 50 linii body) (`test/agents-shape.test.js`)
 - `integration` — testy integracyjne (opt-out persystencja, ortogonalność flow/persona, resume nie wstrzykuje SKILL.md, pełny cykl per-turn/full-guard włącznie z resetem przez compact i `KRUX_TURN_REMINDER=0`) (`test/integration.test.js`)

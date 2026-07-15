@@ -102,8 +102,6 @@ test('mode=on + source=resume: emits short reminder (no full SKILL.md)', () => {
     assert.match(r.stdout, /Wymagany format/);
     assert.match(r.stdout, /4 PRAWA:/);
     assert.doesNotMatch(r.stdout, /Nie:|ZAKAZ/);
-    assert.match(r.stdout, /Krux = techniczny ork/);
-    assert.match(r.stdout, /Wymagany format/);
     assert.doesNotMatch(r.stdout, /nadpisuje wszystkie inne skille/);
     // Full SKILL.md body (e.g., "## Persona") should NOT be present.
     assert.doesNotMatch(r.stdout, /## Persona/);

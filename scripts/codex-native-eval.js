@@ -20,13 +20,13 @@ const PERSONALITIES = ['none', 'pragmatic', 'friendly'];
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 const EVALUATOR_VERSION = 3;
 const MIN_NATIVE_PERSONA_PASS_RATE = 0.8;
-const MIN_PERSONA_PASS_RATE = MIN_NATIVE_PERSONA_PASS_RATE;
 const ACCEPTANCE_CRITERIA = Object.freeze({
+  runShapeComplete: true,
   nativeEveryTurnAnchored: true,
   controlHasNoKruxContext: true,
   minContinuationCountPerRepetition: 1,
   nativeTaskPassRate: 1,
-  nativePersonaPassRateMin: MIN_PERSONA_PASS_RATE,
+  nativePersonaPassRateMin: MIN_NATIVE_PERSONA_PASS_RATE,
   nativePersonaMustBeatControl: true,
   maxWordInflationVsControl: 0,
 });
@@ -312,7 +312,30 @@ function installNativePlugin(spawn, env, cwd) {
   return null;
 }
 
-function reportEvidence(rows) {
+// Kompletny run = dokładnie jedna COMPLETE tura na każdą trójkę
+// wariant × repetycja × klucz tury blueprintu. Bramka odcina okrojony albo
+// spreparowany raw.jsonl, którego agregaty inaczej wyglądałyby wiarygodnie.
+function runShapeComplete(rows, reps) {
+  if (!Number.isInteger(reps) || reps <= 0) return false;
+  if (rows.length !== reps * 2 * TURN_BLUEPRINT.length) return false;
+  const seen = new Set();
+  for (const row of rows) {
+    if (row.status !== 'COMPLETE') return false;
+    const key = `${row.variant}/${row.repetition}/${row.turnKey}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+  }
+  for (const variant of ['control', 'native']) {
+    for (let repetition = 1; repetition <= reps; repetition += 1) {
+      for (const turn of TURN_BLUEPRINT) {
+        if (!seen.has(`${variant}/${repetition}/${turn.key}`)) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function reportEvidence(rows, reps = 1) {
   const native = rows.filter(row => row.variant === 'native' && row.status === 'COMPLETE');
   const control = rows.filter(row => row.variant === 'control' && row.status === 'COMPLETE');
   const continuationCount = native.reduce(
@@ -321,6 +344,7 @@ function reportEvidence(rows) {
   );
   const finalGuardActivations = native.reduce((sum, row) => sum + row.guardActivations, 0);
   return {
+    runShapeComplete: runShapeComplete(rows, reps),
     nativeTurns: native.length,
     controlTurns: control.length,
     nativeEveryTurnAnchored: native.length > 0 && native.every(row => (
@@ -334,6 +358,9 @@ function reportEvidence(rows) {
 
 function acceptanceGates(summary, evidence, reps = 1) {
   return {
+    runShapeComplete: (
+      evidence?.runShapeComplete === ACCEPTANCE_CRITERIA.runShapeComplete
+    ),
     nativeEveryTurnAnchored: (
       evidence?.nativeEveryTurnAnchored === ACCEPTANCE_CRITERIA.nativeEveryTurnAnchored
     ),
@@ -383,7 +410,7 @@ function rescoreRun(runDir, options = {}) {
     ? 'ERROR'
     : previous.status;
   const summary = summarizeResults(scoredRows);
-  const evidence = reportEvidence(rows);
+  const evidence = reportEvidence(rows, reps);
   const gates = acceptanceGates(summary, evidence, reps);
   const now = options.now || (() => new Date());
   const metadata = {
@@ -459,7 +486,7 @@ function runEvaluation(options) {
 
   const writeReport = (status, extras = {}) => {
     const summary = summarizeResults(scoredRows);
-    const evidence = reportEvidence(rows);
+    const evidence = reportEvidence(rows, reps);
     const gates = acceptanceGates(summary, evidence, reps);
     const report = {
       status,
@@ -621,7 +648,6 @@ if (require.main === module) main();
 
 module.exports = {
   EVALUATOR_VERSION,
-  MIN_PERSONA_PASS_RATE,
   ACCEPTANCE_CRITERIA,
   PERSONALITIES,
   TURN_BLUEPRINT,

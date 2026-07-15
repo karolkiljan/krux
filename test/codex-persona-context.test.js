@@ -90,6 +90,34 @@ test('UserPromptSubmit emituje lekki reminder, a na progu pełny', () => {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('KRUX_TURN_REMINDER=0 wycisza lekką kotwicę, pełna na progu zostaje', () => {
+  const dir = tempDir();
+  try {
+    run({ hook_event_name: 'SessionStart', source: 'startup', session_id: 'sid-a' }, dir);
+    const env = { KRUX_TURN_REMINDER: '0', KRUX_DRIFT_INTERVAL: '2' };
+    const first = run({
+      hook_event_name: 'UserPromptSubmit', prompt: 'pierwszy prompt',
+      session_id: 'sid-a', turn_id: 'turn-1',
+    }, dir, env);
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(first.stdout, '');
+    const second = additionalContext(run({
+      hook_event_name: 'UserPromptSubmit', prompt: 'drugi prompt',
+      session_id: 'sid-a', turn_id: 'turn-2',
+    }, dir, env), 'UserPromptSubmit');
+    assert.match(second, /KRUX TURN — [\s\S]*4 PRAWA/);
+    // Wyciszona tura zostaje zakotwiczona: PostToolUse nie przemyca
+    // lekkiej kotwicy z powrotem po pierwszym narzędziu.
+    run({
+      hook_event_name: 'UserPromptSubmit', prompt: 'trzeci prompt',
+      session_id: 'sid-a', turn_id: 'turn-3',
+    }, dir, env);
+    assert.equal(run({
+      hook_event_name: 'PostToolUse', session_id: 'sid-a', turn_id: 'turn-3',
+    }, dir, env).stdout, '');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('jawne off czyści bieżącą sesję i emituje neutralny kontrakt', () => {
   const dir = tempDir();
   try {

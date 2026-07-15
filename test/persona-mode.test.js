@@ -51,8 +51,10 @@ test('niepoprawne wartości pliku i env wracają do on', () => {
 test('klasyfikator łapie format maszynowy, ale nie zwykłe słowo JSON', () => {
   for (const prompt of [
     'Zwróć wyłącznie JSON. Bez markdown.',
+    'Zwroc wylacznie JSON.',
     'Napisz commit message dla tej zmiany.',
     'Podaj dokładny format wskazany niżej.',
+    'Podaj dokladny format wskazany nizej.',
     'Return this in the exact format.',
   ]) assert.equal(isStrictFormatPrompt(prompt), true, prompt);
 

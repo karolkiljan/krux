@@ -205,7 +205,9 @@ tożsamość + mierzalny ślad głosu + dodatni przykład + kontrakt zadania. Co
 `KRUX_DRIFT_INTERVAL` turnów
 pełny `KRUX DRIFT-GUARD` dodaje 4 PRAWA i używa kolejnego przykładu. Hook nie
 wykonuje dodatkowego wywołania modelu. `KRUX_TURN_REMINDER=0` wyłącza lekką
-kotwicę co turn; pełna nadal działa w ustawionym interwale.
+kotwicę co turn na obu hostach; pełna nadal działa w ustawionym interwale,
+a Codexowe `KRUX CONTINUATION` w trakcie tury steruje się osobno przez
+`KRUX_CODEX_TOOL_INTERVAL`.
 
 ### Benchmark persony
 

@@ -138,7 +138,7 @@ test('dry-run nie woła Codexa i zwraca 24 tury dla jednej próby', () => {
   assert.equal(calls, 0);
 });
 
-test('rescore przelicza native raw bez modelu i zachowuje dowody lifecycle', () => {
+test('rescore przelicza raw bez modelu, ale okrojony run nie przechodzi bramki kształtu', () => {
   withTempDir(runDir => {
     const rows = [
       {
@@ -170,7 +170,10 @@ test('rescore przelicza native raw bez modelu i zachowuje dowody lifecycle', () 
     });
 
     assert.equal(result.status, 'COMPLETE');
-    assert.equal(result.accepted, true);
+    // 2 wiersze zamiast pełnych 24 (reps=1 × 2 warianty × 12 tur): scoring
+    // i dowody lifecycle liczą się normalnie, ale bramka kształtu blokuje accepted.
+    assert.equal(result.gates.runShapeComplete, false);
+    assert.equal(result.accepted, false);
     assert.equal(result.summary.native.taskPassRate, 1);
     assert.equal(result.summary.native.personaPassRate, 1);
     assert.equal(result.summary.control.personaPassRate, 0);
@@ -180,7 +183,7 @@ test('rescore przelicza native raw bez modelu i zachowuje dowody lifecycle', () 
     assert.equal(result.metadata.rescoreGitSha, 'rescore-sha');
     assert.equal(fs.readFileSync(path.join(runDir, 'raw.jsonl'), 'utf8'), raw);
     assert.equal(fs.readFileSync(path.join(runDir, 'scores.jsonl'), 'utf8').trim().split('\n').length, 2);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'), 'utf8')).accepted, true);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'), 'utf8')).accepted, false);
   });
 });
 
@@ -194,6 +197,7 @@ test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', (
     },
   };
   const evidence = {
+    runShapeComplete: true,
     nativeEveryTurnAnchored: true,
     controlHasNoKruxContext: true,
     continuationCount: 5,
@@ -201,6 +205,7 @@ test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', (
 
   assert.equal(MIN_NATIVE_PERSONA_PASS_RATE, 0.8);
   assert.deepEqual(acceptanceGates(summary, evidence, 5), {
+    runShapeComplete: true,
     nativeEveryTurnAnchored: true,
     controlHasNoKruxContext: true,
     continuationPerRepetition: true,
@@ -225,6 +230,7 @@ test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', (
   assert.equal(acceptedSummary(summary, { ...evidence, nativeEveryTurnAnchored: false }, 5), false);
   assert.equal(acceptedSummary(summary, { ...evidence, controlHasNoKruxContext: false }, 5), false);
   assert.equal(acceptedSummary(summary, { ...evidence, continuationCount: 4 }, 5), false);
+  assert.equal(acceptedSummary(summary, { ...evidence, runShapeComplete: false }, 5), false);
 });
 
 test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody przed scoringiem', () => {
@@ -306,6 +312,8 @@ test('mockowany pełny run instaluje plugin tylko w native i zapisuje dowody prz
     assert.equal(result.attempts, 24);
     assert.equal(pluginHomes.length, 2);
     assert.ok(pluginHomes.every(home => home.includes('native-home')));
+    assert.equal(result.evidence.runShapeComplete, true);
+    assert.equal(result.gates.runShapeComplete, true);
     assert.equal(result.evidence.nativeEveryTurnAnchored, true);
     assert.equal(result.evidence.controlHasNoKruxContext, true);
     assert.equal(result.evidence.continuationCount, 1);

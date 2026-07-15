@@ -2,8 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { collectStdin, parsePayload, emitContext } = require('./hook-io');
-const { stripFrontmatter } = require('../lib/hook-io');
+const { collectStdin, parsePayload, emitContext, stripFrontmatter } = require('./hook-io');
 const {
   classifyPersonaPrompt,
   getDefaultMode,
@@ -21,6 +20,7 @@ const {
   resetTurnCount,
   markPromptTurn,
   shouldReinforceAfterTool,
+  turnReminderEnabled,
 } = require('../lib/drift-guard');
 
 const OFF_CONTEXT = 'KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.';
@@ -110,12 +110,15 @@ function handlePrompt(dir, sid, turnId, rawPrompt) {
   }
 
   if (!sid || !isSessionActive(dir, sid)) return;
+  // Tura zostaje oznaczona jako zakotwiczona nawet przy KRUX_TURN_REMINDER=0 —
+  // opt-out ma wyciszyć lekkie kotwice, więc PostToolUse nie może ich
+  // przemycić z powrotem przez dogrywkę pierwszego narzędzia.
   markPromptTurn(dir, sid, turnId, { strict: isStrictFormatPrompt(prompt) });
-  const example = nextMicroExample(dir, sid);
-  const reminder = bumpTurnCount(dir, sid)
-    ? buildFullReminder(example)
-    : buildTurnReminder(example);
-  emitContext('UserPromptSubmit', `KRUX TURN — ${reminder}`);
+  if (bumpTurnCount(dir, sid)) {
+    emitContext('UserPromptSubmit', `KRUX TURN — ${buildFullReminder(nextMicroExample(dir, sid))}`);
+  } else if (turnReminderEnabled()) {
+    emitContext('UserPromptSubmit', `KRUX TURN — ${buildTurnReminder(nextMicroExample(dir, sid))}`);
+  }
 }
 
 function handleSubagentStart(dir, sid) {

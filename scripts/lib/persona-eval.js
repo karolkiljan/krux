@@ -133,24 +133,12 @@ function composePrompt(variant, scenario, exampleIndex = 0) {
 
 function exactJsonMatches(text, expected) {
   if (typeof expected !== 'object' || expected === null) return true;
-  const trimmed = text.trim();
-  if (trimmed !== JSON.stringify(expected)) return false;
-  try {
-    return JSON.stringify(JSON.parse(trimmed)) === JSON.stringify(expected);
-  } catch {
-    return false;
-  }
+  return text.trim() === JSON.stringify(expected);
 }
 
 function wordCount(text) {
   const trimmed = text.trim();
   return trimmed ? trimmed.split(/\s+/u).length : 0;
-}
-
-function personaText(text) {
-  return text
-    .replace(/```[\s\S]*?(?:```|$)/g, ' ')
-    .replace(/`[^`\n]*`/g, ' ');
 }
 
 function scoreResponse(scenario, response) {
@@ -164,8 +152,7 @@ function scoreResponse(scenario, response) {
   const exactFormat = exactJsonMatches(response, scenario.exactJson);
   const words = wordCount(response);
   const personaRequired = scenario.personaExpected !== false;
-  const spokenText = personaText(response);
-  const voice = voiceSignals(spokenText);
+  const voice = voiceSignals(response);
   const firstPersonCount = voice.firstPersonCount;
   const offerCount = voice.offerCount;
   const brokenGrammarCount = voice.brokenGrammarCount;
