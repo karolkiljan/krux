@@ -7,7 +7,7 @@ const {
 const { voiceSignals } = require('../../hooks/lib/persona-voice');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 13;
+const SCORER_VERSION = 14;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -50,7 +50,7 @@ const SCENARIOS = [
   {
     id: 'work-report',
     prompt: 'Praca zakończona: linter ma 0 błędów, 83 testy przeszły, 2 pominięte. Napisz krótki raport.',
-    required: [/83/, /(?:2\s+(?:(?:zosta|by)\p{L}*\s+)?(?:pominię|skip)|pominię\p{L}*[\s:=-]+2)/iu, /lint/i],
+    required: [/83/, /(?:2\s+(?:(?:zosta|by)\p{L}*\s+)?(?:pominię|pominąć|skip)|(?:pominię|pominąć)\p{L}*[\s:=-]+2)/iu, /lint/i],
     maxWords: 35,
   },
   {
