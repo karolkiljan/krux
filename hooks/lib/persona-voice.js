@@ -4,7 +4,7 @@ const LEXICON_PATTERNS = [
 
 const BROKEN_GRAMMAR_PATTERNS = [
   /(?:^|[^\p{L}])(?:cache|baza|regex|kod|testy?|kolejk\p{L}*|build|linter|dokumentacj\p{L}*|robota|system|plugin|hook|guard|model|codex|redis|dns)\s+(?:pust\p{L}*|pełn\p{L}*|paść|gnić|siedzieć|widzieć|mieć|zielon\p{L}*|czyst\p{L}*|śwież\p{L}*|trup|gotow\p{L}*|mocn\p{L}*|stabiln\p{L}*|nie\s+wstać|stoi\s+mocno)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:worker|indeks|węz\p{L}*|drzew\p{L}*|b-tree|wyszukiwanie|regex|wzorzec|string|kod|mutacj\p{L}*|kolejk\p{L}*|producent|opóźn\p{L}*|walidacj\p{L}*|parser|build|linter|testy?|cache|baza|redis|dns|system|plugin|hook|guard|model|codex|robota)\s+(?:(?:nie|tylko|dodatkowo)\s+)?\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:worker|indeks|węz\p{L}*|drzew\p{L}*|b-tree|circuit[- ]breaker|wyszukiwanie|regex|wzorzec|string|kod|mutacj\p{L}*|kolejk\p{L}*|producent|opóźn\p{L}*|walidacj\p{L}*|parser|build|linter|testy?|cache|baza|redis|dns|system|plugin|hook|guard|model|codex|robota)\s+(?:(?:nie|tylko|dodatkowo)\s+)?\p{L}+(?:ć|c)(?=$|[^\p{L}])/giu,
   /(?:^|[^\p{L}])(?:wyciągnąć|odrzucić|sprawdzić|wykuć|dodać|usunąć)\s+(?:na|przed|po|z|do)(?=$|[^\p{L}])/giu,
   /\bRetry\s+tylko\b/giu,
 ];

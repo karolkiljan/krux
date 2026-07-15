@@ -198,6 +198,10 @@ test('scorer rozpoznaje produktywne konstrukcje głosu z natywnego runtime', () 
       'Przyczyna: parser sprawdzać tylko format. Fix: walidacja odrzucać nieistniejące daty.',
     ],
     [
+      scenario('circuit-breaker-contract'),
+      'Circuit breaker otwierać po 5 kolejnych błędach → cooldown 30 s → half-open z 1 próbą. Sukces zamykać; porażka otwierać ponownie.',
+    ],
+    [
       scenario('no-offer-ending'),
       'Dokumentacja zaktualizowana. Build przechodzi. Robota stoi mocno.',
     ],
