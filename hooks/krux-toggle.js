@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
 const { onPromptPayload, emitContext, stripFrontmatter } = require('./lib/hook-io');
+const { classifyPersonaPrompt } = require('./lib/persona-mode');
 const {
   buildTurnReminder,
   buildFullReminder,
@@ -39,19 +40,15 @@ onPromptPayload(({ prompt, sessionId }) => {
     }
   };
 
-  // Polish diacritics optional — `wylacz krux`, `wlacz krux` also work.
-  // Both hosts spell explicit toggles: /krux:krux on|off (Claude), $krux:krux on|off (Codex).
-  const oneShotRe = /^(\/|\$)krux:krux$/iu;
-  const offRe = /^(stop krux|normalny tryb|wy(ł|l)(ą|a)cz krux|(\/|\$)krux:krux off)$/iu;
-  const onRe = /^(krux|w(ł|l)(ą|a)cz krux|start krux|aktywuj krux|(\/|\$)krux:krux on)$/iu;
+  const action = classifyPersonaPrompt(prompt);
 
-  if (oneShotRe.test(prompt)) {
+  if (action === 'one-shot') {
     // One-shot loads the skill body through the slash-command channel — this is
     // a fresh reinforcement, so the drift-guard window restarts like any other.
     try { fs.closeSync(fs.openSync(flag, 'w')); } catch (e) {}
     markSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
-  } else if (offRe.test(prompt)) {
+  } else if (action === 'off') {
     try { fs.writeFileSync(modeFile, 'off'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
       return;
@@ -60,7 +57,7 @@ onPromptPayload(({ prompt, sessionId }) => {
     clearSessionActive(claudeDir, sessionId);
     resetTurnCount(claudeDir, sessionId);
     emitContext('KRUX PERSONA OFF. Odpowiadaj od tej wiadomości neutralną, zwięzłą polszczyzną. Nie stosuj łamanej gramatyki ani orkowego słownika. Flow zachowuje własny, niezależny stan.');
-  } else if (onRe.test(prompt)) {
+  } else if (action === 'on') {
     try { fs.writeFileSync(modeFile, 'on'); } catch (e) {
       console.error('[KRUX] write .krux-mode failed:', e.message);
       return;

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { stateDir } = require('./lib/state-dir');
 const { collectStdin, parsePayload, stripFrontmatter } = require('./lib/hook-io');
+const { getDefaultMode } = require('./lib/persona-mode');
 const {
   buildFullReminder,
   nextMicroExample,
@@ -10,29 +11,6 @@ const {
   markSessionActive,
   clearSessionActive,
 } = require('./lib/drift-guard');
-
-const VALID_MODES = ['on', 'off'];
-
-// Resolution order for default mode:
-//   1. <stateDir>/.krux-mode (explicit user choice) beats an inherited shell default —
-//      otherwise `stop krux` writes "off" but the next SessionStart silently turns it on.
-//   2. KRUX_DEFAULT_MODE environment variable (initial default only)
-//   3. 'on'
-function getDefaultMode() {
-  try {
-    const claudeMode = fs.readFileSync(
-      path.join(stateDir(), '.krux-mode'), 'utf8'
-    ).trim().toLowerCase();
-    if (VALID_MODES.includes(claudeMode)) return claudeMode;
-  } catch (e) {}
-
-  const envMode = process.env.KRUX_DEFAULT_MODE;
-  if (envMode && VALID_MODES.includes(envMode.toLowerCase())) {
-    return envMode.toLowerCase();
-  }
-
-  return 'on';
-}
 
 const claudeDir = stateDir();
 const flagPath = path.join(claudeDir, '.krux-active');
@@ -52,7 +30,7 @@ collectStdin(raw => {
     sessionId = payload.session_id;
   }
 
-  const mode = getDefaultMode();
+  const mode = getDefaultMode(claudeDir);
 
   if (mode === 'off') {
     try { fs.unlinkSync(flagPath); } catch (e) {}
