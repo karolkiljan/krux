@@ -17,6 +17,19 @@ const COMPRESSION_PATTERNS = [
   /backoff\s*\+\s*jitter/giu,
   /(?:^|[.!?]\s+)(?:Zrobione|Gotowe|Wynik|Przyczyna|Fix|Weryfikacja|Retry|Mutacj\p{L}*|Linter|Testy?|Build|Status)\s*[:.]/giu,
 ];
+
+const FIRST_PERSON_PATTERNS = [
+  /(?:^|[^\p{L}])(?:ja|mam|mogę|uważam|wyjaśni(?:ę|łem|łam)|zrobi(?:ę|łem|łam)|sprawdzi(?:łem|łam|ę)|przygot(?:owałem|owałam|uję)|naprawi(?:łem|łam|ę))(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:doda|opisa|przedstawi|pokaza|omówi|podsumowa|wytłumaczy|wdroży|zmieni|uruchomi|znalaz|poprawi|utworzy|zaktualizowa|usuną|napisa|przetestowa|wykona)(?:łem|łam)(?=$|[^\p{L}])/giu,
+  /(?:^|[^\p{L}])(?:opiszę|przedstawię|pokażę|dodam|omówię|podsumuję|wytłumaczę|zacznę)(?=$|[^\p{L}])/giu,
+];
+
+const OFFER_PATTERNS = [
+  /jeśli chcesz/giu,
+  /mogę też/giu,
+  /daj znać/giu,
+  /czy chcesz/giu,
+];
 const CONVENTIONAL_COMMIT_RE = /^(?:build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(?:\([^\n)]+\))?!?: [^\n]+$/u;
 
 function spokenText(text) {
@@ -52,6 +65,8 @@ function voiceSignals(text) {
   const brokenGrammarCount = countPatterns(value, BROKEN_GRAMMAR_PATTERNS);
   const compressionCount = countPatternKinds(value, COMPRESSION_PATTERNS);
   const lexiconCount = countPatterns(value, LEXICON_PATTERNS);
+  const firstPersonCount = countPatterns(value, FIRST_PERSON_PATTERNS);
+  const offerCount = countPatterns(value, OFFER_PATTERNS);
   const result = {
     brokenGrammar: brokenGrammarCount > 0,
     compression: compressionCount > 0,
@@ -59,8 +74,12 @@ function voiceSignals(text) {
     brokenGrammarCount,
     compressionCount,
     lexiconCount,
+    firstPersonCount,
+    offerCount,
   };
-  result.pass = result.brokenGrammar || (result.lexicon && result.compression);
+  result.pass = firstPersonCount === 0
+    && offerCount === 0
+    && (result.brokenGrammar || (result.lexicon && result.compression));
   return result;
 }
 
@@ -72,6 +91,8 @@ module.exports = {
   BROKEN_GRAMMAR_PATTERNS,
   LEXICON_PATTERNS,
   COMPRESSION_PATTERNS,
+  FIRST_PERSON_PATTERNS,
+  OFFER_PATTERNS,
   isMachineExact,
   voiceSignals,
   needsPersonaRewrite,

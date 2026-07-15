@@ -15,6 +15,10 @@ const personaDesign = fs.readFileSync(
   path.join(ROOT, 'docs', 'superpowers', 'specs', '2026-07-15-persona-drift-optimization-design.md'),
   'utf8'
 );
+const nativePersonaDesign = fs.readFileSync(
+  path.join(ROOT, 'docs', 'superpowers', 'specs', '2026-07-15-codex-native-persona-plugin-design.md'),
+  'utf8'
+);
 const compact = text => text.replace(/\s+/g, ' ');
 
 function readOptional(file) {
@@ -273,6 +277,10 @@ test('dokumentacja opisuje pełny natywny lifecycle i instalację Codexa', () =>
   assert.match(readme, /PLUGIN_DATA/);
   assert.match(readme, /AGENTS\.md[\s\S]{0,200}opcjonal/i);
   assert.match(readme, /npm run eval:codex-native -- --model <model-id> --reps 5 --personality none/);
+  assert.match(readme, /persona[^\n]+(?:minimum|co najmniej)[^\n]+80%/i);
+  assert.match(readme, /task[^\n]+100%/i);
+  assert.match(readme, /każd[^\n]+tur[^\n]+zakotwiczon/i);
+  assert.match(readme, /kontrol[^\n]+bez[^\n]+KRUX/i);
 
   for (const value of [
     'hooks/codex/hooks.json',
@@ -284,6 +292,9 @@ test('dokumentacja opisuje pełny natywny lifecycle i instalację Codexa', () =>
   ]) assert.match(architecture, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(architecture, /osobn(?:y|e|ych) adapter/i);
   assert.match(architecture, /nie traktuj[\s\S]{0,160}jednego manifestu[\s\S]{0,160}źródła prawdy/i);
+  assert.match(architecture, /minimum[^\n]+80%/i);
+  assert.match(nativePersonaDesign, /minimum[^\n]+80%/i);
+  assert.match(nativePersonaDesign, /łaman\p{L}* gramatyk\p{L}*[^\n]+(?:albo|lub)[^\n]+słownik[^\n]+kompresj/iu);
 });
 
 test('rdzeń utrzymuje postać w zwykłej odpowiedzi', () => {

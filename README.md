@@ -201,7 +201,8 @@ export KRUX_HORDA_NUDGE_INTERVAL=5      # minimalny odstęp turnów między podp
 ```
 
 Gdy persona jest aktywna, każdy turn dostaje dodatnią kotwicę `KRUX TURN`:
-tożsamość + dodatni przykład + kontrakt zadania. Co `KRUX_DRIFT_INTERVAL` turnów
+tożsamość + mierzalny ślad głosu + dodatni przykład + kontrakt zadania. Co
+`KRUX_DRIFT_INTERVAL` turnów
 pełny `KRUX DRIFT-GUARD` dodaje 4 PRAWA i używa kolejnego przykładu. Hook nie
 wykonuje dodatkowego wywołania modelu. `KRUX_TURN_REMINDER=0` wyłącza lekką
 kotwicę co turn; pełna nadal działa w ustawionym interwale.
@@ -240,6 +241,19 @@ plugin wyłącznie w wariancie `native`, a potem wykonuje po 12 tur przez realne
 `codex exec` + `codex exec resume`. Zapisuje odpowiedzi przed scoringiem, dowody
 z transcriptu, aktywacje final guarda i porównanie kosztu w
 `benchmarks/codex-native-eval/<run>/`.
+
+`report.json` ustawia `accepted=true` dopiero po przejściu całej bramki:
+
+- Persona native: minimum 80% zwykłych odpowiedzi i wynik wyższy od kontroli.
+- Task native: 100% zachowanych warunków oraz formatów ścisłych.
+- Każda natywna tura zakotwiczona przez lifecycle pluginu.
+- Kontrola bez żadnego kontekstu `KRUX`; co najmniej jeden dowód
+  `KRUX CONTINUATION` na powtórzenie.
+- Brak dodatniej inflacji liczby słów względem sparowanej kontroli.
+
+Kryteria są zapisane także maszynowo w `acceptanceCriteria`. Liczba aktywacji
+final guarda jest diagnostyką, nie warunkiem — poprawna odpowiedź może od razu
+mieć głos Kruxa.
 
 `KRUX_DEFAULT_MODE` działa jako stan początkowy. Po użyciu `krux` albo `stop krux`
 jawny wybór w `<stateDir>/.krux-mode` ma pierwszeństwo przed zmienną środowiskową.

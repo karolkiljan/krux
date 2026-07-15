@@ -105,9 +105,9 @@ Ten sam plugin obsługuje dwa hosty przez dwa manifesty obok siebie: `.claude-pl
 
 **Resume → zwarta pełna kotwica, compact → pełny reinject SKILL.md.** Resume zachowuje rozmowę, lecz nie wolno zakładać trwałości pozycji developer context; oba adaptery przypominają cały kontrakt w zwartej formie. Compact przepisuje kontekst, więc oba ponownie wstrzykują pełne `SKILL.md`.
 
-**Miks praw, przykładów i kotwicy — trzy warstwy persony.** SKILL.md daje 4 PRAWA oraz przykłady brzmienia, a hook mechanicznie wzmacnia aktywną personę. Runtime składa jeden dodatni kontrakt: tożsamość + dodatni przykład + kontrakt zadania. Własna walidacja brancha `persona-rewrite-fewshot` pokazała, że czysty few-shot może zwiększać gadatliwość i psuć granice. ContextEcho (arXiv:2605.24279) wykazał dryf zależny od modelu i w swoim układzie odzyskiwał personę oraz format przez świeżą, łączoną kotwicę tożsamości i demonstracji; nie dowodzi uniwersalnej przewagi reguł nad przykładami. Wytyczne Anthropic wspierają szczegółową rolę i przykłady. Dlatego Krux zachowuje miks, ale jego skuteczność musi mierzyć lokalnie benchmark, nie sama obecność tekstu w hooku.
+**Miks praw, przykładów i kotwicy — trzy warstwy persony.** SKILL.md daje 4 PRAWA oraz przykłady brzmienia, a hook mechanicznie wzmacnia aktywną personę. Runtime składa jeden dodatni kontrakt: tożsamość + mierzalny kontrakt głosu + dodatni przykład + kontrakt zadania. Własna walidacja brancha `persona-rewrite-fewshot` pokazała, że czysty few-shot może zwiększać gadatliwość i psuć granice. ContextEcho (arXiv:2605.24279) wykazał dryf zależny od modelu i w swoim układzie odzyskiwał personę oraz format przez świeżą, łączoną kotwicę tożsamości i demonstracji; nie dowodzi uniwersalnej przewagi reguł nad przykładami. Wytyczne Anthropic wspierają szczegółową rolę i przykłady. Dlatego Krux zachowuje miks, ale jego skuteczność musi mierzyć lokalnie benchmark, nie sama obecność tekstu w hooku.
 
-**Drift-guard: mechaniczna dodatnia kotwica.** Każda aktywna tura dostaje `KRUX TURN` z tożsamością, kontraktem zachowania treści i rotowanym dodatnim przykładem. Co `KRUX_DRIFT_INTERVAL` tur wchodzi pełny `KRUX DRIFT-GUARD`. Codex dodatkowo domyka dziurę automatycznych kontynuacji przez `PostToolUse`: pierwszy tool niezakotwiczonej tury oraz co czwarty tool długiej tury emituje `KRUX CONTINUATION`. Same kotwice nie wołają modelu; tylko `Stop` może raz uruchomić korektę neutralnego finału. Liczniki i rotacja są per sesja.
+**Drift-guard: mechaniczna dodatnia kotwica.** Każda aktywna tura dostaje `KRUX TURN` z tożsamością, kontraktem zachowania treści, mierzalnym śladem głosu i rotowanym dodatnim przykładem. Co `KRUX_DRIFT_INTERVAL` tur wchodzi pełny `KRUX DRIFT-GUARD`. Codex dodatkowo domyka dziurę automatycznych kontynuacji przez `PostToolUse`: pierwszy tool niezakotwiczonej tury oraz co czwarty tool długiej tury emituje `KRUX CONTINUATION`. Same kotwice nie wołają modelu; tylko `Stop` może raz uruchomić korektę neutralnego finału. `persona-voice.js` jest wspólnym źródłem prawdy dla guarda i scorera: przepuszcza łamaną gramatykę albo orkowy słownik połączony z kompresją, a odrzuca pierwszą osobę i ofertę dalszej pracy. Liczniki i rotacja są per sesja.
 
 **Nudge Hordy: delegacja nie zależy od pamięci modelu.** Ta sama filozofia co drift-guard — samoobserwacja zawodna, więc `krux-horda-trigger.js` mechanicznie łapie triggery ról w promptcie i podpowiada sprawdzenie bramki korzyści. Podpowiedź nie wymusza spawnu: decyzja zostaje przy modelu (bramka korzyści w `orchestration.md`). Osobny plik hooka zgodnie z konwencją „nie mieszać logiki"; generyczny magazyn liczników per-sesja współdzielony z drift-guardem przez `hooks/lib/drift-guard.js`.
 
@@ -124,6 +124,7 @@ nie potwierdzają, że konkretny model wykona personę. Opt-in benchmark urucham
 ```bash
 npm run eval:persona -- --host codex --model <model-id> --reps 5 --variant all
 npm run eval:persona -- --host claude --model <model-id> --reps 5 --variant all
+npm run eval:codex-native -- --model <model-id> --reps 5 --personality none
 ```
 
 Komendy uruchamiaj z checkoutu repozytorium; wymagane `--model <id>` przypina model.
@@ -134,6 +135,11 @@ scores i raport bez model call. Syntetyczny
 `context-summary-probe` nie jest natywnym compactem ani rozmową wieloturową.
 Surowe odpowiedzi trzeba czytać przy każdym trafionym markerze. Brak CLI =
 `SKIP`, nie zaliczony test; `npm test` nie wykonuje wywołań modelu.
+
+Natywny runner ma twardą bramkę `accepted`: task 100%, persona minimum 80% i
+wyżej od kontroli, brak dodatniej inflacji słów, każda tura zakotwiczona,
+kontrola bez kontekstu Kruxa oraz co najmniej jeden `KRUX CONTINUATION` na
+powtórzenie. Dokładny kontrakt trafia do `report.json.acceptanceCriteria`.
 
 Pokrycie:
 - `krux-toggle.js` — regex (diacritics, ASCII, case, full-match, trim), stan pliku, malformed stdin, kompaktowy invariant na każdej aktywnej turze, pełny drift-guard zastępujący go co próg, `KRUX_TURN_REMINDER=0` wyłączający tylko invariant + reset na on/off (`test/krux-toggle.test.js`)

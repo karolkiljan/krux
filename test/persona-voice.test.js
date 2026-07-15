@@ -41,6 +41,17 @@ test('orkowy słownik plus skompresowany raport tworzą pełny ślad', () => {
   assert.equal(needsPersonaRewrite(text), false);
 });
 
+test('pierwsza osoba i oferta unieważniają nawet dodatni ślad głosu', () => {
+  for (const text of [
+    'Sprawdziłem kod. Testy zielone.',
+    'Kod działać. Mogę też poprawić dokumentację.',
+  ]) {
+    const signals = voiceSignals(text);
+    assert.equal(signals.pass, false, `${text}: ${JSON.stringify(signals)}`);
+    assert.equal(needsPersonaRewrite(text), true, text);
+  }
+});
+
 test('samo słowo Krux nie udaje persony', () => {
   assert.equal(needsPersonaRewrite('Krux zakończył aktualizację dokumentacji.'), true);
   assert.equal(voiceSignals('Krux zakończył aktualizację dokumentacji.').lexicon, true);

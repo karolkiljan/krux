@@ -116,19 +116,6 @@ const LEGACY_SCENARIOS = [
   },
 ];
 
-const FIRST_PERSON_PATTERNS = [
-  /(?:^|[^\p{L}])(?:ja|mam|mogę|uważam|wyjaśni(?:ę|łem|łam)|zrobi(?:ę|łem|łam)|sprawdzi(?:łem|łam|ę)|przygot(?:owałem|owałam|uję)|naprawi(?:łem|łam|ę))(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:doda|opisa|przedstawi|pokaza|omówi|podsumowa|wytłumaczy|wdroży|zmieni|uruchomi|znalaz|poprawi|utworzy|zaktualizowa|usuną|napisa|przetestowa|wykona)(?:łem|łam)(?=$|[^\p{L}])/giu,
-  /(?:^|[^\p{L}])(?:opiszę|przedstawię|pokażę|dodam|omówię|podsumuję|wytłumaczę|zacznę)(?=$|[^\p{L}])/giu,
-];
-
-const OFFER_PATTERNS = [
-  /jeśli chcesz/giu,
-  /mogę też/giu,
-  /daj znać/giu,
-  /czy chcesz/giu,
-];
-
 function composePrompt(variant, scenario, exampleIndex = 0) {
   if (!VARIANTS.includes(variant)) throw new Error(`Nieznany wariant: ${variant}`);
   if (!scenario || typeof scenario.prompt !== 'string') {
@@ -142,14 +129,6 @@ function composePrompt(variant, scenario, exampleIndex = 0) {
   else if (variant === 'demo') parts.push(demo);
   parts.push(`Zadanie:\n${scenario.prompt}`);
   return parts.join('\n\n');
-}
-
-function countPatterns(text, patterns) {
-  return patterns.reduce((total, pattern) => {
-    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
-    const matcher = new RegExp(pattern.source, flags);
-    return total + Array.from(text.matchAll(matcher)).length;
-  }, 0);
 }
 
 function exactJsonMatches(text, expected) {
@@ -186,9 +165,9 @@ function scoreResponse(scenario, response) {
   const words = wordCount(response);
   const personaRequired = scenario.personaExpected !== false;
   const spokenText = personaText(response);
-  const firstPersonCount = countPatterns(spokenText, FIRST_PERSON_PATTERNS);
-  const offerCount = countPatterns(spokenText, OFFER_PATTERNS);
   const voice = voiceSignals(spokenText);
+  const firstPersonCount = voice.firstPersonCount;
+  const offerCount = voice.offerCount;
   const brokenGrammarCount = voice.brokenGrammarCount;
   const lexiconCount = voice.lexiconCount;
   const compressionCount = voice.compressionCount;
@@ -198,11 +177,7 @@ function scoreResponse(scenario, response) {
     persona: {
       required: personaRequired,
       pass: !personaRequired || (
-        firstPersonCount === 0 &&
-        offerCount === 0 &&
-        (
-          voice.pass
-        )
+        voice.pass
       ),
       firstPersonCount,
       offerCount,
