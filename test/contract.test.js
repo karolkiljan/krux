@@ -17,6 +17,19 @@ function filesUnder(relative) {
   });
 }
 
+function trackedFilesUnder(relative) {
+  const result = spawnSync("git", ["ls-files", "-z", "--", `${relative}/`], {
+    cwd: repo,
+    encoding: "utf8"
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout
+    .split("\0")
+    .filter(Boolean)
+    .map((file) => path.relative(relative, file))
+    .sort();
+}
+
 function body(markdown) {
   return markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "").trim();
 }
@@ -180,15 +193,22 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   assert.doesNotMatch(`${readme}\n${maintainer}`, /flow|konkret|drift|PostToolUse|statusline|final guard|triggers\.json/iu);
 });
 
-test("only the focused tests, smoke runner and current design records remain", () => {
-  assert.deepEqual(fs.readdirSync(path.join(repo, "test")).sort(), [
+test("only the focused tests, smoke runner and current design records remain", (t) => {
+  const ignoredSpecDirectory = fs.mkdtempSync(
+    path.join(repo, "docs", "superpowers", "specs", ".ignored-contract-probe-")
+  );
+  const ignoredSpec = path.join(ignoredSpecDirectory, "workspace-note.md");
+  fs.writeFileSync(ignoredSpec, "ignored workspace note\n");
+  t.after(() => fs.rmSync(ignoredSpecDirectory, { recursive: true, force: true }));
+
+  assert.deepEqual(trackedFilesUnder("test"), [
     "contract.test.js", "hook.test.js", "horda.test.js"
   ]);
-  assert.deepEqual(fs.readdirSync(path.join(repo, "scripts")).sort(), ["context-smoke.js"]);
-  assert.deepEqual(fs.readdirSync(path.join(repo, "docs", "superpowers", "specs")).sort(), [
+  assert.deepEqual(trackedFilesUnder("scripts"), ["context-smoke.js"]);
+  assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
     "2026-07-15-minimal-krux-design.md"
   ]);
-  assert.deepEqual(fs.readdirSync(path.join(repo, "docs", "superpowers", "plans")).sort(), [
+  assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
     "2026-07-15-minimal-krux.md"
   ]);
   assert.equal(fs.existsSync(path.join(repo, "agents")), false);
