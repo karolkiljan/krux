@@ -131,7 +131,8 @@ Komendy uruchamiaj z checkoutu repozytorium; wymagane `--model <id>` przypina mo
 Raw jest zapisywany przed scoringiem, pochodny `scores.jsonl` rozdziela personę,
 zadanie i koszt, a raport agreguje stabilność per scenariusz i sparowaną inflację
 oraz zapisuje git SHA, model, CLI i wersję scorera. `--rescore <run-dir>` regeneruje
-scores i raport bez model call. Syntetyczny
+scores i raport bez model call; oba runnery obsługują ten tryb, w tym
+`npm run eval:codex-native -- --rescore <run-dir>`. Syntetyczny
 `context-summary-probe` nie jest natywnym compactem ani rozmową wieloturową.
 Surowe odpowiedzi trzeba czytać przy każdym trafionym markerze. Brak CLI =
 `SKIP`, nie zaliczony test; `npm test` nie wykonuje wywołań modelu.

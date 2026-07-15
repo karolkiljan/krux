@@ -7,7 +7,7 @@ const {
 const { voiceSignals } = require('../../hooks/lib/persona-voice');
 
 const VARIANTS = ['control', 'identity', 'demo', 'combined'];
-const SCORER_VERSION = 10;
+const SCORER_VERSION = 11;
 const SCENARIO_SET_VERSION = 2;
 
 const SCENARIOS = [
@@ -21,7 +21,7 @@ const SCENARIOS = [
     id: 'date-validation',
     prompt: 'Parser daty akceptuje 31 lutego, bo sprawdza tylko kształt DD-MM-YYYY. Podaj przyczynę i fix.',
     required: [
-      /(?:kalendarz|nie\s+istnie|nieistniej|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|(?:odrzu|porówn|różni|niezgod|błęd)[^.!;\n]{0,50}normaliz|normaliz[^.!;\n]{0,50}(?:odrzu|porówn|różni|niezgod|błęd))/iu,
+      /(?:kalendarz|nie\s+istnie|nieistniej|(?:nie\s+(?:prawdziw|poprawno|możliw)|niepoprawn|niemożliw)\p{L}*[^.!;\n]{0,25}(?:dat|dni|dzień)|liczb\p{L}*\s+dni|dni\p{L}*\s+(?:w|dla)\s+miesiąc|zakres\p{L}*\s+dni[^.!;\n]{0,40}miesiąc|miesiąc\p{L}*[^.!;\n]{0,50}(?:dni|zakres|rok)|(?:parser|parsowan)\p{L}*\s+(?:ścisł|strict)|(?:odrzu|porówn|różni|niezgod|błęd)[^.!;\n]{0,50}normaliz|normaliz[^.!;\n]{0,50}(?:odrzu|porówn|różni|niezgod|błęd))/iu,
       /(?:odrzu|sprawd|walid|pars)/i,
     ],
     maxWords: 55,
@@ -35,7 +35,7 @@ const SCENARIOS = [
       /half[- ]open/i,
       /(?:1|jedn\p{L}*)\s+(?:probe|prób)/iu,
       /(?:sukces|success)[^.!;\n]{0,60}(?:zam(?:yk|kn)|close)/i,
-      /(?:poraż|fail)[^.!;\n]{0,60}(?:otw(?:ier|órz)|open)/i,
+      /(?:poraż|fail)[^.!;\n]{0,60}(?:otw(?:ier|órz|or)|open)/i,
     ],
     maxWords: 55,
   },

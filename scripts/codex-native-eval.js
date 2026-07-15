@@ -9,6 +9,7 @@ const {
   SCENARIO_SET_VERSION,
   SCENARIOS,
   scoreResponse,
+  scoreRawRows,
   summarizeResults,
 } = require('./lib/persona-eval');
 
@@ -74,8 +75,13 @@ function parseArgs(argv) {
     if (arg === '--model') options.model = argv[++index];
     else if (arg === '--reps') options.reps = Number(argv[++index]);
     else if (arg === '--personality') options.personality = argv[++index];
+    else if (arg === '--rescore') options.rescore = argv[++index];
     else if (arg === '--dry-run') options.dryRun = true;
     else throw new Error(`Nieznany argument: ${arg}`);
+  }
+  if ('rescore' in options) {
+    if (!options.rescore) throw new Error('--rescore wymaga katalogu runu');
+    return { rescore: options.rescore };
   }
   if (!options.model) throw new Error('Wymagane --model <model-id>');
   if (!Number.isInteger(options.reps) || options.reps <= 0) {
@@ -335,6 +341,58 @@ function acceptedSummary(summary, evidence, reps = 1) {
   );
 }
 
+function rescoreRun(runDir, options = {}) {
+  const resolved = path.resolve(runDir);
+  const rawPath = path.join(resolved, 'raw.jsonl');
+  const reportPath = path.join(resolved, 'report.json');
+  if (!fs.existsSync(rawPath)) throw new Error(`Brak raw.jsonl: ${resolved}`);
+  if (!fs.existsSync(reportPath)) throw new Error(`Brak report.json: ${resolved}`);
+
+  const rows = fs.readFileSync(rawPath, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line));
+  const previous = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const scoredRows = scoreRawRows(rows);
+  const reps = previous.reps || Math.max(0, ...rows.map(row => Number(row.repetition) || 0));
+  const rawComplete = rows.length > 0
+    && scoredRows.length === rows.length
+    && (previous.attempts === undefined || previous.attempts === rows.length);
+  const status = previous.status === 'COMPLETE' && !rawComplete
+    ? 'ERROR'
+    : previous.status;
+  const summary = summarizeResults(scoredRows);
+  const evidence = reportEvidence(rows);
+  const now = options.now || (() => new Date());
+  const metadata = {
+    ...(previous.metadata || {}),
+    evaluatorVersion: EVALUATOR_VERSION,
+    scorerVersion: SCORER_VERSION,
+    scenarioSetVersion: SCENARIO_SET_VERSION,
+    rescoredAt: now().toISOString(),
+    rescoreGitSha: options.gitSha || currentGitSha(),
+  };
+  const report = {
+    ...previous,
+    status,
+    reps,
+    attempts: rows.length,
+    metadata,
+    summary,
+    evidence,
+    acceptanceCriteria: ACCEPTANCE_CRITERIA,
+    accepted: status === 'COMPLETE' && acceptedSummary(summary, evidence, reps),
+  };
+  if (!rawComplete) report.rescoreError = 'Raw jest pusty, niekompletny albo nie zgadza się z attempts';
+
+  const scoreText = scoredRows.length
+    ? `${scoredRows.map(row => JSON.stringify(scoreArtifact(row))).join('\n')}\n`
+    : '';
+  fs.writeFileSync(path.join(resolved, 'scores.jsonl'), scoreText);
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  return { ...report, rows, runDir: resolved };
+}
+
 function runEvaluation(options) {
   const model = options.model;
   const reps = options.reps ?? 5;
@@ -514,7 +572,10 @@ function runEvaluation(options) {
 
 function main() {
   try {
-    const result = runEvaluation(parseArgs(process.argv.slice(2)));
+    const options = parseArgs(process.argv.slice(2));
+    const result = options.rescore
+      ? rescoreRun(options.rescore)
+      : runEvaluation(options);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (result.status === 'ERROR') process.exitCode = 1;
   } catch (error) {
@@ -538,5 +599,6 @@ module.exports = {
   extractTranscriptEvidence,
   createIsolatedHome,
   acceptedSummary,
+  rescoreRun,
   runEvaluation,
 };

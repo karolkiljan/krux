@@ -261,6 +261,7 @@ test('dokumentacja opisuje połączoną kotwicę bez nadinterpretacji badań', (
 test('dokumentacja uczciwie ogranicza benchmark i opisuje odtwarzalny raport', () => {
   assert.match(readme, /checkoutu repozytorium/i);
   assert.match(readme, /--rescore/);
+  assert.match(readme, /eval:codex-native -- --rescore/);
   assert.match(readme, /--model <model-id>/);
   assert.match(readme, /syntetyczn[^\n]+context-summary/i);
   assert.match(readme, /\.krux-active-sessions/);

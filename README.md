@@ -233,6 +233,7 @@ przeliczenie istniejącego raw bez wywołania modelu:
 
 ```bash
 npm run eval:persona -- --rescore benchmarks/persona-eval/<run>
+npm run eval:codex-native -- --rescore benchmarks/codex-native-eval/<run>
 ```
 
 `eval:codex-native` jest testem integracyjnym właściwego pluginu. Tworzy osobne,

@@ -18,6 +18,8 @@ test('kanoniczna łamana gramatyka sama jest mierzalnym śladem Kruxa', () => {
     'Parser sprawdzać tylko format. Fix: walidacja odrzucać 31 lutego.',
     'Przyczyna: Redis nie wstać.',
     'Circuit breaker otwierać po 5 błędach.',
+    'Breaker otworzyć po 5 błędach.',
+    'Dokumentacja zaktualizowana. Build przechodzi, robota zakończona.',
     'Dokumentacja zaktualizowana. Build przechodzi. Robota stoi mocno.',
   ]) {
     const signals = voiceSignals(text);

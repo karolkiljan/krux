@@ -14,6 +14,7 @@ const {
   extractTranscriptEvidence,
   createIsolatedHome,
   acceptedSummary,
+  rescoreRun,
   runEvaluation,
 } = require('../scripts/codex-native-eval');
 
@@ -31,6 +32,9 @@ test('parseArgs czyta model, liczbę prób i personality', () => {
     parseArgs(['--model', 'fixture', '--dry-run']),
     { model: 'fixture', reps: 5, personality: 'none', dryRun: true },
   );
+  assert.deepEqual(parseArgs(['--rescore', '/tmp/native-run']), {
+    rescore: '/tmp/native-run',
+  });
 });
 
 test('parseArgs odrzuca brak modelu, zero prób i obce personality', () => {
@@ -130,6 +134,52 @@ test('dry-run nie woła Codexa i zwraca 24 tury dla jednej próby', () => {
   assert.equal(result.status, 'DRY_RUN');
   assert.equal(result.calls.length, 24);
   assert.equal(calls, 0);
+});
+
+test('rescore przelicza native raw bez modelu i zachowuje dowody lifecycle', () => {
+  withTempDir(runDir => {
+    const rows = [
+      {
+        variant: 'control', scenario: 'causal-chain', repetition: 1, turnIndex: 1,
+        response: 'Kolejka jest zapełniona, producent blokuje się, dlatego opóźnienie rośnie.',
+        status: 'COMPLETE', guardActivations: 0,
+        hookEvidence: { contexts: [], persona: false, turn: false, continuation: false },
+      },
+      {
+        variant: 'native', scenario: 'causal-chain', repetition: 1, turnIndex: 1,
+        response: 'Kolejka pełna → producent blokować → opóźnienie rosnąć.',
+        status: 'COMPLETE', guardActivations: 0,
+        hookEvidence: {
+          contexts: ['KRUX CONTINUATION — fixture'],
+          persona: false, turn: false, continuation: true,
+        },
+      },
+    ];
+    const raw = `${rows.map(JSON.stringify).join('\n')}\n`;
+    fs.writeFileSync(path.join(runDir, 'raw.jsonl'), raw);
+    fs.writeFileSync(path.join(runDir, 'report.json'), JSON.stringify({
+      status: 'COMPLETE', reps: 1, turnsPerSession: 1, attempts: 2,
+      metadata: { scorerVersion: 1, generatedAt: '2026-07-15T00:00:00.000Z' },
+    }));
+
+    const result = rescoreRun(runDir, {
+      now: () => new Date('2026-07-15T12:00:00.000Z'),
+      gitSha: 'rescore-sha',
+    });
+
+    assert.equal(result.status, 'COMPLETE');
+    assert.equal(result.accepted, true);
+    assert.equal(result.summary.native.taskPassRate, 1);
+    assert.equal(result.summary.native.personaPassRate, 1);
+    assert.equal(result.summary.control.personaPassRate, 0);
+    assert.equal(result.evidence.nativeEveryTurnAnchored, true);
+    assert.equal(result.evidence.continuationCount, 1);
+    assert.equal(result.metadata.rescoredAt, '2026-07-15T12:00:00.000Z');
+    assert.equal(result.metadata.rescoreGitSha, 'rescore-sha');
+    assert.equal(fs.readFileSync(path.join(runDir, 'raw.jsonl'), 'utf8'), raw);
+    assert.equal(fs.readFileSync(path.join(runDir, 'scores.jsonl'), 'utf8').trim().split('\n').length, 2);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(runDir, 'report.json'), 'utf8')).accepted, true);
+  });
 });
 
 test('akceptacja wymaga pełnych hooków, 100% zadania i minimum 80% persony', () => {

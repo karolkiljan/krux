@@ -377,6 +377,19 @@ test('task matchery akceptują polskie formy circuit breakera i raport z etykiet
   assert.equal(report.task.pass, true);
 });
 
+test('task scorer akceptuje poprawne warianty znalezione przez pełny live benchmark', () => {
+  const date = scoreResponse(
+    scenario('date-validation'),
+    'Przyczyna: parser sprawdzać tylko format DD-MM-YYYY, nie poprawność daty. Fix: po sprawdzeniu formatu zbudować datę ścisłym parserem i odrzucić niemożliwe dni, np. 31-02-2026.',
+  );
+  const breaker = scoreResponse(
+    scenario('circuit-breaker-contract'),
+    'Circuit breaker otwierać po 5 kolejnych błędach → blokować ruch przez cooldown 30 s. Potem half-open z 1 próbą: sukces → zamknąć; porażka → otworzyć ponownie na 30 s.',
+  );
+  assert.equal(date.task.pass, true);
+  assert.equal(breaker.task.pass, true);
+});
+
 test('task matchery ignorują inline-code wokół wymaganych liczb', () => {
   const circuit = scoreResponse(
     scenario('circuit-breaker-contract'),
