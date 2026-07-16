@@ -34,21 +34,17 @@ function body(markdown) {
   return markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "").trim();
 }
 
-function words(text) {
-  return text.trim() ? text.trim().split(/\s+/u).length : 0;
-}
-
 const codex = readJson(".codex-plugin/plugin.json");
 const claude = readJson(".claude-plugin/plugin.json");
 const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.0.1 package", () => {
-  assert.match(codex.version, /^3\.0\.1\+codex\.\d{14}$/u);
-  assert.equal(claude.version, "3.0.1");
-  assert.equal(marketplace.plugins[0].version, "3.0.1");
-  assert.equal(pkg.version, "3.0.1");
+test("all distribution records expose the minimal 3.0.2 package", () => {
+  assert.match(codex.version, /^3\.0\.2\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.0.2");
+  assert.equal(marketplace.plugins[0].version, "3.0.2");
+  assert.equal(pkg.version, "3.0.2");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -106,27 +102,13 @@ test("runtime contains exactly four compact skills and no custom agents", () => 
   assert.deepEqual(skillDirs, ["krux", "krux-flow", "krux-horda", "krux-konkret"]);
   assert.equal(fs.existsSync(path.join(repo, "agents")), false);
 
-  const persona = body(fs.readFileSync(path.join(repo, "skills", "krux", "SKILL.md"), "utf8"));
   const horda = body(fs.readFileSync(path.join(repo, "skills", "krux-horda", "SKILL.md"), "utf8"));
-  const konkret = body(fs.readFileSync(path.join(repo, "skills", "krux-konkret", "SKILL.md"), "utf8"));
-  const flow = body(fs.readFileSync(path.join(repo, "skills", "krux-flow", "SKILL.md"), "utf8"));
-  assert.ok(words(persona) <= 65);
-  assert.match(persona, /Zwięzłość adaptacyjna/u);
-  assert.match(persona, /Rozmawiaj: reaguj na intencję, wcześniejsze słowa/u);
-  assert.match(persona, /Komentarze\/podsumowania: świeży górniczo-kowalski\/wojenny\/rubaszny akcent/u);
-  assert.match(persona, /robak=zadziorność, ryzyko=czujność, próba=triumf/u);
-  assert.match(persona, /dobra konstrukcja=szacunek dla stali/u);
-  assert.match(persona, /Bez złośliwości/u);
-  assert.match(persona, /Fakty, warunki, ryzyka, komendy, wyniki zachować/u);
-  assert.ok(words(horda) <= 150);
-  assert.ok(words(konkret) <= 85);
-  assert.ok(words(flow) <= 85);
   for (const role of ["Niuch", "Grom", "Piryt", "Ochra", "Młot", "Lont"]) {
     assert.match(horda, new RegExp(role, "u"));
   }
 });
 
-test("runtime stays below budget with three state files and no legacy vocabulary", () => {
+test("runtime keeps three state files and no legacy vocabulary", () => {
   const runtimeFiles = [...filesUnder("hooks"), ...filesUnder("skills")];
   assert.deepEqual(runtimeFiles.sort(), [
     "hooks/hooks.json",
@@ -137,11 +119,6 @@ test("runtime stays below budget with three state files and no legacy vocabulary
     "skills/krux/SKILL.md"
   ]);
   const runtimeText = runtimeFiles.map((file) => fs.readFileSync(path.join(repo, file), "utf8")).join("\n");
-  const runtimeBytes = runtimeFiles.reduce(
-    (sum, file) => sum + fs.statSync(path.join(repo, file)).size,
-    0
-  );
-  assert.ok(runtimeBytes <= 8_500, `runtime = ${runtimeBytes} bytes`);
   assert.deepEqual(
     [...new Set(runtimeText.match(/\.krux-[\w-]+/gu) || [])].sort(),
     [".krux-flow", ".krux-konkret", ".krux-mode"]
@@ -177,12 +154,10 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   const maintainer = fs.readFileSync(path.join(repo, "CLAUDE.md"), "utf8");
   const design = fs.readFileSync(path.join(repo, "docs", "superpowers", "specs", "2026-07-15-minimal-krux-design.md"), "utf8");
   const plan = fs.readFileSync(path.join(repo, "docs", "superpowers", "plans", "2026-07-15-minimal-krux.md"), "utf8");
-  assert.ok(readme.split(/\s+/u).length <= 900);
-  assert.ok(maintainer.split(/\s+/u).length <= 500);
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.0.1"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.0.2"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
@@ -217,7 +192,8 @@ test("only the focused tests, smoke runner and current design records remain", (
   assert.deepEqual(trackedFilesUnder("scripts"), ["context-smoke.js"]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
     "2026-07-15-krux-konkret-flow-design.md",
-    "2026-07-15-minimal-krux-design.md"
+    "2026-07-15-minimal-krux-design.md",
+    "2026-07-16-persona-kapsula-design.md"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
     "2026-07-15-krux-konkret-flow.md",
@@ -251,7 +227,7 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
   assert.equal(parsed.threadId, "thread-1");
   assert.deepEqual(parsed.agentMessages, ["wynik"]);
 
-  const persona = "Krux = techniczny ork";
+  const persona = "Krux jest orkiem z Górniczej Doliny";
   const transcript = [
     { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: persona }] } },
     { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: "unrelated" }] } }

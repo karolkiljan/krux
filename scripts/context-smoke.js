@@ -127,7 +127,7 @@ function extractHookContexts(transcript) {
     if (payload?.type !== "message" || payload.role !== "developer") continue;
     for (const item of payload.content || []) {
       if (item?.type !== "input_text" || typeof item.text !== "string") continue;
-      if (item.text.includes("Krux = techniczny ork") || item.text.includes("Tryb Krux")) {
+      if (item.text.includes("Krux")) {
         contexts.push(item.text);
       }
     }

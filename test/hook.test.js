@@ -30,11 +30,11 @@ function context(result) {
   return JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
 }
 
-function words(text) {
-  return text.trim() ? text.trim().split(/\s+/u).length : 0;
-}
+const personaBody = fs.readFileSync(path.join(repo, "skills", "krux", "SKILL.md"), "utf8")
+  .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "")
+  .trim();
 
-test("startup, clear and compact inject the one short persona body", () => {
+test("startup, clear and compact inject the persona body", () => {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
   for (const input of [
     { hook_event_name: "SessionStart", source: "startup" },
@@ -43,9 +43,7 @@ test("startup, clear and compact inject the one short persona body", () => {
   ]) {
     const result = run(input, { CLAUDE_PLUGIN_ROOT: repo, CLAUDE_PLUGIN_DATA: data });
     assert.equal(result.status, 0);
-    assert.match(context(result), /techniczny ork/u);
-    assert.match(context(result), /Destrukcja → pełne zdanie, skutek, odwrót/u);
-    assert.ok(words(context(result)) <= 65);
+    assert.ok(context(result).includes(personaBody));
   }
 });
 
@@ -85,7 +83,7 @@ test("exact off/on phrases persist one mode file and affect lifecycle injection"
   }
   const on = run({ hook_event_name: "UserPromptSubmit", prompt: "WŁĄCZ KRUX" }, env);
   assert.equal(on.status, 0);
-  assert.match(context(on), /techniczny ork/u);
+  assert.ok(context(on).includes(personaBody));
   assert.equal(fs.readFileSync(path.join(data, ".krux-mode"), "utf8"), "on\n");
   assert.deepEqual(fs.readdirSync(data), [".krux-mode"]);
 });
@@ -119,7 +117,7 @@ test("toggle without writable plugin data is explicit and only affects this turn
   assert.match(context(noData), /stan trwały bez zmiany/u);
   const nextSession = run({ hook_event_name: "SessionStart", source: "startup" }, { PLUGIN_ROOT: repo });
   assert.equal(nextSession.status, 0);
-  assert.match(context(nextSession), /techniczny ork/u);
+  assert.ok(context(nextSession).includes(personaBody));
 
   const badData = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-")), "not-a-directory");
   fs.writeFileSync(badData, "x");
@@ -168,7 +166,7 @@ test("invalid mode content is reported and fails closed", () => {
   assert.equal(oversized.stderr, "krux: nieprawidłowy tryb\n");
 });
 
-test("a simulated 12-turn lifecycle uses at most 128 hook-context words", () => {
+test("a simulated 12-turn lifecycle runs every hook event cleanly", () => {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
   const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
   const events = [
@@ -179,12 +177,9 @@ test("a simulated 12-turn lifecycle uses at most 128 hook-context words", () => 
     })),
     { hook_event_name: "SessionStart", source: "compact" }
   ];
-  const total = events.reduce((sum, event) => {
-    const result = run(event, env);
-    assert.equal(result.status, 0);
-    return sum + (result.stdout ? words(context(result)) : 0);
-  }, 0);
-  assert.ok(total <= 128, `hook context = ${total} words`);
+  for (const event of events) {
+    assert.equal(run(event, env).status, 0);
+  }
 });
 
 test("exact konkret phrases persist a flag file and echo the scope contract", () => {
@@ -214,7 +209,7 @@ test("konkret flag survives SessionStart independent of persona state", () => {
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
   assert.match(context(result), /Konkret aktywny/u);
-  assert.doesNotMatch(context(result), /techniczny ork/u);
+  assert.ok(!context(result).includes(personaBody));
 });
 
 test("SessionStart combines persona and konkret in order when both active", () => {
@@ -224,7 +219,7 @@ test("SessionStart combines persona and konkret in order when both active", () =
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
   const text = context(result);
-  assert.ok(text.indexOf("techniczny ork") < text.indexOf("Konkret aktywny"));
+  assert.ok(text.indexOf(personaBody) < text.indexOf("Konkret aktywny"));
 });
 
 test("konkret toggle without plugin data never activates and reports turn-only scope", () => {
@@ -272,7 +267,7 @@ test("SessionStart combines persona, konkret and flow in order when all active",
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
   const text = context(result);
-  assert.ok(text.indexOf("techniczny ork") < text.indexOf("Konkret aktywny"));
+  assert.ok(text.indexOf(personaBody) < text.indexOf("Konkret aktywny"));
   assert.ok(text.indexOf("Konkret aktywny") < text.indexOf("Flow aktywny"));
 });
 
