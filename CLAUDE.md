@@ -45,7 +45,7 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
-- Wersje rekordów dystrybucji zgadzają się z `3.0.0` po usunięciu opcjonalnych metadanych build Codexa.
+- Wersje rekordów dystrybucji zgadzają się z `3.0.1` po usunięciu opcjonalnych metadanych build Codexa.
 - Łączny rozmiar `hooks/` i `skills/` nie przekracza 8 500 bajtów.
 
 ## Komendy wydania

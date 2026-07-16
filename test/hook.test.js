@@ -44,7 +44,7 @@ test("startup, clear and compact inject the one short persona body", () => {
     const result = run(input, { CLAUDE_PLUGIN_ROOT: repo, CLAUDE_PLUGIN_DATA: data });
     assert.equal(result.status, 0);
     assert.match(context(result), /techniczny ork/u);
-    assert.match(context(result), /Destrukcja: pełne zdanie, skutek, odwrót/u);
+    assert.match(context(result), /Destrukcja → pełne zdanie, skutek, odwrót/u);
     assert.ok(words(context(result)) <= 65);
   }
 });

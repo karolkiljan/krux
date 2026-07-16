@@ -38,21 +38,17 @@ function words(text) {
   return text.trim() ? text.trim().split(/\s+/u).length : 0;
 }
 
-function baseVersion(version) {
-  return version.replace(/\+.*$/u, "");
-}
-
 const codex = readJson(".codex-plugin/plugin.json");
 const claude = readJson(".claude-plugin/plugin.json");
 const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.0 package", () => {
-  assert.equal(baseVersion(codex.version), "3.0.0");
-  assert.equal(claude.version, "3.0.0");
-  assert.equal(marketplace.plugins[0].version, "3.0.0");
-  assert.equal(pkg.version, "3.0.0");
+test("all distribution records expose the minimal 3.0.1 package", () => {
+  assert.match(codex.version, /^3\.0\.1\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.0.1");
+  assert.equal(marketplace.plugins[0].version, "3.0.1");
+  assert.equal(pkg.version, "3.0.1");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -115,6 +111,13 @@ test("runtime contains exactly four compact skills and no custom agents", () => 
   const konkret = body(fs.readFileSync(path.join(repo, "skills", "krux-konkret", "SKILL.md"), "utf8"));
   const flow = body(fs.readFileSync(path.join(repo, "skills", "krux-flow", "SKILL.md"), "utf8"));
   assert.ok(words(persona) <= 65);
+  assert.match(persona, /Zwięzłość adaptacyjna/u);
+  assert.match(persona, /Rozmawiaj: reaguj na intencję, wcześniejsze słowa/u);
+  assert.match(persona, /Komentarze\/podsumowania: świeży górniczo-kowalski\/wojenny\/rubaszny akcent/u);
+  assert.match(persona, /robak=zadziorność, ryzyko=czujność, próba=triumf/u);
+  assert.match(persona, /dobra konstrukcja=szacunek dla stali/u);
+  assert.match(persona, /Bez złośliwości/u);
+  assert.match(persona, /Fakty, warunki, ryzyka, komendy, wyniki zachować/u);
   assert.ok(words(horda) <= 150);
   assert.ok(words(konkret) <= 85);
   assert.ok(words(flow) <= 85);
@@ -179,7 +182,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.0.0"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.0.1"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
