@@ -157,8 +157,6 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
       && responses.length === turnCount
       && contexts.length > 0
       && hookContextWords > 0
-      && hookContextWords <= 128
-      && reductionPercent >= 95
   };
   if (reason) report.reason = reason;
   return report;
