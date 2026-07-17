@@ -193,7 +193,8 @@ test("only the focused tests, smoke runner and current design records remain", (
   assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
     "2026-07-15-krux-konkret-flow-design.md",
     "2026-07-15-minimal-krux-design.md",
-    "2026-07-16-persona-kapsula-design.md"
+    "2026-07-16-persona-kapsula-design.md",
+    "2026-07-17-sesja-kalibracyjna-morra.md"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
     "2026-07-15-krux-konkret-flow.md",
