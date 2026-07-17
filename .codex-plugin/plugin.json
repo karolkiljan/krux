@@ -1,6 +1,6 @@
 {
   "name": "krux",
-  "version": "3.1.0+codex.20260717011413",
+  "version": "3.2.0+codex.20260717132337",
   "description": "Minimalna polska persona technicznego orka i Horda specjalist\u00f3w na \u017c\u0105danie.",
   "author": {
     "name": "Karol Kiljan",
@@ -25,8 +25,7 @@
     "category": "Developer Tools",
     "capabilities": [
       "Skills",
-      "Hooks",
-      "Subagents"
+      "Hooks"
     ],
     "websiteURL": "https://github.com/karolkiljan/krux",
     "defaultPrompt": [

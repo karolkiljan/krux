@@ -13,6 +13,7 @@ skills/krux-konkret/SKILL.md                  tryb precyzji zakresu
 skills/krux-flow/SKILL.md                     tryb iteracyjny krok-po-kroku
 test/{hook,horda,contract}.test.js             testy deterministyczne
 scripts/context-smoke.js                      pomiar 12 tur
+docs/superpowers/{specs,plans}/               dokumenty projektowe (śledzone mimo wpisu w .gitignore)
 package.json                                  komendy i wersja bazowa
 README.md, CLAUDE.md, LICENSE                 dokumentacja i licencja
 ```
@@ -42,11 +43,12 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - `hooks/hooks.json` jest odkrywany przez oba hosty: Claude Code i Codex.
 - `hooks/krux.js` przyjmuje obie rodziny zmiennych: `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` oraz `PLUGIN_ROOT` / `PLUGIN_DATA`.
 - Body `skills/krux/SKILL.md` po frontmatter jest jedynym źródłem głosu.
+- Body `skills/krux-konkret/SKILL.md` i `skills/krux-flow/SKILL.md` po frontmatter są jedynym źródłem kontraktów trybów — hook nie przechowuje ich kopii.
 - Instrukcje w `skills/krux/SKILL.md` pisze się poprawną polszczyzną; głos orka niosą wyłącznie pary przykładów. Opisywanie głosu przymiotnikami zamiast pokazania wzorca jest regresem — patrz `docs/superpowers/specs/2026-07-16-persona-kapsula-design.md`.
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
-- Wersje rekordów dystrybucji zgadzają się z `3.1.0` po usunięciu opcjonalnych metadanych build Codexa.
+- Wersje rekordów dystrybucji zgadzają się z `3.2.0` po usunięciu opcjonalnych metadanych build Codexa.
 
 ## Komendy wydania
 

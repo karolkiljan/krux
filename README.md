@@ -8,17 +8,21 @@ Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`.
 
 ## Instalacja
 
+Plugin rozwijany jest lokalnie — instaluj z lokalnego klonu repozytorium.
+Publiczne repo na GitHubie może być starsze niż lokalny master i wtedy
+zainstaluje inną wersję niż opisana niżej.
+
 ### Claude Code
 
 ```bash
-claude plugin marketplace add karolkiljan/krux
+claude plugin marketplace add /ścieżka/do/klonu/krux
 claude plugin install krux@krux-marketplace
 ```
 
 ### Codex
 
 ```bash
-codex plugin marketplace add karolkiljan/krux
+codex plugin marketplace add /ścieżka/do/klonu/krux
 codex plugin add krux@krux-marketplace
 ```
 

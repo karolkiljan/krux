@@ -40,11 +40,11 @@ const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.1.0 package", () => {
-  assert.match(codex.version, /^3\.1\.0\+codex\.\d{14}$/u);
-  assert.equal(claude.version, "3.1.0");
-  assert.equal(marketplace.plugins[0].version, "3.1.0");
-  assert.equal(pkg.version, "3.1.0");
+test("all distribution records expose the minimal 3.2.0 package", () => {
+  assert.match(codex.version, /^3\.2\.0\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.2.0");
+  assert.equal(marketplace.plugins[0].version, "3.2.0");
+  assert.equal(pkg.version, "3.2.0");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -63,7 +63,7 @@ test("Codex manifest uses default hook discovery and complete interface metadata
   assert.match(codex.interface.longDescription, /granicach kontekstu/u);
   assert.equal(codex.interface.developerName, "Karol Kiljan");
   assert.equal(codex.interface.category, "Developer Tools");
-  assert.deepEqual(codex.interface.capabilities, ["Skills", "Hooks", "Subagents"]);
+  assert.deepEqual(codex.interface.capabilities, ["Skills", "Hooks"]);
   assert.equal(codex.interface.websiteURL, "https://github.com/karolkiljan/krux");
   assert.deepEqual(codex.interface.defaultPrompt, [
     "$krux:krux — zastosuj głos Kruxa",
@@ -157,7 +157,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.1.0"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.2.0"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
@@ -227,29 +227,57 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
   assert.equal(parsed.threadId, "thread-1");
   assert.deepEqual(parsed.agentMessages, ["wynik"]);
 
-  const persona = "Krux jest orkiem z Górniczej Doliny";
+  const persona = "## Kim jest Krux\n\nKrux jest orkiem z Górniczej Doliny";
   const transcript = [
     { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: persona }] } },
-    { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: "unrelated" }] } }
+    { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: "unrelated" }] } },
+    { type: "response_item", payload: { type: "message", role: "developer", content: [{ type: "input_text", text: "wzmianka o pluginie Krux bez iniekcji" }] } }
   ].map(JSON.stringify).join("\n");
-  assert.deepEqual(smoke.extractHookContexts(transcript), [persona]);
+  assert.deepEqual(smoke.extractHookContexts(transcript), [{ text: persona, kinds: ["persona"] }]);
+  assert.deepEqual(smoke.classifyHookContext("Tryb precyzji zakresu: tylko proszone"), ["konkret"]);
+  assert.deepEqual(smoke.classifyHookContext("Tryb iteracyjny: jeden ruch"), ["flow"]);
+  assert.deepEqual(smoke.classifyHookContext("zwykły tekst ze słowem Krux"), []);
 
+  const personaContext = { text: Array.from({ length: 64 }, () => "x").join(" "), kinds: ["persona"] };
   const accepted = smoke.buildReport({
     model: "model-x",
-    responses: Array.from({ length: 12 }, () => "dwa słowa"),
-    contexts: [Array.from({ length: 64 }, () => "x").join(" ")]
+    responses: Array.from({ length: 12 }, () => "robak gryzie beton"),
+    contexts: [personaContext]
   });
   assert.equal(accepted.turns, 12);
-  assert.equal(accepted.outputWords, 24);
+  assert.equal(accepted.outputWords, 36);
   assert.equal(accepted.hookContextWords, 64);
   assert.equal(accepted.hookContextEvents, 1);
+  assert.equal(accepted.hookContextReplays, 0);
+  assert.deepEqual(accepted.hookEvents, { persona: 1, konkret: 0, flow: 0 });
   assert.equal(accepted.baselineHookContextWords, 2567);
+  assert.deepEqual(accepted.voiceHitsPerTurn, Array.from({ length: 12 }, () => 1));
+  assert.equal(accepted.voiceHitsTotal, 12);
+  assert.equal(accepted.voiceDriftRatio, 1);
   assert.equal(accepted.accepted, true);
+
+  const replayed = smoke.buildReport({
+    model: "model-x",
+    responses: Array.from({ length: 12 }, () => "ok"),
+    contexts: [personaContext, personaContext]
+  });
+  assert.equal(replayed.hookContextEvents, 1);
+  assert.equal(replayed.hookContextReplays, 1);
+  assert.equal(replayed.hookContextWords, 64);
+  assert.equal(replayed.accepted, true);
+
+  const doubledPersona = smoke.buildReport({
+    model: "model-x",
+    responses: Array.from({ length: 12 }, () => "ok"),
+    contexts: [personaContext, { text: "## Kim jest Krux — inna kopia", kinds: ["persona"] }]
+  });
+  assert.deepEqual(doubledPersona.hookEvents, { persona: 2, konkret: 0, flow: 0 });
+  assert.equal(doubledPersona.accepted, false);
 
   const rejected = smoke.buildReport({
     model: "model-x",
     responses: Array.from({ length: 11 }, () => "ok"),
-    contexts: [Array.from({ length: 64 }, () => "x").join(" ")]
+    contexts: [personaContext]
   });
   assert.equal(rejected.accepted, false);
 
@@ -259,6 +287,9 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
     contexts: []
   });
   assert.equal(disabledPlugin.accepted, false);
+
+  assert.equal(smoke.voiceHits("Robak siedzieć w pętli. Wykuć od nowa, sztolnia stara."), 3);
+  assert.equal(smoke.voiceHits("instalacja pakietu stała się prosta"), 0);
 });
 
 test("context smoke validates every turn against JSONL and final output", () => {

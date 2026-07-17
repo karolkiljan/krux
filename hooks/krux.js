@@ -44,11 +44,16 @@ function modeIsOn() {
 
 function writeMode(mode) {
   if (!modePath) return false;
+  const temporary = `${modePath}.${process.pid}.tmp`;
   try {
     fs.mkdirSync(data, { recursive: true });
-    fs.writeFileSync(modePath, `${mode}\n`);
+    fs.writeFileSync(temporary, `${mode}\n`);
+    fs.renameSync(temporary, modePath);
     return true;
   } catch (error) {
+    try {
+      fs.rmSync(temporary, { force: true });
+    } catch {}
     process.stderr.write(`krux: nie zapisać trybu: ${error.message}\n`);
     return false;
   }
@@ -75,14 +80,14 @@ function setFlag(filePath, on, label) {
   }
 }
 
-function persona() {
-  const skill = path.join(root, "skills", "krux", "SKILL.md");
+function skillBody(name) {
+  const skill = path.join(root, "skills", name, "SKILL.md");
   try {
     return fs.readFileSync(skill, "utf8")
       .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "")
       .trim();
   } catch {
-    process.stderr.write("krux: brak skills/krux/SKILL.md\n");
+    process.stderr.write(`krux: brak skills/${name}/SKILL.md\n`);
     return "";
   }
 }
@@ -94,9 +99,6 @@ function emit(event, additionalContext) {
   }));
 }
 
-const KONKRET_TEXT = "Konkret aktywny: dokładnie to o co proszę, nic więcej, najprościej. Sprawa obok → 1 linia raportu, nie ruszaj. Dwuznaczne → pytanie, nie zgadywanie.";
-const FLOW_TEXT = "Flow aktywny: jeden najmniejszy ruch + powód, pytanie o zgodę. Po zgodzie wykonaj tylko ten ruch, raportuj plik:linia i status testu, następny ruch z rezultatu.";
-
 const input = readInput();
 if (!input || typeof input.hook_event_name !== "string") process.exit(0);
 
@@ -104,12 +106,13 @@ const event = input.hook_event_name;
 if (event === "SessionStart") {
   if (!["startup", "clear", "compact"].includes(input.source)) process.exit(0);
   const parts = [];
-  if (modeIsOn()) parts.push(persona());
-  if (flagOn(konkretPath)) parts.push(KONKRET_TEXT);
-  if (flagOn(flowPath)) parts.push(FLOW_TEXT);
-  if (parts.length) emit(event, parts.join("\n\n"));
+  if (modeIsOn()) parts.push(skillBody("krux"));
+  if (flagOn(konkretPath)) parts.push(skillBody("krux-konkret"));
+  if (flagOn(flowPath)) parts.push(skillBody("krux-flow"));
+  const combined = parts.filter(Boolean).join("\n\n");
+  if (combined) emit(event, combined);
 } else if (event === "UserPromptSubmit") {
-  const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
+  const prompt = typeof input.prompt === "string" ? input.prompt.normalize("NFC").trim() : "";
   if (/^wyłącz krux$/iu.test(prompt)) {
     const saved = writeMode("off");
     emit(event, saved
@@ -117,19 +120,27 @@ if (event === "SessionStart") {
       : "Tryb Krux wyłączony tylko w tej turze; stan trwały bez zmiany. Odpowiadaj neutralnie.");
   } else if (/^włącz krux$/iu.test(prompt)) {
     const saved = writeMode("on");
-    const voice = persona();
-    emit(event, saved ? voice : `Tryb Krux włączony tylko w tej turze; stan trwały bez zmiany.\n${voice}`.trim());
+    const voice = skillBody("krux");
+    emit(event, saved
+      ? (voice || "Tryb Krux włączony, ale body persony jest niedostępne.")
+      : `Tryb Krux włączony tylko w tej turze; stan trwały bez zmiany.\n${voice}`.trim());
   } else if (/^wyłącz konkret$/iu.test(prompt)) {
     const saved = setFlag(konkretPath, false, "konkret");
     emit(event, saved ? "Konkret wyłączony." : "Konkret wyłączony tylko w tej turze.");
   } else if (/^włącz konkret$/iu.test(prompt)) {
     const saved = setFlag(konkretPath, true, "konkret");
-    emit(event, saved ? KONKRET_TEXT : `${KONKRET_TEXT} (tylko w tej turze)`);
+    const contract = skillBody("krux-konkret");
+    emit(event, saved
+      ? (contract || "Konkret włączony, ale kontrakt jest niedostępny.")
+      : `Konkret włączony tylko w tej turze; stan trwały bez zmiany.\n${contract}`.trim());
   } else if (/^wyłącz flow$/iu.test(prompt)) {
     const saved = setFlag(flowPath, false, "flow");
     emit(event, saved ? "Flow wyłączony." : "Flow wyłączony tylko w tej turze.");
   } else if (/^włącz flow$/iu.test(prompt)) {
     const saved = setFlag(flowPath, true, "flow");
-    emit(event, saved ? FLOW_TEXT : `${FLOW_TEXT} (tylko w tej turze)`);
+    const contract = skillBody("krux-flow");
+    emit(event, saved
+      ? (contract || "Flow włączony, ale kontrakt jest niedostępny.")
+      : `Flow włączony tylko w tej turze; stan trwały bez zmiany.\n${contract}`.trim());
   }
 }

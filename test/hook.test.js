@@ -30,9 +30,15 @@ function context(result) {
   return JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
 }
 
-const personaBody = fs.readFileSync(path.join(repo, "skills", "krux", "SKILL.md"), "utf8")
-  .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "")
-  .trim();
+function skillBody(name) {
+  return fs.readFileSync(path.join(repo, "skills", name, "SKILL.md"), "utf8")
+    .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "")
+    .trim();
+}
+
+const personaBody = skillBody("krux");
+const konkretBody = skillBody("krux-konkret");
+const flowBody = skillBody("krux-flow");
 
 test("startup, clear and compact inject the persona body", () => {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
@@ -187,7 +193,7 @@ test("exact konkret phrases persist a flag file and echo the scope contract", ()
   const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
   const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
   assert.equal(on.status, 0);
-  assert.match(context(on), /Konkret aktywny/u);
+  assert.ok(context(on).includes(konkretBody));
   assert.equal(fs.existsSync(path.join(data, ".krux-konkret")), true);
 
   const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "zwykła tura" }, env);
@@ -208,7 +214,7 @@ test("konkret flag survives SessionStart independent of persona state", () => {
 
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
-  assert.match(context(result), /Konkret aktywny/u);
+  assert.ok(context(result).includes(konkretBody));
   assert.ok(!context(result).includes(personaBody));
 });
 
@@ -219,7 +225,7 @@ test("SessionStart combines persona and konkret in order when both active", () =
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
   const text = context(result);
-  assert.ok(text.indexOf(personaBody) < text.indexOf("Konkret aktywny"));
+  assert.ok(text.indexOf(personaBody) < text.indexOf(konkretBody));
 });
 
 test("konkret toggle without plugin data never activates and reports turn-only scope", () => {
@@ -228,7 +234,7 @@ test("konkret toggle without plugin data never activates and reports turn-only s
   assert.match(context(on), /tylko w tej turze/u);
   const check = run({ hook_event_name: "SessionStart", source: "startup" }, { PLUGIN_ROOT: repo });
   assert.equal(check.status, 0);
-  assert.doesNotMatch(context(check), /Konkret aktywny/u);
+  assert.ok(!context(check).includes(konkretBody));
 });
 
 test("konkret toggle reports turn-only scope when the flag cannot be written", () => {
@@ -246,7 +252,7 @@ test("exact flow phrases persist a flag file and echo the iteration contract", (
   const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
   const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz flow" }, env);
   assert.equal(on.status, 0);
-  assert.match(context(on), /Flow aktywny/u);
+  assert.ok(context(on).includes(flowBody));
   assert.equal(fs.existsSync(path.join(data, ".krux-flow")), true);
 
   const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "tak" }, env);
@@ -267,8 +273,8 @@ test("SessionStart combines persona, konkret and flow in order when all active",
   const result = run({ hook_event_name: "SessionStart", source: "startup" }, env);
   assert.equal(result.status, 0);
   const text = context(result);
-  assert.ok(text.indexOf(personaBody) < text.indexOf("Konkret aktywny"));
-  assert.ok(text.indexOf("Konkret aktywny") < text.indexOf("Flow aktywny"));
+  assert.ok(text.indexOf(personaBody) < text.indexOf(konkretBody));
+  assert.ok(text.indexOf(konkretBody) < text.indexOf(flowBody));
 });
 
 test("flow toggle without plugin data reports turn-only scope", () => {
@@ -285,4 +291,43 @@ test("flow toggle reports turn-only scope when the flag cannot be written", () =
   assert.equal(result.status, 0);
   assert.match(result.stderr, /błąd zapisu flow/u);
   assert.match(context(result), /tylko w tej turze/u);
+});
+
+test("NFD-encoded toggle phrases are normalized and matched", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  const off = run({ hook_event_name: "UserPromptSubmit", prompt: "wyłącz krux".normalize("NFD") }, env);
+  assert.equal(off.status, 0);
+  assert.match(context(off), /wyłączony/u);
+  assert.equal(fs.readFileSync(path.join(data, ".krux-mode"), "utf8"), "off\n");
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "WŁĄCZ KRUX".normalize("NFD") }, env);
+  assert.equal(on.status, 0);
+  assert.ok(context(on).includes(personaBody));
+});
+
+test("activation without a readable skill still confirms and persists state", () => {
+  const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), "krux-root-"));
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: emptyRoot, PLUGIN_DATA: data };
+  const on = run({ hook_event_name: "UserPromptSubmit", prompt: "włącz krux" }, env);
+  assert.equal(on.status, 0);
+  assert.match(context(on), /włączony, ale body persony jest niedostępne/u);
+  assert.equal(fs.readFileSync(path.join(data, ".krux-mode"), "utf8"), "on\n");
+  assert.match(on.stderr, /brak skills\/krux\/SKILL\.md/u);
+});
+
+test("failed flag removal reports turn-only scope and keeps the flag", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  run({ hook_event_name: "UserPromptSubmit", prompt: "włącz konkret" }, env);
+  fs.chmodSync(data, 0o500);
+  try {
+    const off = run({ hook_event_name: "UserPromptSubmit", prompt: "wyłącz konkret" }, env);
+    assert.equal(off.status, 0);
+    assert.match(off.stderr, /błąd zapisu konkret/u);
+    assert.match(context(off), /Konkret wyłączony tylko w tej turze/u);
+    assert.equal(fs.existsSync(path.join(data, ".krux-konkret")), true);
+  } finally {
+    fs.chmodSync(data, 0o700);
+  }
 });

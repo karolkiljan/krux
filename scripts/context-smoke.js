@@ -55,6 +55,7 @@ function invocationForTurn(index, model, workdir, outputFile, threadId) {
     };
   }
   if (!threadId) throw new Error(`Brak thread_id dla tury ${index + 1}`);
+  // `codex exec resume` nie przyjmuje -s/-C — sandbox i workdir dziedziczy z wątku tury 1.
   return {
     command: "codex",
     args: ["exec", "resume", ...shared, threadId, promptForTurn(index)]
@@ -114,6 +115,18 @@ function validateTurnResult(parsed, expectedThreadId, finalOutput) {
   return threadId;
 }
 
+const hookAnchors = [
+  { kind: "persona", anchor: "Kim jest Krux" },
+  { kind: "konkret", anchor: "Tryb precyzji zakresu" },
+  { kind: "flow", anchor: "Tryb iteracyjny" }
+];
+
+function classifyHookContext(text) {
+  return hookAnchors
+    .filter(({ anchor }) => text.includes(anchor))
+    .map(({ kind }) => kind);
+}
+
 function extractHookContexts(transcript) {
   const contexts = [];
   for (const line of String(transcript || "").split(/\r?\n/u).filter(Boolean)) {
@@ -127,9 +140,8 @@ function extractHookContexts(transcript) {
     if (payload?.type !== "message" || payload.role !== "developer") continue;
     for (const item of payload.content || []) {
       if (item?.type !== "input_text" || typeof item.text !== "string") continue;
-      if (item.text.includes("Krux")) {
-        contexts.push(item.text);
-      }
+      const kinds = classifyHookContext(item.text);
+      if (kinds.length) contexts.push({ text: item.text, kinds });
     }
   }
   return contexts;
@@ -140,22 +152,62 @@ function wordCount(text) {
   return clean ? clean.split(/\s+/u).length : 0;
 }
 
+const voicePattern = new RegExp(
+  "(?<!\\p{L})(?:stal|robak\\p{L}*|glist\\p{L}*|trup\\p{L}*|gni[ćj]\\p{L}*|zaraz[ay]\\p{L}*"
+  + "|plugaw\\p{L}*|granit\\p{L}*|kut[aey]\\p{L}*|hartow\\p{L}*|wyku[ćłt]\\p{L}*|węsz\\p{L}*"
+  + "|wywęsz\\p{L}*|kilof\\p{L}*|warow\\p{L}*|rozłup\\p{L}*|zgni[eo]\\p{L}*|smr[oó]d\\p{L}*"
+  + "|śmierdz\\p{L}*|wieprz\\p{L}*|strażnik\\p{L}*|naskrob\\p{L}*|sztolni\\p{L}*|zawał\\p{L}*"
+  + "|kanark?\\p{L}*|chodnik\\p{L}*|hord[aęy]|[Mm]orr[aęoy]|kopalni\\p{L}*|wynocha|boli|padać"
+  + ")(?!\\p{L})",
+  "giu"
+);
+
+function voiceHits(text) {
+  return (String(text || "").match(voicePattern) || []).length;
+}
+
+function voiceDrift(hitsPerTurn) {
+  const half = Math.floor(hitsPerTurn.length / 2);
+  if (half === 0) return null;
+  const average = (slice) => slice.reduce((sum, hits) => sum + hits, 0) / slice.length;
+  const first = average(hitsPerTurn.slice(0, half));
+  const second = average(hitsPerTurn.slice(hitsPerTurn.length - half));
+  if (first === 0) return null;
+  return second / first;
+}
+
 function buildReport({ model, responses = [], contexts = [], status = "COMPLETE", reason }) {
   const outputWords = responses.reduce((sum, response) => sum + wordCount(response), 0);
-  const hookContextWords = contexts.reduce((sum, context) => sum + wordCount(context), 0);
+  const unique = new Map();
+  for (const { text, kinds } of contexts) {
+    if (!unique.has(text)) unique.set(text, kinds);
+  }
+  const hookContextWords = [...unique.keys()].reduce((sum, text) => sum + wordCount(text), 0);
+  const hookEvents = { persona: 0, konkret: 0, flow: 0 };
+  for (const kinds of unique.values()) {
+    for (const kind of kinds) hookEvents[kind] += 1;
+  }
   const reductionPercent = 100 * (1 - hookContextWords / baselineHookContextWords);
+  const voiceHitsPerTurn = responses.map((response) => voiceHits(response));
   const report = {
     status,
     model,
     turns: responses.length,
     outputWords,
     hookContextWords,
-    hookContextEvents: contexts.length,
+    hookContextEvents: unique.size,
+    hookContextReplays: contexts.length - unique.size,
+    hookEvents,
     baselineHookContextWords,
     reductionPercent,
+    voiceHitsPerTurn,
+    voiceHitsTotal: voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
+    voiceDriftRatio: voiceDrift(voiceHitsPerTurn),
     accepted: status === "COMPLETE"
       && responses.length === turnCount
-      && contexts.length > 0
+      && hookEvents.persona === 1
+      && hookEvents.konkret === 0
+      && hookEvents.flow === 0
       && hookContextWords > 0
   };
   if (reason) report.reason = reason;
@@ -320,6 +372,8 @@ module.exports = {
   invocationForTurn,
   parseCodexJson,
   validateTurnResult,
+  classifyHookContext,
   extractHookContexts,
+  voiceHits,
   buildReport
 };
