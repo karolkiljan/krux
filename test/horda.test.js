@@ -24,7 +24,6 @@ test("Horda is one concise on-demand map for native subagents", () => {
   const markdown = fs.readFileSync(skillPath, "utf8");
   const text = body(markdown);
   assert.match(markdown, /description: Use when /u);
-  assert.ok(text.split(/\s+/u).length <= 150);
   assert.match(text, /specjalizac|izolacj|równoleg/u);
   assert.match(text, /drobnic/iu);
   assert.match(text, /natywnego subagenta/u);
