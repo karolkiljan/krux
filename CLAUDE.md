@@ -54,13 +54,13 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 
 ```bash
 npm test
-uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux
-uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-horda
-uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-konkret
-uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-flow
-uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py .
+uv run --with pyyaml python $HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux
+uv run --with pyyaml python $HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-horda
+uv run --with pyyaml python $HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-konkret
+uv run --with pyyaml python $HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/krux-flow
+uv run --with pyyaml python $HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py .
 claude plugin validate .
-python3 /Users/karolkiljan/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py .
+python3 $HOME/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py .
 npm run smoke:context -- --model gpt-5.6-sol
 git diff --check
 ```

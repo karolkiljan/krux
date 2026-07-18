@@ -166,7 +166,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
     "plugin-creator/scripts/validate_plugin.py ."
   ]) {
     assert.ok(
-      maintainer.includes(`uv run --with pyyaml python /Users/karolkiljan/.codex/skills/.system/${validator}`),
+      maintainer.includes(`uv run --with pyyaml python $HOME/.codex/skills/.system/${validator}`),
       `missing reproducible validator command: ${validator}`
     );
   }
