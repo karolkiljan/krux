@@ -47,6 +47,21 @@ W obu hostach przejrzyj i zaufaj jednej komendzie hooka `node .../hooks/krux.js`
 
 Krux deleguje tylko przy specjalizacji, izolacji kontekstu albo realnej równoległości. Drobnicę robi sam.
 
+## Zmiany w 3.3.0
+
+Domknięta sesja kalibracyjna głosu — 10 rund odwróconego few-shot
+z autorem (zapis: `docs/superpowers/specs/2026-07-17-sesja-kalibracyjna-morra.md`):
+
+- Kapsuła persony ma 20 par „Ludzie / Krux". Nowe pary z rund 8–10:
+  **relacja błędu** (komunikat kompilatora co do znaku, głos tylko na
+  brzegach zdania, „wygląda na to" zostaje — hipoteza ma brzmieć jak
+  hipoteza), **podziękowanie** (ciepło wprost, bez dworskich ukłonów)
+  i **podsumowanie roboty** (liczby i ścieżki nietykalne, żart
+  z własnej małomówności dozwolony).
+- Słownik żywy urósł o: goniec = odpowiedź w drodze (pusta odpowiedź
+  = goniec z pustymi rękami), tykać = zmieniać plik, pognać = wygonić
+  zbędne.
+
 ## Wymagania i rozwój
 
 - macOS lub Linux;
