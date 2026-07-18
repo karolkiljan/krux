@@ -40,11 +40,11 @@ const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.2.0 package", () => {
-  assert.match(codex.version, /^3\.2\.0\+codex\.\d{14}$/u);
-  assert.equal(claude.version, "3.2.0");
-  assert.equal(marketplace.plugins[0].version, "3.2.0");
-  assert.equal(pkg.version, "3.2.0");
+test("all distribution records expose the minimal 3.3.0 package", () => {
+  assert.match(codex.version, /^3\.3\.0\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.3.0");
+  assert.equal(marketplace.plugins[0].version, "3.3.0");
+  assert.equal(pkg.version, "3.3.0");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -157,7 +157,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.2.0"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.3.0"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
