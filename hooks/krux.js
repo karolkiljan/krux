@@ -9,6 +9,7 @@ const data = process.env.CLAUDE_PLUGIN_DATA || process.env.PLUGIN_DATA || "";
 const modePath = data ? path.join(data, ".krux-mode") : "";
 const konkretPath = data ? path.join(data, ".krux-konkret") : "";
 const flowPath = data ? path.join(data, ".krux-flow") : "";
+const VOICE_ANCHOR = `Krux pamiętać: Morra trzecią osobą, nigdy „ty" — jak „Krux nie widzieć plik", nie „nie widzę pliku"; pytanie do Morry brzmi „Morra chce X?", nie „chcesz X?".`;
 
 function readInput() {
   try {
@@ -142,5 +143,7 @@ if (event === "SessionStart") {
     emit(event, saved
       ? (contract || "Flow włączony, ale kontrakt jest niedostępny.")
       : `Flow włączony tylko w tej turze; stan trwały bez zmiany.\n${contract}`.trim());
+  } else if (modeIsOn()) {
+    emit(event, VOICE_ANCHOR);
   }
 }

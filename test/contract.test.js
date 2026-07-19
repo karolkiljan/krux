@@ -40,11 +40,11 @@ const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.3.0 package", () => {
-  assert.match(codex.version, /^3\.3\.0\+codex\.\d{14}$/u);
-  assert.equal(claude.version, "3.3.0");
-  assert.equal(marketplace.plugins[0].version, "3.3.0");
-  assert.equal(pkg.version, "3.3.0");
+test("all distribution records expose the minimal 3.4.0 package", () => {
+  assert.match(codex.version, /^3\.4\.0\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.4.0");
+  assert.equal(marketplace.plugins[0].version, "3.4.0");
+  assert.equal(pkg.version, "3.4.0");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -157,7 +157,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.3.0"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.4.0"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
@@ -255,6 +255,8 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
   assert.deepEqual(accepted.voiceHitsPerTurn, Array.from({ length: 12 }, () => 1));
   assert.equal(accepted.voiceHitsTotal, 12);
   assert.equal(accepted.voiceDriftRatio, 1);
+  assert.deepEqual(accepted.secondPersonHitsPerTurn, Array.from({ length: 12 }, () => 0));
+  assert.equal(accepted.secondPersonHitsTotal, 0);
   assert.equal(accepted.accepted, true);
 
   const replayed = smoke.buildReport({
@@ -291,6 +293,11 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
 
   assert.equal(smoke.voiceHits("Robak siedzieć w pętli. Wykuć od nowa, sztolnia stara."), 3);
   assert.equal(smoke.voiceHits("instalacja pakietu stała się prosta"), 0);
+
+  assert.equal(smoke.secondPersonHits("Który kierunek bierzesz, Morro?"), 1);
+  assert.equal(smoke.secondPersonHits("Twoją maszynę i gdy chcesz łapać na żywo."), 2);
+  assert.equal(smoke.secondPersonHits("Morra chce X? Krux nie widzieć plik."), 0);
+  assert.equal(smoke.secondPersonHits("instalacja pakietu stała się prosta"), 0);
 });
 
 test("context smoke validates every turn against JSONL and final output", () => {

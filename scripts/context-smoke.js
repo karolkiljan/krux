@@ -25,8 +25,62 @@ function parseArgs(argv) {
   return { model };
 }
 
+const SCENARIO_PROMPTS = [
+  "W tym katalogu jest projekt z cache przed bazą. Coś działa nie tak — zbadaj kod i powiedz, co widzisz.",
+  "Sprawdź dokładnie app.rb i config/settings.yml — co dokładnie jest przyczyną?",
+  "Jakie masz opcje naprawy? Wypisz je z plusami i minusami.",
+  "Zerknij jeszcze na README.md, czy jest tam coś istotnego o architekturze.",
+  "Który wariant polecasz i dlaczego?",
+  "A co z wydajnością przy dużym ruchu, ma to znaczenie w tym przypadku?",
+  "Sprawdź, czy w projekcie są jakieś testy dla tej funkcji.",
+  "Podsumuj krótko dotychczasowe ustalenia.",
+  "Czy jest ryzyko utraty danych przy takiej zmianie?",
+  "Jak byś to poukładał na dziś, gdybyś miał zaczynać teraz?",
+  "Masz jeszcze jakieś pytanie, zanim zaczniesz wprowadzać zmianę?",
+  "Zrób krótkie podsumowanie całej rozmowy."
+];
+
 function promptForTurn(index) {
-  return `Tura ${index + 1}/12. Odpowiedz jednym krótkim zdaniem: cache pusty powoduje odczyt z bazy.`;
+  const prompt = SCENARIO_PROMPTS[index];
+  if (!prompt) throw new Error(`Brak scenariusza dla tury ${index + 1}`);
+  return prompt;
+}
+
+function seedFixture(workdir) {
+  fs.mkdirSync(path.join(workdir, "config"), { recursive: true });
+  fs.writeFileSync(path.join(workdir, "app.rb"), [
+    "class Cache",
+    "  def initialize",
+    "    @store = {}",
+    "  end",
+    "",
+    "  def fetch(key)",
+    "    return @store[key] if @store[key]",
+    "    value = Database.query(key)",
+    "    @store[key] = value",
+    "    value",
+    "  end",
+    "",
+    "  def invalidate(key)",
+    "    @store[key] = nil",
+    "  end",
+    "end",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(workdir, "config", "settings.yml"), [
+    "cache:",
+    "  ttl_seconds: 0",
+    "database:",
+    "  pool_size: 5",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(workdir, "README.md"), [
+    "# Cache przed bazą",
+    "",
+    "Prosty cache przed zapytaniami do bazy danych.",
+    "`ttl_seconds: 0` w `config/settings.yml` oznacza brak automatycznego wygasania wpisów.",
+    ""
+  ].join("\n"));
 }
 
 function invocationForTurn(index, model, workdir, outputFile, threadId) {
@@ -166,6 +220,19 @@ function voiceHits(text) {
   return (String(text || "").match(voicePattern) || []).length;
 }
 
+// Heurystyka, nie gramatyczny parser: końcówki -asz/-esz/-isz/-ysz łapią większość
+// czasowników 2. os. l.poj. ("bierzesz", "masz", "chcesz", "widzisz"), plus wprost
+// zaimki "ty/cię/ciebie/tobie/tobą" i "twoj*". Kontrakt Kruxa każe trzecią osobę
+// ("Morra") — każde trafienie tego wzorca jest naruszeniem.
+const secondPersonPattern = new RegExp(
+  "(?<!\\p{L})(?:\\p{L}*(?:asz|esz|isz|ysz)|ty|ci[eę]|ciebie|tobie|tob[ąa]|twoj\\p{L}*)(?!\\p{L})",
+  "giu"
+);
+
+function secondPersonHits(text) {
+  return (String(text || "").match(secondPersonPattern) || []).length;
+}
+
 function voiceDrift(hitsPerTurn) {
   const half = Math.floor(hitsPerTurn.length / 2);
   if (half === 0) return null;
@@ -189,6 +256,7 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
   }
   const reductionPercent = 100 * (1 - hookContextWords / baselineHookContextWords);
   const voiceHitsPerTurn = responses.map((response) => voiceHits(response));
+  const secondPersonHitsPerTurn = responses.map((response) => secondPersonHits(response));
   const report = {
     status,
     model,
@@ -203,6 +271,8 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
     voiceHitsPerTurn,
     voiceHitsTotal: voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
     voiceDriftRatio: voiceDrift(voiceHitsPerTurn),
+    secondPersonHitsPerTurn,
+    secondPersonHitsTotal: secondPersonHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
     accepted: status === "COMPLETE"
       && responses.length === turnCount
       && hookEvents.persona === 1
@@ -300,6 +370,7 @@ function runSmoke({ model }) {
     fs.mkdirSync(codexHome, { recursive: true, mode: 0o700 });
     fs.mkdirSync(workdir, { recursive: true });
     fs.mkdirSync(output, { recursive: true });
+    seedFixture(workdir);
 
     const sourceCodexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
     const sourceAuth = path.join(sourceCodexHome, "auth.json");
@@ -375,5 +446,6 @@ module.exports = {
   classifyHookContext,
   extractHookContexts,
   voiceHits,
+  secondPersonHits,
   buildReport
 };

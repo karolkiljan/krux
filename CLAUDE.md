@@ -30,9 +30,11 @@ README.md, CLAUDE.md, LICENSE                 dokumentacja i licencja
 | `UserPromptSubmit` | dokładne `włącz konkret` po `trim`, bez różnicy wielkości liter | kontrakt precyzji zakresu |
 | `UserPromptSubmit` | dokładne `wyłącz flow` po `trim`, bez różnicy wielkości liter | potwierdzenie wyłączenia rytmu |
 | `UserPromptSubmit` | dokładne `włącz flow` po `trim`, bez różnicy wielkości liter | kontrakt pętli iteracyjnej |
+| `UserPromptSubmit` | dowolny inny tekst, flaga persony `on` | krótka kotwica głosu (trzecia osoba, złamana gramatyka) |
+| `UserPromptSubmit` | dowolny inny tekst, flaga persony `off` | brak |
 | każde inne wejście | dowolne | brak |
 
-Tylko `SessionStart(startup|clear|compact)` oraz sześć dokładnych komend toggle mogą emitować kontekst.
+`SessionStart(startup|clear|compact)`, sześć dokładnych komend toggle i każda inna tura `UserPromptSubmit` przy włączonej personie mogą emitować kontekst. Kotwica głosu jest statyczna (bez stanu, bez licznika tur) — przeciwdziała temu, że pojedyncza iniekcja na starcie sesji traci wagę po kilku turach z dużą ilością tokenów narzędziowych między nimi.
 
 ## Reguła stanu
 
@@ -48,7 +50,7 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
-- Wersje rekordów dystrybucji zgadzają się z `3.3.0` po usunięciu opcjonalnych metadanych build Codexa.
+- Wersje rekordów dystrybucji zgadzają się z `3.4.0` po usunięciu opcjonalnych metadanych build Codexa.
 
 ## Komendy wydania
 

@@ -53,11 +53,10 @@ test("startup, clear and compact inject the persona body", () => {
   }
 });
 
-test("resume, ordinary prompt and unrelated lifecycle events are silent and do not write state", () => {
+test("resume and unrelated lifecycle events are silent and do not write state", () => {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
   for (const input of [
     { hook_event_name: "SessionStart", source: "resume" },
-    { hook_event_name: "UserPromptSubmit", prompt: "napraw test" },
     { hook_event_name: "PostToolUse" },
     { hook_event_name: "SubagentStart" },
     { hook_event_name: "Stop" }
@@ -67,6 +66,20 @@ test("resume, ordinary prompt and unrelated lifecycle events are silent and do n
     assert.equal(result.stdout, "");
   }
   assert.deepEqual(fs.readdirSync(data), []);
+});
+
+test("ordinary prompt gets the voice anchor while persona is on, and stays silent once persona is off", () => {
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-hook-"));
+  const env = { PLUGIN_ROOT: repo, PLUGIN_DATA: data };
+  const onTurn = run({ hook_event_name: "UserPromptSubmit", prompt: "napraw test" }, env);
+  assert.equal(onTurn.status, 0);
+  assert.match(context(onTurn), /trzecią osobą/u);
+  assert.deepEqual(fs.readdirSync(data), []);
+
+  run({ hook_event_name: "UserPromptSubmit", prompt: "wyłącz krux" }, env);
+  const offTurn = run({ hook_event_name: "UserPromptSubmit", prompt: "napraw test" }, env);
+  assert.equal(offTurn.status, 0);
+  assert.equal(offTurn.stdout, "");
 });
 
 test("exact off/on phrases persist one mode file and affect lifecycle injection", () => {
@@ -184,7 +197,11 @@ test("a simulated 12-turn lifecycle runs every hook event cleanly", () => {
     { hook_event_name: "SessionStart", source: "compact" }
   ];
   for (const event of events) {
-    assert.equal(run(event, env).status, 0);
+    const result = run(event, env);
+    assert.equal(result.status, 0);
+    if (event.hook_event_name === "UserPromptSubmit") {
+      assert.match(context(result), /trzecią osobą/u);
+    }
   }
 });
 
@@ -198,7 +215,7 @@ test("exact konkret phrases persist a flag file and echo the scope contract", ()
 
   const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "zwykła tura" }, env);
   assert.equal(ordinary.status, 0);
-  assert.equal(ordinary.stdout, "");
+  assert.match(context(ordinary), /trzecią osobą/u);
 
   const off = run({ hook_event_name: "UserPromptSubmit", prompt: "WYŁĄCZ KONKRET" }, env);
   assert.equal(off.status, 0);
@@ -257,7 +274,7 @@ test("exact flow phrases persist a flag file and echo the iteration contract", (
 
   const ordinary = run({ hook_event_name: "UserPromptSubmit", prompt: "tak" }, env);
   assert.equal(ordinary.status, 0);
-  assert.equal(ordinary.stdout, "");
+  assert.match(context(ordinary), /trzecią osobą/u);
 
   const off = run({ hook_event_name: "UserPromptSubmit", prompt: "WYŁĄCZ FLOW" }, env);
   assert.equal(off.status, 0);
