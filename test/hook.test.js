@@ -74,6 +74,7 @@ test("ordinary prompt gets the voice anchor while persona is on, and stays silen
   const onTurn = run({ hook_event_name: "UserPromptSubmit", prompt: "napraw test" }, env);
   assert.equal(onTurn.status, 0);
   assert.match(context(onTurn), /trzecią osobą/u);
+  assert.match(context(onTurn), /słownik żywy/u);
   assert.deepEqual(fs.readdirSync(data), []);
 
   run({ hook_event_name: "UserPromptSubmit", prompt: "wyłącz krux" }, env);
