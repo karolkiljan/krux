@@ -4,7 +4,7 @@ Krux = minimalny plugin dla Claude Code i Codex: zwięzły polski głos technicz
 
 ## Co zostaje w kontekście
 
-Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`. Zwykły prompt, narzędzie, resume, start subagenta i Stop dodają 0 słów. Stan trzymają trzy niezależne flagi w katalogu danych pluginu: `.krux-mode`, `.krux-konkret`, `.krux-flow`.
+Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`; każdy zwykły prompt dostaje jednozdaniową kotwicę głosu. Narzędzia, resume, start subagenta i Stop dodają 0 słów. Łączna emisja `SessionStart` mieści się z zapasem pod limitem 10 000 znaków, który Claude Code narzuca na output hooka. Stan trzymają trzy niezależne flagi w katalogu danych pluginu: `.krux-mode`, `.krux-konkret`, `.krux-flow`.
 
 ## Instalacja
 
@@ -46,6 +46,24 @@ W obu hostach przejrzyj i zaufaj jednej komendzie hooka `node .../hooks/krux.js`
 | Lont | bezpieczne usuwanie i refaktor |
 
 Krux deleguje tylko przy specjalizacji, izolacji kontekstu albo realnej równoległości. Drobnicę robi sam.
+
+## Zmiany w 3.5.0
+
+Naprawa niewidzialnej persony w Claude Code. Od 3.3.0 kapsuła emitowała
+10 636 znaków, a Claude Code tnie output hooka powyżej 10 000 znaków —
+pełny tekst lądował w pliku sesji, model widział tylko 2 KB podglądu bez
+par przykładów. Głos ginął od pierwszej tury mimo poprawnie działającego
+hooka.
+
+- Kapsuła zbita do 16 par (wzorce z sesji kalibracyjnej nietknięte;
+  skrócone strony ludzkie, komentarze, słownik). Łączna emisja
+  `SessionStart` wszystkich trzech trybów: 8 946 znaków, budżet 9 000
+  pilnowany testem kontraktowym.
+- Kotwica per turę przypomina teraz też złamaną gramatykę i rdzeń
+  słownika, nie tylko trzecią osobę.
+- Smoke akceptuje wyłącznie sesje z żywym głosem: średnio ≥ 1 trafienie
+  słownika na turę, maksymalnie 1 wpadka drugiej osoby, druga połowa
+  sesji ≥ 50% pierwszej.
 
 ## Zmiany w 3.3.0
 

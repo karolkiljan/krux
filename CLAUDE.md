@@ -30,7 +30,7 @@ README.md, CLAUDE.md, LICENSE                 dokumentacja i licencja
 | `UserPromptSubmit` | dokładne `włącz konkret` po `trim`, bez różnicy wielkości liter | kontrakt precyzji zakresu |
 | `UserPromptSubmit` | dokładne `wyłącz flow` po `trim`, bez różnicy wielkości liter | potwierdzenie wyłączenia rytmu |
 | `UserPromptSubmit` | dokładne `włącz flow` po `trim`, bez różnicy wielkości liter | kontrakt pętli iteracyjnej |
-| `UserPromptSubmit` | dowolny inny tekst, flaga persony `on` | krótka kotwica głosu (trzecia osoba, złamana gramatyka) |
+| `UserPromptSubmit` | dowolny inny tekst, flaga persony `on` | krótka kotwica głosu (trzecia osoba, złamana gramatyka, rdzeń słownika) |
 | `UserPromptSubmit` | dowolny inny tekst, flaga persony `off` | brak |
 | każde inne wejście | dowolne | brak |
 
@@ -49,8 +49,9 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - Instrukcje w `skills/krux/SKILL.md` pisze się poprawną polszczyzną; głos orka niosą wyłącznie pary przykładów. Opisywanie głosu przymiotnikami zamiast pokazania wzorca jest regresem — patrz `docs/superpowers/specs/2026-07-16-persona-kapsula-design.md`.
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
+- Claude Code tnie output hooka powyżej 10 000 znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu. Dlatego łączna emisja `SessionStart` (persona + konkret + flow) i każda emisja toggle mieszczą się w budżecie 9 000 znaków, a kotwica głosu w 300 — pilnuje tego test kontraktowy. Powiększenie któregokolwiek body wymaga wycięcia czegoś w zamian, nie podniesienia budżetu.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
-- Wersje rekordów dystrybucji zgadzają się z `3.4.0` po usunięciu opcjonalnych metadanych build Codexa.
+- Wersje rekordów dystrybucji zgadzają się z `3.5.0` po usunięciu opcjonalnych metadanych build Codexa.
 
 ## Komendy wydania
 
