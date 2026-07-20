@@ -279,6 +279,11 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
       && hookEvents.konkret === 0
       && hookEvents.flow === 0
       && hookContextWords > 0
+      // Bramka głosu: bez niej raport akceptował sesje, w których persona
+      // umierała po pierwszych turach, mimo poprawnych emisji hooka.
+      && voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0) >= turnCount
+      && secondPersonHitsPerTurn.reduce((sum, hits) => sum + hits, 0) <= 1
+      && (voiceDrift(voiceHitsPerTurn) === null || voiceDrift(voiceHitsPerTurn) >= 0.5)
   };
   if (reason) report.reason = reason;
   return report;

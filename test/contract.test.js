@@ -311,13 +311,40 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
 
   const replayed = smoke.buildReport({
     model: "model-x",
-    responses: Array.from({ length: 12 }, () => "ok"),
+    responses: Array.from({ length: 12 }, () => "robak gryzie beton"),
     contexts: [personaContext, personaContext]
   });
   assert.equal(replayed.hookContextEvents, 1);
   assert.equal(replayed.hookContextReplays, 1);
   assert.equal(replayed.hookContextWords, 64);
   assert.equal(replayed.accepted, true);
+
+  const voiceless = smoke.buildReport({
+    model: "model-x",
+    responses: Array.from({ length: 12 }, () => "wszystko gotowe, zmiana wdrożona"),
+    contexts: [personaContext]
+  });
+  assert.equal(voiceless.voiceHitsTotal, 0);
+  assert.equal(voiceless.accepted, false);
+
+  const secondPerson = smoke.buildReport({
+    model: "model-x",
+    responses: Array.from({ length: 12 }, () => "robak siedzi — bierzesz ten wariant?"),
+    contexts: [personaContext]
+  });
+  assert.equal(secondPerson.secondPersonHitsTotal, 12);
+  assert.equal(secondPerson.accepted, false);
+
+  const fading = smoke.buildReport({
+    model: "model-x",
+    responses: [
+      ...Array.from({ length: 6 }, () => "robak w sztolni, smród i zawał"),
+      ...Array.from({ length: 6 }, () => "gotowe, wdrożone")
+    ],
+    contexts: [personaContext]
+  });
+  assert.equal(fading.voiceDriftRatio, 0);
+  assert.equal(fading.accepted, false);
 
   const doubledPersona = smoke.buildReport({
     model: "model-x",
