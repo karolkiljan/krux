@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
@@ -92,6 +93,55 @@ test("hook registry has only two one-command lifecycle entries", () => {
     });
     assert.equal(probe.status, 0, probe.stderr);
   }
+});
+
+test("every hook emission fits the documented Claude Code context cap", () => {
+  // Claude Code tnie output hooka (w tym additionalContext) powyżej 10 000
+  // znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu.
+  // Budżet 9 000 zostawia margines na przyszłe edycje wszystkich trzech trybów.
+  const HARNESS_CAP = 10_000;
+  const BUDGET = 9_000;
+  const ANCHOR_BUDGET = 300;
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-budget-"));
+  const cleanEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) =>
+      !key.startsWith("KRUX_") &&
+      !["PLUGIN_ROOT", "PLUGIN_DATA", "CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA"].includes(key)
+    )
+  );
+  const emit = (input) => {
+    const result = spawnSync(process.execPath, [path.join(repo, "hooks", "krux.js")], {
+      cwd: repo,
+      env: { ...cleanEnv, CLAUDE_PLUGIN_ROOT: repo, CLAUDE_PLUGIN_DATA: data },
+      input: JSON.stringify(input),
+      encoding: "utf8",
+      timeout: 6_000
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout ? JSON.parse(result.stdout).hookSpecificOutput.additionalContext : "";
+  };
+
+  assert.ok(BUDGET < HARNESS_CAP);
+  for (const prompt of ["włącz konkret", "włącz flow"]) {
+    emit({ hook_event_name: "UserPromptSubmit", prompt });
+  }
+  const combined = emit({ hook_event_name: "SessionStart", source: "startup" });
+  assert.ok(
+    combined.length > 0 && combined.length <= BUDGET,
+    `SessionStart ze wszystkimi trybami emituje ${combined.length} znaków, budżet ${BUDGET}`
+  );
+
+  const personaToggle = emit({ hook_event_name: "UserPromptSubmit", prompt: "włącz krux" });
+  assert.ok(
+    personaToggle.length > 0 && personaToggle.length <= BUDGET,
+    `"włącz krux" emituje ${personaToggle.length} znaków, budżet ${BUDGET}`
+  );
+
+  const anchor = emit({ hook_event_name: "UserPromptSubmit", prompt: "zwykła tura" });
+  assert.ok(
+    anchor.length > 0 && anchor.length <= ANCHOR_BUDGET,
+    `kotwica głosu ma ${anchor.length} znaków, budżet ${ANCHOR_BUDGET}`
+  );
 });
 
 test("runtime contains exactly four compact skills and no custom agents", () => {
