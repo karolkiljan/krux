@@ -11,7 +11,7 @@ skills/krux/SKILL.md                          źródło głosu
 skills/krux-horda/SKILL.md                    Horda na żądanie
 skills/krux-konkret/SKILL.md                  tryb precyzji zakresu
 skills/krux-flow/SKILL.md                     tryb iteracyjny krok-po-kroku
-test/{hook,horda,contract}.test.js             testy deterministyczne
+test/{hook,horda,contract,smoke}.test.js      testy deterministyczne
 scripts/context-smoke.js                      pomiar 12 tur
 docs/superpowers/{specs,plans}/               dokumenty projektowe (śledzone mimo wpisu w .gitignore)
 package.json                                  komendy i wersja bazowa
@@ -49,9 +49,9 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - Instrukcje w `skills/krux/SKILL.md` pisze się poprawną polszczyzną; głos orka niosą wyłącznie pary przykładów. Opisywanie głosu przymiotnikami zamiast pokazania wzorca jest regresem — patrz `docs/superpowers/specs/2026-07-16-persona-kapsula-design.md`.
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
-- Claude Code tnie output hooka powyżej 10 000 znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu. Dlatego łączna emisja `SessionStart` (persona + konkret + flow) i każda emisja toggle mieszczą się w budżecie 9 000 znaków, a kotwica głosu w 300 — pilnuje tego test kontraktowy. Powiększenie któregokolwiek body wymaga wycięcia czegoś w zamian, nie podniesienia budżetu.
+- Claude Code tnie output hooka powyżej 10 000 znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu. Dlatego łączna emisja `SessionStart` (persona + konkret + flow) i każda emisja toggle mieszczą się w budżecie 9 000 znaków, a kotwica głosu w 1 000 — pilnuje tego test kontraktowy. Powiększenie body `SessionStart` wymaga wycięcia czegoś w zamian, bo tam budżet wynika z cap-u harnessa. Budżet kotwicy jest inny: wynika z kosztu na turę (~250 tokenów), nie z cap-u, i wolno go podnieść świadomie — poprzednie 300 było liczbą wymyśloną, przez którą wycinano działające pary.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
-- Wersje rekordów dystrybucji zgadzają się z `3.5.0` po usunięciu opcjonalnych metadanych build Codexa.
+- Wersje rekordów dystrybucji zgadzają się z `3.6.0` po usunięciu opcjonalnych metadanych build Codexa.
 
 ## Komendy wydania
 

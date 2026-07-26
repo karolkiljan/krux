@@ -41,11 +41,11 @@ const marketplace = readJson(".claude-plugin/marketplace.json");
 const pkg = readJson("package.json");
 const hooks = readJson("hooks/hooks.json");
 
-test("all distribution records expose the minimal 3.5.0 package", () => {
-  assert.match(codex.version, /^3\.5\.0\+codex\.\d{14}$/u);
-  assert.equal(claude.version, "3.5.0");
-  assert.equal(marketplace.plugins[0].version, "3.5.0");
-  assert.equal(pkg.version, "3.5.0");
+test("all distribution records expose the minimal 3.6.0 package", () => {
+  assert.match(codex.version, /^3\.6\.0\+codex\.\d{14}$/u);
+  assert.equal(claude.version, "3.6.0");
+  assert.equal(marketplace.plugins[0].version, "3.6.0");
+  assert.equal(pkg.version, "3.6.0");
   assert.equal(pkg.type, "commonjs");
   assert.equal(pkg.engines.node, ">=18");
   assert.deepEqual(pkg.dependencies ?? {}, {});
@@ -101,7 +101,12 @@ test("every hook emission fits the documented Claude Code context cap", () => {
   // Budżet 9 000 zostawia margines na przyszłe edycje wszystkich trzech trybów.
   const HARNESS_CAP = 10_000;
   const BUDGET = 9_000;
-  const ANCHOR_BUDGET = 300;
+  // Kotwica leci w KAZDEJ turze, wiec ma wlasny budzet — ale 300 znakow bylo
+  // liczba wymyslona, nie policzona: przy ~4 znakach na token to ~75 tokenow,
+  // a szesc kolejnych wersji kotwicy wycinalo dzialajace pary tylko po to, by
+  // sie w niej zmiescic. 1000 znakow to ~250 tokenow na ture, dziesieciokrotnie
+  // ponizej cap-u harnessa, i zostawia miejsce na pare do kazdej osi glosu.
+  const ANCHOR_BUDGET = 1_000;
   const data = fs.mkdtempSync(path.join(os.tmpdir(), "krux-budget-"));
   const cleanEnv = Object.fromEntries(
     Object.entries(process.env).filter(([key]) =>
@@ -207,7 +212,7 @@ test("public and maintainer docs describe only the minimal architecture", () => 
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
-  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.5.0"]) {
+  for (const required of ["hooks/hooks.json", "hooks/krux.js", "SessionStart", "source=compact", ".krux-mode", "3.6.0"]) {
     assert.match(maintainer, new RegExp(required.replace(".", "\\."), "u"));
   }
   for (const validator of [
@@ -237,14 +242,28 @@ test("only the focused tests, smoke runner and current design records remain", (
   t.after(() => fs.rmSync(ignoredSpecDirectory, { recursive: true, force: true }));
 
   assert.deepEqual(trackedFilesUnder("test"), [
-    "contract.test.js", "hook.test.js", "horda.test.js"
+    "contract.test.js", "hook.test.js", "horda.test.js", "smoke.test.js"
   ]);
   assert.deepEqual(trackedFilesUnder("scripts"), ["context-smoke.js"]);
+  // Sąd czytelności jest jedynym specem z katalogiem załącznika: stanowisko
+  // pomiarowe i 396 surowych werdyktów, bez których wniosków nie da się
+  // odtworzyć. Narzędzie nie wchodzi do npm test — sądu z modelem w pętli nie
+  // da się zasertować deterministycznie.
   assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
     "2026-07-15-krux-konkret-flow-design.md",
     "2026-07-15-minimal-krux-design.md",
     "2026-07-16-persona-kapsula-design.md",
-    "2026-07-17-sesja-kalibracyjna-morra.md"
+    "2026-07-17-sesja-kalibracyjna-morra.md",
+    "2026-07-26-sad-czytelnosci-kotwicy.md",
+    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT.txt",
+    "2026-07-26-sad-czytelnosci-kotwicy/README.md",
+    "2026-07-26-sad-czytelnosci-kotwicy/grade.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/gubienie.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/korelacja.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/labels.json",
+    "2026-07-26-sad-czytelnosci-kotwicy/prompts.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/run.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/werdykty.jsonl"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
     "2026-07-15-krux-konkret-flow.md",
@@ -304,6 +323,8 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
   assert.equal(accepted.baselineHookContextWords, 2567);
   assert.deepEqual(accepted.voiceHitsPerTurn, Array.from({ length: 12 }, () => 1));
   assert.equal(accepted.voiceHitsTotal, 12);
+  // Bramka glosu liczy gestosc, nie sume: suma karala za zwiezlosc.
+  assert.equal(Math.round(accepted.voiceDensityPerThousand), 333);
   assert.equal(accepted.voiceDriftRatio, 1);
   assert.deepEqual(accepted.secondPersonHitsPerTurn, Array.from({ length: 12 }, () => 0));
   assert.equal(accepted.secondPersonHitsTotal, 0);
@@ -343,8 +364,22 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
     ],
     contexts: [personaContext]
   });
+  // Persona zgaszona w drugiej polowie: drift zostaje jako obserwacja,
+  // ale odrzuca ja warunek "druga polowa nie jest pusta".
   assert.equal(fading.voiceDriftRatio, 0);
   assert.equal(fading.accepted, false);
+
+  // Zwiezle odpowiedzi z zywa persona MUSZA przechodzic: stary prog
+  // (suma >= liczba tur) odrzucal je tylko za to, ze byly krotsze.
+  const zwiezly = smoke.buildReport({
+    model: "model-x",
+    responses: Array.from({ length: 12 }, (unused, index) =>
+      index % 2 === 0 ? "robak" : "gotowe, wdrozone bez zbednych slow"),
+    contexts: [personaContext]
+  });
+  assert.equal(zwiezly.voiceHitsTotal, 6);
+  assert.ok(zwiezly.voiceDensityPerThousand >= 6);
+  assert.equal(zwiezly.accepted, true);
 
   const doubledPersona = smoke.buildReport({
     model: "model-x",

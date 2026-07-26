@@ -230,7 +230,151 @@ const secondPersonPattern = new RegExp(
 );
 
 function secondPersonHits(text) {
-  return (String(text || "").match(secondPersonPattern) || []).length;
+  // Kod nie jest mową do Morry: nazwa operacji w backtickach ("sprawdź →
+  // pobierz → zapisz") kończy się jak czasownik 2. osoby i bez tego odsiewu
+  // liczy się jako naruszenie granicy, której nikt nie przekroczył.
+  const prose = String(text || "")
+    .replace(/```[\s\S]*?```/gu, " ")
+    .replace(/`[^`]*`/gu, " ");
+  return (prose.match(secondPersonPattern) || []).length;
+}
+
+// Heurystyka, nie gramatyczny parser. Liczy WYŁĄCZNIE bezokolicznik w miejscu
+// orzeczenia przy podmiocie ("Krux nie widzieć plik") — to sygnatura głosu.
+// Liczenie wszystkich bezokoliczników nie różnicuje niczego: gładki raport ma
+// ich tyle samo co orkowy, bo wyliczenia planu ("dodać kolumnę, przenieść
+// indeks") są poprawną polszczyzną. Uwaga: \w i \b w JS są ASCII-only i po
+// polsku cicho zwracają zero, stąd wszędzie \p{L} i flaga u.
+// Podmiotem bywa cokolwiek ("Projekt mieć cache", "`app.rb` nie wczytywać
+// konfiguracji"), nie tylko Krux — zawężenie do trzech imion niedoszacowuje
+// głos blisko dwukrotnie. Blokada dotyczy wyłącznie początków punktów
+// wyliczenia (myślnik, gwiazdka, cyfra z kropką), bo tam bezokolicznik jest
+// zwykłym planem; zwykła kropka końca zdania blokować nie może, inaczej
+// wypada najczęstsza pozycja podmiotu. Rdzeń bierze \p{L}+, nie {3,}: przy
+// {3,} krótkie bezokoliczniki ("mieć", "kuć", "bić") cicho wypadały.
+const subjectInfinitivePattern = new RegExp(
+  "(?<![\\n\\r*\\-]\\s?)(?<!\\d[.)]\\s?)(?<![\\p{L}])"
+  + "([\\p{L}`_.]{2,})\\s+(?:nie\\s+)?(\\p{L}+(?:ać|eć|ić|yć|ąć|uć|ść|źć))(?![\\p{L}])",
+  "gu"
+);
+
+// Rzeczowniki wpadające w końcówki bezokolicznika.
+const infinitiveFalsePositives = new Set([
+  "nić", "sieć", "płeć", "część", "gość", "kość", "maść", "treść", "wieść",
+  "śmierć", "pamięć", "chęć", "gałąź", "rzeź", "zamieć", "opowieść", "korzyść"
+]);
+
+// Słowa, po których bezokolicznik jest zwykłą polszczyzną, nie łamaniem:
+// modalne i fazowe ("trzeba sprawdzić"), spójniki oraz zaimki ("czy można to
+// naprawić" — bez zaimków "to naprawić" liczyło się jako głos Kruxa).
+const infinitiveLicensers = new Set([
+  "trzeba", "można", "warto", "należy", "wolno", "wystarczy", "łatwo", "trudno",
+  "musi", "muszę", "musimy", "może", "mogę", "możemy", "możesz", "chce", "chcę",
+  "chcemy", "umie", "umiem", "potrafi", "potrafię", "powinien", "powinna",
+  "zaczyna", "zacznie", "próbuje", "pozwala", "pomaga", "zamierza", "planuje",
+  "lubi", "woli", "da", "się", "by", "aby", "żeby", "zamiast", "bez", "będzie",
+  "lepiej", "czas", "i", "oraz", "lub", "albo", "potem", "najpierw",
+  "to", "co", "go", "ją", "je", "ich", "nam", "im", "mu", "jej", "tego", "tym",
+  "tam", "jak", "gdy", "kiedy", "czy", "niż", "tylko", "już", "też", "także",
+  "jeszcze", "znów", "znowu", "wreszcie", "dopiero", "nigdy", "zawsze", "wtedy"
+]);
+
+const infinitiveEnding = /(?:ać|eć|ić|yć|ąć|uć|ść|źć)$/u;
+
+function infinitiveHits(text) {
+  const source = String(text || "");
+  let hits = 0;
+  for (const match of source.matchAll(subjectInfinitivePattern)) {
+    const subject = match[1].toLowerCase().replace(/[`_.]/gu, "");
+    const verb = match[2].toLowerCase();
+    if (infinitiveFalsePositives.has(verb)) continue;
+    if (infinitiveLicensers.has(subject)) continue;
+    // Bezokolicznik po bezokoliczniku to łańcuch planu ("zapisać i wysłać").
+    if (infinitiveEnding.test(subject)) continue;
+    hits += 1;
+  }
+  return hits;
+}
+
+// Pary wzorcowe w skills/krux/SKILL.md trzymają ~7 słów na zdanie; dryf w
+// gładką poradnię widać jako wzrost tej liczby, nie jako spadek słownika.
+// Bloki kodu i ścieżki w backtickach nie są mową, więc lecą z pomiaru.
+// Odsetek zdań mieszczących się w progu. Czulszy niż średnia: średnia tonie
+// w długim ogonie (zdania 21+ słów są podobnie częste przy każdej kotwicy),
+// przez co przesunięcie masy z 13-20 słów do przedziału krótkiego prawie w
+// niej nie widać. Kalibracja: pary wzorcowe 65%, transkrypt z dryfem 32%,
+// gładka poradnia 0%.
+const SHORT_SENTENCE_WORDS = 8;
+
+function sentenceLengths(text) {
+  const prose = String(text || "")
+    .replace(/```[\s\S]*?```/gu, " ")
+    .replace(/`[^`]*`/gu, "X")
+    .split(/\r?\n/u)
+    .filter((line) => (line.match(/\|/gu) || []).length < 2)
+    .join("\n");
+  return prose
+    .split(/(?<=[.!?])\s+/u)
+    .map((sentence) => wordCount(sentence))
+    .filter((words) => words > 1);
+}
+
+// Defekty czytelności — odsetek zdań, w których sens zaczyna uciekać. Typy
+// wzięte wprost z miejsc, gdzie zgubił się w realnej sesji (2026-07-25):
+// zdanie na 44 słowa, zdanie złożone podrzędnie z wtrąceniem w nawiasie.
+// Mniej znaczy lepiej. Kalibracja: wzorzec skills/krux/SKILL.md 4,1%,
+// transkrypt oceniony przez użytkownika jako nieczytelny 61,4%.
+const LONG_SENTENCE_WORDS = 20;
+const SUBORDINATE_WORDS = 15;
+const SUBORDINATE_COMMAS = 2;
+const PARENTHETICAL_WORDS = 5;
+
+function readabilityDefectRatio(text) {
+  const sentences = String(text || "")
+    .replace(/```[\s\S]*?```/gu, " ")
+    .split(/\r?\n/u)
+    .filter((line) => (line.match(/\|/gu) || []).length < 2)
+    .join("\n")
+    .split(/(?<=[.!?])\s+/u)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => wordCount(sentence) > 1);
+  if (!sentences.length) return null;
+
+  let defects = 0;
+  for (const sentence of sentences) {
+    const words = wordCount(sentence);
+    if (words > LONG_SENTENCE_WORDS) defects += 1;
+    if (words >= SUBORDINATE_WORDS && (sentence.match(/,/gu) || []).length >= SUBORDINATE_COMMAS) {
+      defects += 1;
+    }
+    for (const aside of sentence.matchAll(/\(([^)]+)\)/gu)) {
+      if (wordCount(aside[1]) > PARENTHETICAL_WORDS) defects += 1;
+    }
+  }
+  return defects / sentences.length;
+}
+
+function shortSentenceRatio(text) {
+  const lengths = sentenceLengths(text);
+  if (!lengths.length) return null;
+  return lengths.filter((words) => words <= SHORT_SENTENCE_WORDS).length / lengths.length;
+}
+
+function averageSentenceWords(text) {
+  const prose = String(text || "")
+    .replace(/```[\s\S]*?```/gu, " ")
+    .replace(/`[^`]*`/gu, "X")
+    // Wiersz tabeli markdown nie ma kropki, więc bez tego cięcia cała tabela
+    // liczy się jako jedno zdanie na czterdzieści słów i udaje dryf w prozę.
+    .split(/\r?\n/u)
+    .filter((line) => (line.match(/\|/gu) || []).length < 2)
+    .join("\n");
+  const lengths = prose
+    .split(/(?<=[.!?])\s+/u)
+    .map((sentence) => wordCount(sentence))
+    .filter((words) => words > 1);
+  if (!lengths.length) return null;
+  return lengths.reduce((sum, words) => sum + words, 0) / lengths.length;
 }
 
 function voiceDrift(hitsPerTurn) {
@@ -257,6 +401,9 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
   const reductionPercent = 100 * (1 - hookContextWords / baselineHookContextWords);
   const voiceHitsPerTurn = responses.map((response) => voiceHits(response));
   const secondPersonHitsPerTurn = responses.map((response) => secondPersonHits(response));
+  const infinitiveHitsPerTurn = responses.map((response) => infinitiveHits(response));
+  const voiceHitsTotal = voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0);
+  const voiceDensityPerThousand = outputWords ? 1000 * voiceHitsTotal / outputWords : 0;
   const report = {
     status,
     model,
@@ -269,10 +416,22 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
     baselineHookContextWords,
     reductionPercent,
     voiceHitsPerTurn,
-    voiceHitsTotal: voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
+    voiceHitsTotal,
+    voiceDensityPerThousand,
+    // Drift zostaje jako obserwacja, ale NIE jako bramka: przy tej samej
+    // kotwicy waha sie 0,42-1,11, a 7 z 10 oblanych przebiegow padlo wlasnie
+    // na nim. Metryka liczona z 12 liczb rzedu 0-5 jest za szumowa na prog.
     voiceDriftRatio: voiceDrift(voiceHitsPerTurn),
     secondPersonHitsPerTurn,
     secondPersonHitsTotal: secondPersonHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
+    // Metryki składni: obserwacyjne, poza bramką `accepted`. voiceHits mierzy
+    // tylko leksykę, więc dryf w gładką polszczyznę z poprawnym słownikiem
+    // przechodził niezauważony. Progów jeszcze nie ma — najpierw dane.
+    infinitiveHitsPerTurn,
+    infinitiveHitsTotal: infinitiveHitsPerTurn.reduce((sum, hits) => sum + hits, 0),
+    averageSentenceWords: averageSentenceWords(responses.join("\n\n")),
+    shortSentenceRatio: shortSentenceRatio(responses.join("\n\n")),
+    readabilityDefectRatio: readabilityDefectRatio(responses.join("\n\n")),
     accepted: status === "COMPLETE"
       && responses.length === turnCount
       && hookEvents.persona === 1
@@ -281,9 +440,22 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
       && hookContextWords > 0
       // Bramka głosu: bez niej raport akceptował sesje, w których persona
       // umierała po pierwszych turach, mimo poprawnych emisji hooka.
-      && voiceHitsPerTurn.reduce((sum, hits) => sum + hits, 0) >= turnCount
+      //
+      // Liczy GĘSTOŚĆ, nie sumę. Stary próg (suma >= liczba tur) karał za
+      // zwięzłość: krótsze odpowiedzi mają mniej słów słownika przy tej samej
+      // gęstości, więc kotwica skracająca zdania oblewała mimo żywej persony.
+      // Zmierzone na 28 przebiegach: gęstość 7,2-15,9 na 1000 słów niezależnie
+      // od kotwicy, przy sumach 9-25. Próg 6 przepuszcza każdy z nich i łapie
+      // personę martwą, u której gęstość leci do zera.
+      && voiceDensityPerThousand >= 6
       && secondPersonHitsPerTurn.reduce((sum, hits) => sum + hits, 0) <= 1
-      && (voiceDrift(voiceHitsPerTurn) === null || voiceDrift(voiceHitsPerTurn) >= 0.5)
+      // Persona nie może zgasnąć w trakcie sesji. Stary warunek (drift >= 0,5)
+      // miał ten sam cel, ale liczony z 12 liczb rzędu 0-5 wahał się 0,42-1,11
+      // przy tej samej kotwicy i odrzucił 7 z 10 oblanych przebiegów, wszystkie
+      // z żywą personą. Warunek "druga połowa nie jest pusta" łapie prawdziwe
+      // wygaszenie i nie karze za wariancję między turami.
+      && voiceHitsPerTurn.slice(Math.ceil(voiceHitsPerTurn.length / 2))
+        .reduce((sum, hits) => sum + hits, 0) > 0
   };
   if (reason) report.reason = reason;
   return report;
@@ -355,8 +527,16 @@ function reportDirectory(now = new Date()) {
   return directory;
 }
 
-function writeReport(directory, report) {
+function writeReport(directory, report, responses = []) {
   fs.writeFileSync(path.join(directory, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+  // Surowe odpowiedzi obok raportu: bez nich każda nowa metryka głosu wymaga
+  // przepalenia kolejnego przebiegu, bo liczb nie da się policzyć wstecz.
+  if (responses.length) {
+    fs.writeFileSync(
+      path.join(directory, "responses.json"),
+      `${JSON.stringify(responses, null, 2)}\n`
+    );
+  }
 }
 
 function runSmoke({ model }) {
@@ -424,7 +604,7 @@ function runSmoke({ model }) {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
 
-  writeReport(directory, report);
+  writeReport(directory, report, responses);
   return report;
 }
 
@@ -452,5 +632,9 @@ module.exports = {
   extractHookContexts,
   voiceHits,
   secondPersonHits,
+  infinitiveHits,
+  averageSentenceWords,
+  shortSentenceRatio,
+  readabilityDefectRatio,
   buildReport
 };

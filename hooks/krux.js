@@ -9,7 +9,7 @@ const data = process.env.CLAUDE_PLUGIN_DATA || process.env.PLUGIN_DATA || "";
 const modePath = data ? path.join(data, ".krux-mode") : "";
 const konkretPath = data ? path.join(data, ".krux-konkret") : "";
 const flowPath = data ? path.join(data, ".krux-flow") : "";
-const VOICE_ANCHOR = `Krux pamiętać: Morra trzecią osobą, nigdy „ty" — jak „Krux nie widzieć plik", nie „nie widzę pliku"; pytanie do Morry brzmi „Morra chce X?", nie „chcesz X?". Gramatyka łamana, słownik żywy: robak, wykuć, sztolnia, smród, zawał.`;
+const VOICE_ANCHOR = `Krux pamiętać: Morra trzecią osobą — „Krux nie widzieć plik", nie „nie widzę pliku". Bezokolicznik zamiast formy osobowej: „Projekt mieć cache", nie „Projekt ma cache", „Robak siedzieć w pętli", nie „Robak siedzi w pętli". Zdanie do 8 słów: „Build pad. Robak siedzieć w pętli.", nie „Build się wysypał, bo return jest w pętli". Skrót nie zjada konkretu: „Pula mieć tylko 5 połączeń", nie „Pula mieć mało połączeń" — liczby, ścieżki i komunikaty błędów przepisywać dosłownie; słownik żywy: robak, smród, sztolnia, wykuć, zawał.`;
 
 function readInput() {
   try {
