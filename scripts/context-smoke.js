@@ -654,9 +654,21 @@ function run(command, args, options) {
 
 function reportDirectory(now = new Date()) {
   const id = now.toISOString().replace(/[:.]/gu, "-");
-  const directory = path.join(repoAbsolutePath, "benchmarks", "context-smoke", id);
-  fs.mkdirSync(directory, { recursive: true });
-  return directory;
+  const parent = path.join(repoAbsolutePath, "benchmarks", "context-smoke");
+  fs.mkdirSync(parent, { recursive: true });
+  // Dwa przebiegi startujące w tej samej milisekundzie dostawały ten sam
+  // katalog, bo `recursive: true` nie pada na istniejącym. Drugi nadpisywał
+  // raport pierwszego i seria po cichu traciła przebieg. `mkdir` bez recursive
+  // jest atomowy — kolizję widać po EEXIST, nie po brakującym wyniku.
+  for (let proba = 0; ; proba += 1) {
+    const directory = path.join(parent, proba ? `${id}-${proba}` : id);
+    try {
+      fs.mkdirSync(directory);
+      return directory;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+  }
 }
 
 function writeReport(directory, report, responses = []) {
@@ -761,6 +773,7 @@ module.exports = {
   promptForTurn,
   SCENARIOS,
   turnCount,
+  reportDirectory,
   invocationForTurn,
   parseCodexJson,
   validateTurnResult,

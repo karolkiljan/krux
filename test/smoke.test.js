@@ -17,7 +17,8 @@ const {
   parseArgs,
   promptForTurn,
   SCENARIOS,
-  turnCount
+  turnCount,
+  reportDirectory
 } = require("../scripts/context-smoke.js");
 
 // Heurystyki głosu są pisane po polsku, a klasy \w i \b w JS są ASCII-only.
@@ -235,6 +236,23 @@ test("kolejka fixture seeds the answer key with its side facts intact", () => {
     assert.match(readme, /nie czyta tego pliku/u);
   } finally {
     fs.rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
+// Zdarzyło się naprawdę: trzy przebiegi puszczone równolegle wylądowały w
+// dwóch katalogach, bo dwa wystartowały w tej samej milisekundzie. Drugi
+// nadpisał raport pierwszego i seria po cichu straciła przebieg.
+test("two runs starting in the same millisecond get separate directories", () => {
+  const chwila = new Date();
+  const pierwszy = reportDirectory(chwila);
+  const drugi = reportDirectory(chwila);
+  try {
+    assert.notEqual(pierwszy, drugi);
+    assert.ok(fs.existsSync(pierwszy) && fs.existsSync(drugi));
+    assert.equal(path.basename(drugi), `${path.basename(pierwszy)}-1`);
+  } finally {
+    fs.rmSync(pierwszy, { recursive: true, force: true });
+    fs.rmSync(drugi, { recursive: true, force: true });
   }
 });
 
