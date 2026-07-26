@@ -3,13 +3,21 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
 const {
   infinitiveHits,
   secondPersonHits,
   averageSentenceWords,
   shortSentenceRatio,
   readabilityDefectRatio,
-  buildReport
+  buildReport,
+  parseArgs,
+  promptForTurn,
+  SCENARIOS,
+  turnCount
 } = require("../scripts/context-smoke.js");
 
 // Heurystyki głosu są pisane po polsku, a klasy \w i \b w JS są ASCII-only.
@@ -136,4 +144,111 @@ test("report carries the syntax metrics without touching the acceptance gate", (
   const gladkiReport = buildReport({ model: "probe", responses: gladki, contexts: [], status: "COMPLETE" });
   assert.equal(gladkiReport.infinitiveHitsTotal, 0);
   assert.equal(gladkiReport.accepted, false, "gładki raport i tak pada na bramce słownika, nie na składni");
+});
+
+// Domyślny scenariusz jest kotwicą porównywalności: wszystkie pomiary w
+// benchmarks/context-smoke/ do 3.6.0 stoją na `cache`. Przełączenie domyślnej
+// wartości nie zepsułoby żadnego przebiegu — po cichu unieważniłoby całą serię.
+test("scenario defaults to cache and only accepts known names", () => {
+  assert.equal(parseArgs(["--model", "probe"]).scenario, "cache");
+  assert.equal(parseArgs(["--model", "probe", "--scenario", "kolejka"]).scenario, "kolejka");
+
+  // Kolejność flag jest dowolna — parser leci po argumentach, nie po pozycjach.
+  const odwrotnie = parseArgs(["--scenario", "kolejka", "--model", "probe"]);
+  assert.equal(odwrotnie.model, "probe");
+  assert.equal(odwrotnie.scenario, "kolejka");
+
+  // Literówka w nazwie musi padać od razu. Cichy fallback na `cache` puściłby
+  // wielogodzinny przebieg mierzący nie ten scenariusz, co trzeba.
+  assert.throws(() => parseArgs(["--model", "probe", "--scenario", "kolejkaa"]), /Nieznany scenariusz/u);
+  assert.throws(() => parseArgs(["--model", "probe", "--scenario"]), /Wymagane --scenario/u);
+  assert.throws(
+    () => parseArgs(["--model", "probe", "--scenario", "--model"]),
+    /Wymagane --scenario/u
+  );
+  assert.throws(
+    () => parseArgs(["--model", "probe", "--scenario", "cache", "--scenario", "kolejka"]),
+    /więcej niż raz/u
+  );
+});
+
+test("every scenario carries a prompt for each of the 12 turns", () => {
+  for (const [nazwa, scenariusz] of Object.entries(SCENARIOS)) {
+    assert.equal(
+      scenariusz.prompts.length,
+      turnCount,
+      `scenariusz ${nazwa} ma ${scenariusz.prompts.length} promptów zamiast ${turnCount}`
+    );
+    assert.equal(typeof scenariusz.seed, "function", `scenariusz ${nazwa} bez fixture`);
+
+    // Pętla przebiegu woła promptForTurn dla każdej tury — żadna nie może rzucać.
+    for (let tura = 0; tura < turnCount; tura += 1) {
+      assert.equal(typeof promptForTurn(tura, nazwa), "string");
+    }
+    assert.throws(() => promptForTurn(turnCount, nazwa), /Brak scenariusza dla tury/u);
+  }
+
+  // Prompty muszą być różne — wspólna lista znaczyłaby, że model dostaje
+  // pytania o cache, siedząc w fixture kolejki.
+  assert.notEqual(promptForTurn(0, "cache"), promptForTurn(0, "kolejka"));
+  assert.equal(promptForTurn(0), promptForTurn(0, "cache"));
+});
+
+// Klucz odpowiedzi scenariusza `kolejka` siedzi w fixture, nie w promptach.
+// Test waruje, żeby liczby poboczne — te, na których sąd czytelności rozstrzygał
+// przewagę kotwicy — nie wyparowały cicho z zasianych plików.
+test("kolejka fixture seeds the answer key with its side facts intact", () => {
+  const workdir = fs.mkdtempSync(path.join(os.tmpdir(), "krux-scenario-kolejka-"));
+  try {
+    SCENARIOS.kolejka.seed(workdir);
+
+    const czytaj = (nazwa) => fs.readFileSync(path.join(workdir, nazwa), "utf8");
+    const worker = czytaj("worker.js");
+    const queue = czytaj(path.join("config", "queue.yml"));
+    const log = czytaj(path.join("logs", "last-run.txt"));
+    const pkg = JSON.parse(czytaj("package.json"));
+    const readme = czytaj("README.md");
+
+    // Przyczyna: ponowienie woła handle rekurencyjnie i nigdy nie sprawdza
+    // max_attempts — worker w ogóle nie czyta queue.yml.
+    assert.match(worker, /return this\.retry\(job\)/u);
+    assert.equal(/max_attempts|queue\.yml/u.test(worker), false);
+
+    // Zero jest poprawnym wynikiem handlera i wpada w `if (!result)` — bez tego
+    // pliku zwiad kończy się na brakującym require, nie na przyczynie.
+    const handler = czytaj("handler.js");
+    assert.match(worker, /require\("\.\/handler"\)/u);
+    assert.match(handler, /return saved;/u);
+
+    // Cztery liczby poboczne: żadna nie jest potrzebna do diagnozy, każda
+    // sprawdza, czy skrót nie zjadł konkretu.
+    assert.match(queue, /prefetch: 12/u);
+    assert.match(queue, /concurrency: 4/u);
+    assert.equal(pkg.dependencies.amqplib, "0.10.4");
+    assert.match(
+      log,
+      /Error: job 8841 exceeded visibility timeout after 30s \(queue=invoices, attempt=17\)/u
+    );
+
+    // README rozstrzyga pytanie o politykę ponowień — inaczej „max_attempts: 3"
+    // z YAML-a wygląda na obowiązujący limit i klucz przestaje być twardy.
+    assert.match(readme, /nie czyta tego pliku/u);
+  } finally {
+    fs.rmSync(workdir, { recursive: true, force: true });
+  }
+});
+
+test("report names the scenario it was measured on", () => {
+  const responses = ["Krux nie widzieć plik."];
+  assert.equal(buildReport({ model: "probe", responses, contexts: [] }).scenario, "cache");
+  assert.equal(
+    buildReport({ model: "probe", responses, contexts: [], scenario: "kolejka" }).scenario,
+    "kolejka"
+  );
+
+  // Raport błędu też musi nieść scenariusz: przerwany przebieg zostaje w
+  // benchmarks/ i bez tego pola jest nie do przypisania.
+  const bledny = buildReport({ model: "probe", status: "ERROR", reason: "padło", scenario: "kolejka" });
+  assert.equal(bledny.scenario, "kolejka");
+  assert.equal(bledny.status, "ERROR");
 });

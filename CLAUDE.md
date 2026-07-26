@@ -50,6 +50,7 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
 - Claude Code tnie output hooka powyżej 10 000 znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu. Dlatego łączna emisja `SessionStart` (persona + konkret + flow) i każda emisja toggle mieszczą się w budżecie 9 000 znaków, a kotwica głosu w 1 000 — pilnuje tego test kontraktowy. Powiększenie body `SessionStart` wymaga wycięcia czegoś w zamian, bo tam budżet wynika z cap-u harnessa. Budżet kotwicy jest inny: wynika z kosztu na turę (~250 tokenów), nie z cap-u, i wolno go podnieść świadomie — poprzednie 300 było liczbą wymyśloną, przez którą wycinano działające pary.
+- `scripts/context-smoke.js` ma dwa scenariusze: `cache` (domyślny) i `kolejka`. Domyślnego się nie zmienia — wszystkie przebiegi w `benchmarks/context-smoke/` do 3.6.0 stoją na `cache` i podmiana zerwałaby porównywalność. `kolejka` odpowiada na ograniczenie z `docs/superpowers/specs/2026-07-26-sad-czytelnosci-kotwicy.md`: niesie cztery liczby poboczne (`prefetch: 12`, `concurrency: 4`, `amqplib 0.10.4`, dosłowny komunikat z logu) zamiast jednej, więc mierzy „skrót nie zjada konkretu" na szerszej próbie. Raport zawsze nazywa scenariusz w polu `scenario`.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
 - Wersje rekordów dystrybucji zgadzają się z `3.6.0` po usunięciu opcjonalnych metadanych build Codexa.
 
@@ -65,5 +66,6 @@ uv run --with pyyaml python $HOME/.codex/skills/.system/plugin-creator/scripts/v
 claude plugin validate .
 python3 $HOME/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py .
 npm run smoke:context -- --model gpt-5.6-sol
+npm run smoke:context -- --model gpt-5.6-sol --scenario kolejka
 git diff --check
 ```

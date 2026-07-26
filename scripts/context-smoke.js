@@ -13,8 +13,19 @@ const maxOutputBytes = 32 * 1024 * 1024;
 
 function parseArgs(argv) {
   let model;
+  let scenario;
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
+    if (argument === "--scenario") {
+      if (scenario) throw new Error("Argument --scenario podany więcej niż raz");
+      scenario = argv[index + 1];
+      if (!scenario || scenario.startsWith("--")) throw new Error("Wymagane --scenario <nazwa>");
+      if (!Object.hasOwn(SCENARIOS, scenario)) {
+        throw new Error(`Nieznany scenariusz: ${scenario} (dostępne: ${Object.keys(SCENARIOS).join(", ")})`);
+      }
+      index += 1;
+      continue;
+    }
     if (argument !== "--model") throw new Error(`Nieznany argument: ${argument}`);
     if (model) throw new Error("Argument --model podany więcej niż raz");
     model = argv[index + 1];
@@ -22,7 +33,7 @@ function parseArgs(argv) {
     index += 1;
   }
   if (!model) throw new Error("Wymagane --model <model-id>");
-  return { model };
+  return { model, scenario: scenario || "cache" };
 }
 
 const SCENARIO_PROMPTS = [
@@ -40,10 +51,119 @@ const SCENARIO_PROMPTS = [
   "Zrób krótkie podsumowanie całej rozmowy."
 ];
 
-function promptForTurn(index) {
-  const prompt = SCENARIO_PROMPTS[index];
+// Scenariusz „kolejka" powstał po sądzie czytelności z 2026-07-26. Tamten
+// pomiar rozstrzygnął się na jednej liczbie pobocznej (`pool_size`), więc
+// przewaga kotwicy mogła być własnością fixture'u, nie kotwicy. Tutaj liczb
+// pobocznych jest cztery — `prefetch`, `concurrency`, przypięta wersja
+// zależności i dosłowny komunikat błędu z logu — a żadna nie jest potrzebna do
+// diagnozy. To one sprawdzają, czy skrót zjada konkret.
+const KOLEJKA_PROMPTS = [
+  "W tym katalogu jest worker kolejki zadań. Zadania z pewnymi wynikami mielą się w kółko — zbadaj kod i powiedz, co widzisz.",
+  "Sprawdź dokładnie worker.js i config/queue.yml — co dokładnie jest przyczyną?",
+  "Zerknij do logs/last-run.txt — co ten log mówi o przebiegu?",
+  "Jakie masz opcje naprawy? Wypisz je z plusami i minusami.",
+  "Zerknij jeszcze na README.md, czy jest tam coś istotnego o polityce ponowień.",
+  "Który wariant polecasz i dlaczego?",
+  "Sprawdź package.json — czy wersje zależności mają tu znaczenie?",
+  "Czy ustawienia wydajnościowe workera są w ogóle używane przez kod?",
+  "Sprawdź, czy w projekcie są jakieś testy dla tej funkcji.",
+  "Czy przy takiej zmianie grozi zgubienie zadań z kolejki?",
+  "Jak byś to poukładał na dziś, gdybyś miał zaczynać teraz?",
+  "Zrób krótkie podsumowanie całej rozmowy."
+];
+
+function promptForTurn(index, scenario = "cache") {
+  const prompt = SCENARIOS[scenario].prompts[index];
   if (!prompt) throw new Error(`Brak scenariusza dla tury ${index + 1}`);
   return prompt;
+}
+
+function seedKolejkaFixture(workdir) {
+  fs.mkdirSync(path.join(workdir, "config"), { recursive: true });
+  fs.mkdirSync(path.join(workdir, "logs"), { recursive: true });
+  fs.writeFileSync(path.join(workdir, "worker.js"), [
+    "\"use strict\";",
+    "",
+    "const Handler = require(\"./handler\");",
+    "",
+    "class Worker {",
+    "  constructor(queue) {",
+    "    this.queue = queue;",
+    "    this.attempts = 0;",
+    "  }",
+    "",
+    "  async handle(job) {",
+    "    const result = await Handler.run(job);",
+    "    if (!result) {",
+    "      this.attempts += 1;",
+    "      return this.retry(job);",
+    "    }",
+    "    this.attempts = 0;",
+    "    return result;",
+    "  }",
+    "",
+    "  retry(job) {",
+    "    const delay = 500 * this.attempts;",
+    "    return new Promise((resolve) => {",
+    "      setTimeout(() => resolve(this.handle(job)), delay);",
+    "    });",
+    "  }",
+    "}",
+    "",
+    "module.exports = Worker;",
+    ""
+  ].join("\n"));
+  // Bez tego pliku `require(\"./handler\")` w workerze wisi w powietrzu, a zwiad
+  // modelu kończy się na „brak pliku" zamiast na przyczynie. Handler zwraca
+  // liczbę zapisanych pozycji — zero jest poprawnym wynikiem, i to ono wpada
+  // w `if (!result)`.
+  fs.writeFileSync(path.join(workdir, "handler.js"), [
+    "\"use strict\";",
+    "",
+    "const Handler = {",
+    "  async run(job) {",
+    "    const items = job.payload.items || [];",
+    "    let saved = 0;",
+    "    for (const item of items) {",
+    "      if (item.amount === 0) continue;",
+    "      saved += 1;",
+    "    }",
+    "    return saved;",
+    "  }",
+    "};",
+    "",
+    "module.exports = Handler;",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(workdir, "config", "queue.yml"), [
+    "queue:",
+    "  max_attempts: 3",
+    "  visibility_timeout: 30",
+    "worker:",
+    "  concurrency: 4",
+    "  prefetch: 12",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(workdir, "logs", "last-run.txt"), [
+    "2026-07-24T22:14:02Z worker start queue=invoices",
+    "2026-07-24T22:14:33Z Error: job 8841 exceeded visibility timeout after 30s (queue=invoices, attempt=17)",
+    "2026-07-24T22:14:33Z worker stop",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(workdir, "package.json"), `${JSON.stringify({
+    name: "queue-worker",
+    version: "1.2.0",
+    private: true,
+    dependencies: { amqplib: "0.10.4" }
+  }, null, 2)}\n`);
+  fs.writeFileSync(path.join(workdir, "README.md"), [
+    "# Worker kolejki",
+    "",
+    "Prosty worker zdejmujący zadania z kolejki.",
+    "`max_attempts: 3` w `config/queue.yml` jest wartością informacyjną dla panelu —",
+    "polityka ponowień siedzi w kodzie workera i nie czyta tego pliku.",
+    ""
+  ].join("\n"));
 }
 
 function seedFixture(workdir) {
@@ -83,7 +203,15 @@ function seedFixture(workdir) {
   ].join("\n"));
 }
 
-function invocationForTurn(index, model, workdir, outputFile, threadId) {
+// Rejestr scenariuszy. `cache` jest domyślny i to na nim stoją wszystkie
+// pomiary do 3.6.0 włącznie — zmiana domyślnego zerwałaby porównywalność
+// z `benchmarks/context-smoke/`.
+const SCENARIOS = {
+  cache: { prompts: SCENARIO_PROMPTS, seed: seedFixture },
+  kolejka: { prompts: KOLEJKA_PROMPTS, seed: seedKolejkaFixture }
+};
+
+function invocationForTurn(index, model, workdir, outputFile, threadId, scenario = "cache") {
   const shared = [
     "--json",
     "--dangerously-bypass-hook-trust",
@@ -104,7 +232,7 @@ function invocationForTurn(index, model, workdir, outputFile, threadId) {
         "read-only",
         "-C",
         workdir,
-        promptForTurn(index)
+        promptForTurn(index, scenario)
       ]
     };
   }
@@ -112,7 +240,7 @@ function invocationForTurn(index, model, workdir, outputFile, threadId) {
   // `codex exec resume` nie przyjmuje -s/-C — sandbox i workdir dziedziczy z wątku tury 1.
   return {
     command: "codex",
-    args: ["exec", "resume", ...shared, threadId, promptForTurn(index)]
+    args: ["exec", "resume", ...shared, threadId, promptForTurn(index, scenario)]
   };
 }
 
@@ -387,7 +515,7 @@ function voiceDrift(hitsPerTurn) {
   return second / first;
 }
 
-function buildReport({ model, responses = [], contexts = [], status = "COMPLETE", reason }) {
+function buildReport({ model, responses = [], contexts = [], status = "COMPLETE", reason, scenario = "cache" }) {
   const outputWords = responses.reduce((sum, response) => sum + wordCount(response), 0);
   const unique = new Map();
   for (const { text, kinds } of contexts) {
@@ -407,6 +535,10 @@ function buildReport({ model, responses = [], contexts = [], status = "COMPLETE"
   const report = {
     status,
     model,
+    // Bez tego pola katalogi w benchmarks/ są nierozróżnialne, a dwa
+    // scenariusze mają inny klucz odpowiedzi — wynik z jednego przyłożony do
+    // drugiego jest bezwartościowy.
+    scenario,
     turns: responses.length,
     outputWords,
     hookContextWords,
@@ -539,7 +671,7 @@ function writeReport(directory, report, responses = []) {
   }
 }
 
-function runSmoke({ model }) {
+function runSmoke({ model, scenario = "cache" }) {
   const directory = reportDirectory();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "krux-context-smoke-"));
   const home = path.join(scratch, "home");
@@ -555,7 +687,7 @@ function runSmoke({ model }) {
     fs.mkdirSync(codexHome, { recursive: true, mode: 0o700 });
     fs.mkdirSync(workdir, { recursive: true });
     fs.mkdirSync(output, { recursive: true });
-    seedFixture(workdir);
+    SCENARIOS[scenario].seed(workdir);
 
     const sourceCodexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
     const sourceAuth = path.join(sourceCodexHome, "auth.json");
@@ -578,7 +710,7 @@ function runSmoke({ model }) {
     let threadId;
     for (let index = 0; index < turnCount; index += 1) {
       const outputFile = path.join(output, `${String(index + 1).padStart(2, "0")}.txt`);
-      const invocation = invocationForTurn(index, model, workdir, outputFile, threadId);
+      const invocation = invocationForTurn(index, model, workdir, outputFile, threadId, scenario);
       const result = run(invocation.command, invocation.args, {
         cwd: workdir,
         env: environment
@@ -591,14 +723,15 @@ function runSmoke({ model }) {
     }
 
     contexts = extractHookContexts(appendedTranscript(codexHome, before));
-    report = buildReport({ model, responses, contexts });
+    report = buildReport({ model, responses, contexts, scenario });
   } catch (error) {
     report = buildReport({
       model,
       responses,
       contexts,
       status: "ERROR",
-      reason: error.message
+      reason: error.message,
+      scenario
     });
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
@@ -625,6 +758,9 @@ if (require.main === module) main();
 
 module.exports = {
   parseArgs,
+  promptForTurn,
+  SCENARIOS,
+  turnCount,
   invocationForTurn,
   parseCodexJson,
   validateTurnResult,
