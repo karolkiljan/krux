@@ -57,6 +57,15 @@ const SCENARIO_PROMPTS = [
 // pobocznych jest cztery — `prefetch`, `concurrency`, przypięta wersja
 // zależności i dosłowny komunikat błędu z logu — a żadna nie jest potrzebna do
 // diagnozy. To one sprawdzają, czy skrót zjada konkret.
+//
+// Pierwsza wersja tych promptów zamawiała trzy z czterech liczb wprost („Sprawdź
+// package.json — czy wersje zależności mają tu znaczenie?", „Czy ustawienia
+// wydajnościowe workera są w ogóle używane przez kod?") i sąd wyszedł remisem
+// 98:98: konkret zamówiony pytaniem podaje każda kotwica, więc mierzy się
+// posłuszeństwo, nie ochronę konkretu. Tury 7 i 8 pytają teraz o skutek, nie o
+// wartość — plik trzeba przeczytać tak samo, ale liczba wchodzi mimochodem albo
+// wcale. Żaden prompt nie może nazywać `prefetch`, `concurrency` ani
+// `package.json`; pilnuje tego test w test/smoke.test.js.
 const KOLEJKA_PROMPTS = [
   "W tym katalogu jest worker kolejki zadań. Zadania z pewnymi wynikami mielą się w kółko — zbadaj kod i powiedz, co widzisz.",
   "Sprawdź dokładnie worker.js i config/queue.yml — co dokładnie jest przyczyną?",
@@ -64,8 +73,8 @@ const KOLEJKA_PROMPTS = [
   "Jakie masz opcje naprawy? Wypisz je z plusami i minusami.",
   "Zerknij jeszcze na README.md, czy jest tam coś istotnego o polityce ponowień.",
   "Który wariant polecasz i dlaczego?",
-  "Sprawdź package.json — czy wersje zależności mają tu znaczenie?",
-  "Czy ustawienia wydajnościowe workera są w ogóle używane przez kod?",
+  "Czy naprawa siedzi wyłącznie w kodzie, czy trzeba ruszyć też konfigurację albo zależności?",
+  "A co z zachowaniem przy dużym obciążeniu, ma to znaczenie w tym przypadku?",
   "Sprawdź, czy w projekcie są jakieś testy dla tej funkcji.",
   "Czy przy takiej zmianie grozi zgubienie zadań z kolejki?",
   "Jak byś to poukładał na dziś, gdybyś miał zaczynać teraz?",

@@ -255,14 +255,20 @@ test("only the focused tests, smoke runner and current design records remain", (
     "2026-07-16-persona-kapsula-design.md",
     "2026-07-17-sesja-kalibracyjna-morra.md",
     "2026-07-26-sad-czytelnosci-kotwicy.md",
+    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT-kolejka-v1.txt",
+    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT-kolejka.txt",
     "2026-07-26-sad-czytelnosci-kotwicy/RAPORT.txt",
     "2026-07-26-sad-czytelnosci-kotwicy/README.md",
     "2026-07-26-sad-czytelnosci-kotwicy/grade.js",
     "2026-07-26-sad-czytelnosci-kotwicy/gubienie.js",
     "2026-07-26-sad-czytelnosci-kotwicy/korelacja.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/labels-kolejka-v1.json",
+    "2026-07-26-sad-czytelnosci-kotwicy/labels-kolejka.json",
     "2026-07-26-sad-czytelnosci-kotwicy/labels.json",
     "2026-07-26-sad-czytelnosci-kotwicy/prompts.js",
     "2026-07-26-sad-czytelnosci-kotwicy/run.js",
+    "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka-v1.jsonl",
+    "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka.jsonl",
     "2026-07-26-sad-czytelnosci-kotwicy/werdykty.jsonl"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [

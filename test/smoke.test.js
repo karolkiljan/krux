@@ -195,6 +195,26 @@ test("every scenario carries a prompt for each of the 12 turns", () => {
   assert.equal(promptForTurn(0), promptForTurn(0, "cache"));
 });
 
+// Sąd z 2026-07-26 utknął na suficie 98:98, bo prompty zamawiały trzy z czterech
+// liczb pobocznych wprost. Konkret zamówiony pytaniem podaje każda kotwica —
+// mierzy się wtedy posłuszeństwo, nie ochronę konkretu. Test warownikiem: nazwa
+// pobocznego ustawienia w promptach jest regresem pomiaru, nie drobiazgiem.
+test("kolejka prompts never order the side facts by name", () => {
+  const zamawianie = [/prefetch/iu, /concurrency/iu, /package\.json/iu, /amqplib/iu];
+  for (const prompt of SCENARIOS.kolejka.prompts) {
+    for (const wzorzec of zamawianie) {
+      assert.doesNotMatch(prompt, wzorzec, `prompt zamawia konkret poboczny: ${prompt}`);
+    }
+  }
+
+  // Fakty diagnostyczne wolno zamawiać — bez nich rozmowa nie ma o czym być.
+  // Kontrola: pliki niosące przyczynę dalej są w promptach nazwane.
+  const wszystkie = SCENARIOS.kolejka.prompts.join(" ");
+  assert.match(wszystkie, /worker\.js/u);
+  assert.match(wszystkie, /queue\.yml/u);
+  assert.match(wszystkie, /last-run\.txt/u);
+});
+
 // Klucz odpowiedzi scenariusza `kolejka` siedzi w fixture, nie w promptach.
 // Test waruje, żeby liczby poboczne — te, na których sąd czytelności rozstrzygał
 // przewagę kotwicy — nie wyparowały cicho z zasianych plików.
