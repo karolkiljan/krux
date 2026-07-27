@@ -269,7 +269,12 @@ test("only the focused tests, smoke runner and current design records remain", (
     "2026-07-26-sad-czytelnosci-kotwicy/run.js",
     "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka-v1.jsonl",
     "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka.jsonl",
-    "2026-07-26-sad-czytelnosci-kotwicy/werdykty.jsonl"
+    "2026-07-26-sad-czytelnosci-kotwicy/werdykty.jsonl",
+    "2026-07-27-ablacja-sessionstart.md",
+    "2026-07-27-ablacja-sessionstart/ablacja.js",
+    "2026-07-27-ablacja-sessionstart/mapa.txt",
+    "2026-07-27-ablacja-sessionstart/pomiar.sh",
+    "2026-07-27-ablacja-sessionstart/przebiegi.json"
   ]);
   assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
     "2026-07-15-krux-konkret-flow.md",
