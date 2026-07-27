@@ -314,6 +314,12 @@ test("context smoke helpers enforce the 12-turn report contract", () => {
   assert.deepEqual(smoke.classifyHookContext("Tryb iteracyjny: jeden ruch"), ["flow"]);
   assert.deepEqual(smoke.classifyHookContext("zwykły tekst ze słowem Krux"), []);
 
+  // Personę rozpoznaje dowolny z jej fragmentów. Przy jednym pomiar ablacyjny,
+  // który wycina pierwszą sekcję, dostawał zero emisji persony i oblewał
+  // bramkę mimo żywego głosu — mierzył ślepotę klasyfikatora, nie personę.
+  assert.deepEqual(smoke.classifyHookContext("## Jak Krux mówi\n\n**Stan.**"), ["persona"]);
+  assert.deepEqual(smoke.classifyHookContext("## Kim jest Krux\n\nOrk z Doliny"), ["persona"]);
+
   const personaContext = { text: Array.from({ length: 64 }, () => "x").join(" "), kinds: ["persona"] };
   const accepted = smoke.buildReport({
     model: "model-x",

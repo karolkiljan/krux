@@ -306,15 +306,19 @@ function validateTurnResult(parsed, expectedThreadId, finalOutput) {
   return threadId;
 }
 
+// Każdy tryb rozpoznaje się po dowolnym ze swoich fragmentów. Persona miała
+// jeden — nagłówek pierwszej sekcji — więc pomiar ablacyjny, który tę sekcję
+// wycina, dostawał `hookContextWords: 0` i oblewał bramkę mimo żywego głosu.
+// Wynik wyglądał jak śmierć persony, a był ślepotą klasyfikatora.
 const hookAnchors = [
-  { kind: "persona", anchor: "Kim jest Krux" },
-  { kind: "konkret", anchor: "Tryb precyzji zakresu" },
-  { kind: "flow", anchor: "Tryb iteracyjny" }
+  { kind: "persona", anchors: ["Kim jest Krux", "Jak Krux mówi"] },
+  { kind: "konkret", anchors: ["Tryb precyzji zakresu"] },
+  { kind: "flow", anchors: ["Tryb iteracyjny"] }
 ];
 
 function classifyHookContext(text) {
   return hookAnchors
-    .filter(({ anchor }) => text.includes(anchor))
+    .filter(({ anchors }) => anchors.some((anchor) => text.includes(anchor)))
     .map(({ kind }) => kind);
 }
 
