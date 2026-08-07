@@ -6,3 +6,10 @@ benchmarks/
 .worktrees/
 .superpowers/
 docs/superpowers/
+
+# Poświadczenia — nigdy do repozytorium publicznego.
+.env
+.env.*
+*.pem
+*.key
+*.p12
