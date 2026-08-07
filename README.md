@@ -1,16 +1,22 @@
 # Krux
 
-Krux = minimalny plugin dla Claude Code i Codex: zwięzły polski głos technicznego orka oraz sześciu specjalistów ładowanych tylko wtedy, gdy robota ich potrzebuje.
+Krux to plugin dla Claude Code i Codex. Daje asystentowi zwięzły polski głos technicznego orka i sześciu wyspecjalizowanych orków, którzy wchodzą do roboty wyłącznie na żądanie.
 
-## Co zostaje w kontekście
+Pod spodem nic się nie zmienia: ta sama wiedza, ta sama poprawność. Zmienia się to, ile słów trzeba przeczytać, żeby dojść do sedna.
 
-Persona wchodzi przez `SessionStart` przy `startup`, `clear` i `source=compact`; każdy zwykły prompt dostaje jednozdaniową kotwicę głosu. Narzędzia, resume, start subagenta i Stop dodają 0 słów. Łączna emisja `SessionStart` mieści się z zapasem pod limitem 10 000 znaków, który Claude Code narzuca na output hooka. Stan trzymają trzy niezależne flagi w katalogu danych pluginu: `.krux-mode`, `.krux-konkret`, `.krux-flow`.
+## Jak to brzmi
+
+**Zwykły asystent**
+
+> Build pada z `TypeError: Cannot read properties of undefined (reading 'map')` w `src/render.js:42` — pewnie `items` jest undefined.
+
+**Krux**
+
+> Build pad. Kompilator mówi — `TypeError: Cannot read properties of undefined (reading 'map')`, plik `src/render.js`, linia 42. Wygląda na to, że `items` undefined, bo API odesłało goniec z pustymi rękami.
+
+Komunikat błędu, ścieżka i numer linii przechodzą co do znaku. Hipoteza dalej brzmi jak hipoteza. Głos siedzi na brzegach zdania, nigdy w faktach.
 
 ## Instalacja
-
-Plugin rozwijany jest lokalnie — instaluj z lokalnego klonu repozytorium.
-Publiczne repo na GitHubie może być starsze niż lokalny master i wtedy
-zainstaluje inną wersję niż opisana niżej.
 
 ### Claude Code
 
@@ -30,62 +36,42 @@ W obu hostach przejrzyj i zaufaj jednej komendzie hooka `node .../hooks/krux.js`
 
 ## Użycie
 
-- `wyłącz krux` jako cała wiadomość → trwały tryb neutralny.
-- `włącz krux` jako cała wiadomość → trwały głos Kruxa.
-- `włącz konkret` / `wyłącz konkret` → tryb precyzji zakresu: tylko proszone, nic więcej.
-- `włącz flow` / `wyłącz flow` → tryb iteracyjny: jeden ruch na raz, zgoda przed egzekucją.
-- Claude: `/krux:krux-horda`; Codex: `$krux:krux-horda` → mapa specjalistów na żądanie.
+Przełączniki działają, gdy stanowią całą wiadomość. Ustawienie jest trwałe — przeżywa restart sesji.
+
+| Komenda | Skutek |
+|---|---|
+| `włącz krux` | głos orka |
+| `wyłącz krux` | tryb neutralny |
+| `włącz konkret` / `wyłącz konkret` | precyzja zakresu: tylko to, o co proszono, nic ponadto |
+| `włącz flow` / `wyłącz flow` | rytm iteracyjny: jeden ruch na raz, zgoda przed każdym |
+
+Trzy osie są niezależne i składalne — zakres i rytm nie zmieniają głosu ani siebie nawzajem.
+
+## Horda
+
+Sześciu specjalistów do zadań, które opłaca się oddać osobnemu agentowi. Mapa ładuje się na żądanie: w Claude Code przez `/krux:krux-horda`, w Codeksie przez `$krux:krux-horda`.
 
 | Ork | Fach |
 |---|---|
-| Niuch | debug i eksploracja |
-| Grom | backend i dane |
-| Piryt | review i ryzyko |
+| Niuch | debug, szukanie przyczyny, zwiad po kodzie |
+| Grom | backend, API, dane |
+| Piryt | review i ocena ryzyka |
 | Ochra | frontend i UI |
 | Młot | testy i weryfikacja |
 | Lont | bezpieczne usuwanie i refaktor |
 
-Krux deleguje tylko przy specjalizacji, izolacji kontekstu albo realnej równoległości. Drobnicę robi sam.
+Krux deleguje tylko przy fachowej specjalizacji, izolacji kontekstu albo realnej równoległości. Drobnicę robi sam — zimny subagent na jednego grepa kosztuje więcej, niż daje.
 
-## Zmiany w 3.5.0
+## Granice
 
-Naprawa niewidzialnej persony w Claude Code. Od 3.3.0 kapsuła emitowała
-10 636 znaków, a Claude Code tnie output hooka powyżej 10 000 znaków —
-pełny tekst lądował w pliku sesji, model widział tylko 2 KB podglądu bez
-par przykładów. Głos ginął od pierwszej tury mimo poprawnie działającego
-hooka.
+Poprawność, bezpieczeństwo i wymagany format wyprzedzają głos. Liczby, wersje, ścieżki, komendy i komunikaty błędów idą dosłownie. Kod, JSON, commit messages i opisy PR pozostają neutralne — głos obowiązuje wokół nich, nie w środku. Przed ruchem nieodwracalnym Krux przechodzi na pełne zdania: warunek, skutek, droga odwrotu.
 
-- Kapsuła zbita do 16 par (wzorce z sesji kalibracyjnej nietknięte;
-  skrócone strony ludzkie, komentarze, słownik). Łączna emisja
-  `SessionStart` wszystkich trzech trybów: 8 946 znaków, budżet 9 000
-  pilnowany testem kontraktowym.
-- Kotwica per turę przypomina teraz też złamaną gramatykę i rdzeń
-  słownika, nie tylko trzecią osobę.
-- Smoke akceptuje wyłącznie sesje z żywym głosem: średnio ≥ 1 trafienie
-  słownika na turę, maksymalnie 1 wpadka drugiej osoby, druga połowa
-  sesji ≥ 50% pierwszej.
+## Wymagania
 
-## Zmiany w 3.3.0
-
-Domknięta sesja kalibracyjna głosu — 10 rund odwróconego few-shot
-z autorem:
-
-- Kapsuła persony ma 20 par „Ludzie / Krux". Nowe pary z rund 8–10:
-  **relacja błędu** (komunikat kompilatora co do znaku, głos tylko na
-  brzegach zdania, „wygląda na to" zostaje — hipoteza ma brzmieć jak
-  hipoteza), **podziękowanie** (ciepło wprost, bez dworskich ukłonów)
-  i **podsumowanie roboty** (liczby i ścieżki nietykalne, żart
-  z własnej małomówności dozwolony).
-- Słownik żywy urósł o: goniec = odpowiedź w drodze (pusta odpowiedź
-  = goniec z pustymi rękami), tykać = zmieniać plik, pognać = wygonić
-  zbędne.
-
-## Wymagania i rozwój
-
-- macOS lub Linux;
-- Claude Code lub Codex;
-- Node.js 18+ w `PATH`;
-- brak `npm install` i brak zależności runtime.
+- macOS albo Linux
+- Claude Code albo Codex
+- Node.js 18+ w `PATH`
+- zero zależności runtime, bez `npm install`
 
 ```bash
 npm test
