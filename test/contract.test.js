@@ -207,8 +207,6 @@ test("all obsolete runtime paths are absent", () => {
 test("public and maintainer docs describe only the minimal architecture", () => {
   const readme = fs.readFileSync(path.join(repo, "README.md"), "utf8");
   const maintainer = fs.readFileSync(path.join(repo, "CLAUDE.md"), "utf8");
-  const design = fs.readFileSync(path.join(repo, "docs", "superpowers", "specs", "2026-07-15-minimal-krux-design.md"), "utf8");
-  const plan = fs.readFileSync(path.join(repo, "docs", "superpowers", "plans", "2026-07-15-minimal-krux.md"), "utf8");
   for (const required of ["Claude Code", "Codex", "włącz krux", "wyłącz krux", "krux-horda", "Niuch", "Lont"]) {
     assert.match(readme, new RegExp(required, "u"));
   }
@@ -226,60 +224,30 @@ test("public and maintainer docs describe only the minimal architecture", () => 
     );
   }
   assert.doesNotMatch(
-    `${maintainer}\n${design}\n${plan}`,
+    maintainer,
     /^python3 .*\/(?:quick_validate|validate_plugin)\.py(?: |$)/gmu
   );
-  assert.match(plan, /one atomic source commit replaces the four intermediate task commits/u);
+  // Repozytorium jest publiczne, a dokumenty projektowe zostały lokalne.
+  // Żaden publikowany dokument nie może wskazywać ścieżki w docs/superpowers/,
+  // bo po stronie klonu taki link nie prowadzi do niczego.
+  assert.doesNotMatch(`${readme}\n${maintainer}`, /`docs\/superpowers\/[^`]+`/u);
   assert.doesNotMatch(`${readme}\n${maintainer}`, /drift|PostToolUse|statusline|final guard|triggers\.json/iu);
 });
 
-test("only the focused tests, smoke runner and current design records remain", (t) => {
-  const ignoredSpecDirectory = fs.mkdtempSync(
-    path.join(repo, "docs", "superpowers", "specs", ".ignored-contract-probe-")
-  );
-  const ignoredSpec = path.join(ignoredSpecDirectory, "workspace-note.md");
-  fs.writeFileSync(ignoredSpec, "ignored workspace note\n");
-  t.after(() => fs.rmSync(ignoredSpecDirectory, { recursive: true, force: true }));
-
+test("only the focused tests and the smoke runner ship; design records stay local", () => {
   assert.deepEqual(trackedFilesUnder("test"), [
     "contract.test.js", "hook.test.js", "horda.test.js", "smoke.test.js"
   ]);
   assert.deepEqual(trackedFilesUnder("scripts"), ["context-smoke.js"]);
-  // Sąd czytelności jest jedynym specem z katalogiem załącznika: stanowisko
-  // pomiarowe i 396 surowych werdyktów, bez których wniosków nie da się
-  // odtworzyć. Narzędzie nie wchodzi do npm test — sądu z modelem w pętli nie
-  // da się zasertować deterministycznie.
-  assert.deepEqual(trackedFilesUnder("docs/superpowers/specs"), [
-    "2026-07-15-krux-konkret-flow-design.md",
-    "2026-07-15-minimal-krux-design.md",
-    "2026-07-16-persona-kapsula-design.md",
-    "2026-07-17-sesja-kalibracyjna-morra.md",
-    "2026-07-26-sad-czytelnosci-kotwicy.md",
-    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT-kolejka-v1.txt",
-    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT-kolejka.txt",
-    "2026-07-26-sad-czytelnosci-kotwicy/RAPORT.txt",
-    "2026-07-26-sad-czytelnosci-kotwicy/README.md",
-    "2026-07-26-sad-czytelnosci-kotwicy/grade.js",
-    "2026-07-26-sad-czytelnosci-kotwicy/gubienie.js",
-    "2026-07-26-sad-czytelnosci-kotwicy/korelacja.js",
-    "2026-07-26-sad-czytelnosci-kotwicy/labels-kolejka-v1.json",
-    "2026-07-26-sad-czytelnosci-kotwicy/labels-kolejka.json",
-    "2026-07-26-sad-czytelnosci-kotwicy/labels.json",
-    "2026-07-26-sad-czytelnosci-kotwicy/prompts.js",
-    "2026-07-26-sad-czytelnosci-kotwicy/run.js",
-    "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka-v1.jsonl",
-    "2026-07-26-sad-czytelnosci-kotwicy/werdykty-kolejka.jsonl",
-    "2026-07-26-sad-czytelnosci-kotwicy/werdykty.jsonl",
-    "2026-07-27-ablacja-sessionstart.md",
-    "2026-07-27-ablacja-sessionstart/ablacja.js",
-    "2026-07-27-ablacja-sessionstart/mapa.txt",
-    "2026-07-27-ablacja-sessionstart/pomiar.sh",
-    "2026-07-27-ablacja-sessionstart/przebiegi.json"
-  ]);
-  assert.deepEqual(trackedFilesUnder("docs/superpowers/plans"), [
-    "2026-07-15-krux-konkret-flow.md",
-    "2026-07-15-minimal-krux.md"
-  ]);
+  // Dokumenty projektowe zostają na dysku maintainera i nie wchodzą do repo.
+  // Powód jest jeden: repozytorium jest publiczne, a specy niosą surowy zapis
+  // sesji kalibracyjnej z autorem oraz 396 werdyktów sądu czytelności.
+  // Reguła `docs/superpowers/` w .gitignore jest od tej pory skuteczna —
+  // wcześniej katalog był śledzony mimo wpisu i wpis nic nie znaczył.
+  assert.deepEqual(trackedFilesUnder("docs/superpowers"), []);
+  assert.equal(spawnSync("git", ["check-ignore", "-q", "docs/superpowers/specs/probe.md"], {
+    cwd: repo
+  }).status, 0);
   assert.equal(fs.existsSync(path.join(repo, "agents")), false);
   const pkg = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8"));
   assert.equal(pkg.scripts["smoke:context"], "node scripts/context-smoke.js");

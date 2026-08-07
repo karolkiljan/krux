@@ -68,7 +68,7 @@ hooka.
 ## Zmiany w 3.3.0
 
 Domknięta sesja kalibracyjna głosu — 10 rund odwróconego few-shot
-z autorem (zapis: `docs/superpowers/specs/2026-07-17-sesja-kalibracyjna-morra.md`):
+z autorem:
 
 - Kapsuła persony ma 20 par „Ludzie / Krux". Nowe pary z rund 8–10:
   **relacja błędu** (komunikat kompilatora co do znaku, głos tylko na

@@ -13,10 +13,16 @@ skills/krux-konkret/SKILL.md                  tryb precyzji zakresu
 skills/krux-flow/SKILL.md                     tryb iteracyjny krok-po-kroku
 test/{hook,horda,contract,smoke}.test.js      testy deterministyczne
 scripts/context-smoke.js                      pomiar 12 tur
-docs/superpowers/{specs,plans}/               dokumenty projektowe (śledzone mimo wpisu w .gitignore)
 package.json                                  komendy i wersja bazowa
 README.md, CLAUDE.md, LICENSE                 dokumentacja i licencja
 ```
+
+Dokumenty projektowe (specyfikacje, plany, surowe dane pomiarowe) leżą poza
+repozytorium, w lokalnym katalogu `docs/superpowers/` objętym `.gitignore`.
+Repozytorium jest publiczne, a te zapisy niosą surowe wypowiedzi autora
+i pełne transkrypty przebiegów. Odwołania niżej wskazują pliki, które ma
+maintainer u siebie — w klonie ich nie ma i test kontraktowy pilnuje,
+by żaden publikowany dokument nie linkował do tej ścieżki.
 
 ## Macierz zdarzeń
 
@@ -46,11 +52,11 @@ Trzy niezależne flagi w `<plugin-data>/`: `.krux-mode` (persona, treść `on`/`
 - `hooks/krux.js` przyjmuje obie rodziny zmiennych: `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` oraz `PLUGIN_ROOT` / `PLUGIN_DATA`.
 - Body `skills/krux/SKILL.md` po frontmatter jest jedynym źródłem głosu.
 - Body `skills/krux-konkret/SKILL.md` i `skills/krux-flow/SKILL.md` po frontmatter są jedynym źródłem kontraktów trybów — hook nie przechowuje ich kopii.
-- Instrukcje w `skills/krux/SKILL.md` pisze się poprawną polszczyzną; głos orka niosą wyłącznie pary przykładów. Opisywanie głosu przymiotnikami zamiast pokazania wzorca jest regresem — patrz `docs/superpowers/specs/2026-07-16-persona-kapsula-design.md`.
+- Instrukcje w `skills/krux/SKILL.md` pisze się poprawną polszczyzną; głos orka niosą wyłącznie pary przykładów. Opisywanie głosu przymiotnikami zamiast pokazania wzorca jest regresem — patrz lokalny spec `2026-07-16-persona-kapsula-design.md`.
 - Horda pozostaje w `skills/krux-horda/SKILL.md` i ładuje się wyłącznie na żądanie.
 - `krux-konkret` i `krux-flow` to niezależne, składalne osie — nie zmieniają głosu ani nie zależą od siebie nawzajem.
 - Claude Code tnie output hooka powyżej 10 000 znaków: pełny tekst ląduje w pliku sesji, model dostaje 2 KB podglądu. Dlatego łączna emisja `SessionStart` (persona + konkret + flow) i każda emisja toggle mieszczą się w budżecie 9 000 znaków, a kotwica głosu w 1 000 — pilnuje tego test kontraktowy. Powiększenie body `SessionStart` wymaga wycięcia czegoś w zamian, bo tam budżet wynika z cap-u harnessa. Budżet kotwicy jest inny: wynika z kosztu na turę (~250 tokenów), nie z cap-u, i wolno go podnieść świadomie — poprzednie 300 było liczbą wymyśloną, przez którą wycinano działające pary.
-- `scripts/context-smoke.js` ma dwa scenariusze: `cache` (domyślny) i `kolejka`. Domyślnego się nie zmienia — wszystkie przebiegi w `benchmarks/context-smoke/` do 3.7.0 stoją na `cache` i podmiana zerwałaby porównywalność. `kolejka` niesie cztery liczby poboczne (`prefetch: 12`, `concurrency: 4`, `amqplib 0.10.4`, dosłowny komunikat z logu) zamiast jednej. Sądzono na nim dwa razy, 168 werdyktów: **nie różnicuje kotwic**. Runda I stanęła na suficie, bo prompty zamawiały liczby wprost; po naprawie tur 7 i 8 wynik dalej jest remisem, a poboczne fakty wchodzą do zapisu w obu grupach niemal identycznie — decyduje temat rozmowy, nie kotwica. Żaden prompt tego scenariusza nie może nazywać `prefetch`, `concurrency` ani `package.json` (waruje test). Trzeci scenariusz pomiarowy musi wprowadzać liczbę poboczną raz, mimochodem, bez powrotu do niej — szczegóły i bilans kosztu kotwicy w `docs/superpowers/specs/2026-07-26-sad-czytelnosci-kotwicy.md`. Raport zawsze nazywa scenariusz w polu `scenario`.
+- `scripts/context-smoke.js` ma dwa scenariusze: `cache` (domyślny) i `kolejka`. Domyślnego się nie zmienia — wszystkie przebiegi w `benchmarks/context-smoke/` do 3.7.0 stoją na `cache` i podmiana zerwałaby porównywalność. `kolejka` niesie cztery liczby poboczne (`prefetch: 12`, `concurrency: 4`, `amqplib 0.10.4`, dosłowny komunikat z logu) zamiast jednej. Sądzono na nim dwa razy, 168 werdyktów: **nie różnicuje kotwic**. Runda I stanęła na suficie, bo prompty zamawiały liczby wprost; po naprawie tur 7 i 8 wynik dalej jest remisem, a poboczne fakty wchodzą do zapisu w obu grupach niemal identycznie — decyduje temat rozmowy, nie kotwica. Żaden prompt tego scenariusza nie może nazywać `prefetch`, `concurrency` ani `package.json` (waruje test). Trzeci scenariusz pomiarowy musi wprowadzać liczbę poboczną raz, mimochodem, bez powrotu do niej — szczegóły i bilans kosztu kotwicy w lokalnym specu `2026-07-26-sad-czytelnosci-kotwicy.md`. Raport zawsze nazywa scenariusz w polu `scenario`.
 - Runtime nie ma zależności npm, a testy używają wbudowanego `node:test`.
 - Wersje rekordów dystrybucji zgadzają się z `3.7.0` po usunięciu opcjonalnych metadanych build Codexa.
 
